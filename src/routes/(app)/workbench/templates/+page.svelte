@@ -125,6 +125,10 @@
 	<Breadcrumb.Root class="flex-grow">
 		<Breadcrumb.List>
 			<Breadcrumb.Item class="hidden md:block">
+				<Breadcrumb.Link href="/workbench">Workbench</Breadcrumb.Link>
+			</Breadcrumb.Item>
+			<Breadcrumb.Separator class="hidden md:block" />
+			<Breadcrumb.Item>
 				<Breadcrumb.Link>Templates</Breadcrumb.Link>
 			</Breadcrumb.Item>
 		</Breadcrumb.List>
@@ -134,9 +138,9 @@
 <section class="mx-auto my-8 flex gap-2">
 	<Button
 		variant="outline"
-		href="{base}/templates/create"
+		href="{base}/workbench"
 		class=" {templates.length > 0 && !loading ? '' : 'border-accent/50!'} w-fit"
-		>Create new template</Button
+		>Go to workbench</Button
 	>
 	<Button variant="outline" onclick={() => importTemplate()} class="w-fit">Import from file</Button>
 </section>
@@ -194,10 +198,10 @@
 				{@const graphData = safeJSONParse(templateData?.payload?.data || '{}')}
 
 				<li class="col-span-1">
-					<Card.Root>
+					<Card.Root class="p-0">
 						<Dialog.Root bind:open={dialogOpen}>
-							<Card.Content class="flex flex-col gap-4 ">
-								<Card.Header class="relative flex justify-between px-0">
+							<Card.Content class="flex flex-col p-0 ">
+								<!-- <Card.Header class="relative flex justify-between px-0">
 									<Card.Title>{template}</Card.Title>
 									{#if !templateData?.trusted}
 										<Tooltip.Provider>
@@ -212,9 +216,9 @@
 											</Tooltip.Root>
 										</Tooltip.Provider>
 									{/if}
-								</Card.Header>
+								</Card.Header> -->
 								<button
-									class=" bg-sidebar hover:bg-accent-foreground/10 aspect-square w-full overflow-clip rounded-lg transition-all"
+									class=" bg-sidebar hover:bg-accent-foreground/10 aspect-video w-full overflow-clip rounded-lg transition-all"
 									onclick={() => openTemplate(template)}
 								>
 									<AgentGraph
@@ -230,43 +234,23 @@
 									/>
 								</button>
 
-								<Card.Footer class="flex justify-between gap-2 border-t px-0">
-									<span class="flex gap-2">
-										<Tooltip.Provider>
-											<Tooltip.Root delayDuration={300}>
-												<Tooltip.Trigger
-													><Button
-														class="self-start"
-														variant="ghostHover"
-														size="sm"
-														href="{base}/templates/create?template={template}"
-														><IconPencilRegular />
-														<div class="sr-only">Edit</div></Button
-													></Tooltip.Trigger
-												>
-												<Tooltip.Content>
-													<p>Edit</p>
-												</Tooltip.Content>
-											</Tooltip.Root>
-										</Tooltip.Provider>
-
-										<Tooltip.Provider>
-											<Tooltip.Root delayDuration={300}>
-												<Tooltip.Trigger
-													><Button
-														class="self-start"
-														variant="ghostHover"
-														size="sm"
-														onclick={() => downloadTemplate(template)}
-														><IconDownloadRegular />
-														<div class="sr-only">Download</div></Button
-													></Tooltip.Trigger
-												>
-												<Tooltip.Content>
-													<p>Download</p>
-												</Tooltip.Content>
-											</Tooltip.Root>
-										</Tooltip.Provider>
+								<Card.Footer class="flex justify-between gap-2 border-t p-6">
+									<span class="flex flex-col gap-2">
+										<Card.Title>{template}</Card.Title>
+										{#if !templateData.trusted}
+											<Tooltip.Provider>
+												<Tooltip.Root delayDuration={0}>
+													<Tooltip.Trigger
+														class="text-accent absolute right-0 opacity-70 hover:opacity-100"
+														><IconWarningCircleRegular class="size-5" /></Tooltip.Trigger
+													>
+													<Tooltip.Content>
+														<p>Imported from external source</p>
+													</Tooltip.Content>
+												</Tooltip.Root>
+											</Tooltip.Provider>
+										{/if}
+										Created {templateData.updated}
 									</span>
 
 									<Button onclick={() => openTemplate(template)}>View</Button>

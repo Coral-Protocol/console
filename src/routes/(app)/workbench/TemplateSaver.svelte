@@ -8,8 +8,8 @@
 	import { toast } from 'svelte-sonner';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
-	import type { Template } from '../TemplateV1';
-	import { saveTemplateToLocalStorage } from '../TemplateLib';
+	import type { Template } from './templates/TemplateV1';
+	import { saveTemplateToLocalStorage } from './templates/TemplateLib';
 
 	let { open = $bindable(false), data }: { open: boolean; data: Template['payload']['data'] } =
 		$props();
