@@ -38,7 +38,6 @@
 	let renameValue = $derived(template);
 	let desciptionValue = $derived(templateData.description || 'No description');
 	let titleMode = $state<'edit' | 'view'>('view');
-	let descriptionMode = $state<'edit' | 'view'>('view');
 
 	const removeTemplate = (name: string) => {
 		try {
@@ -178,9 +177,9 @@
 						bind:value={renameValue}
 						inputTag="input"
 						bind:mode={titleMode}
-						validate={(value) => value.length > 0 && TEMPLATE_NAME_REGEX.test(value)}
+						validate={(value: any) => value.length > 0 && TEMPLATE_NAME_REGEX.test(value)}
 						class="w-fit p-1"
-						onSave={(value) => {
+						onSave={(value: any) => {
 							updateName(template, value);
 						}}
 					/>{#if titleMode === 'edit'}
@@ -223,7 +222,10 @@
 							agents={payload.agentGraphRequest?.agents || []}
 							groups={payload.agentGraphRequest?.groups || []}
 							options={{
-								nodeSubLabel: null
+								nodeSubLabel: null,
+								disableDrag: true,
+								disableBrush: true,
+								selectedNodeId: null
 							}}
 						/>
 					</div>
@@ -238,27 +240,17 @@
 								>Description</Accordion.Trigger
 							>
 							<Accordion.Content
-								class="max-h-[340px] min-h-0 w-[400px] overflow-x-hidden overflow-y-scroll"
+								class="max-h-[340px] min-h-0 w-[400px] overflow-x-hidden overflow-y-scroll pt-2"
 							>
-								<Rename.Provider>
-									{#if descriptionMode === 'edit'}
-										<Rename.Save size="sm" class="text-muted-foreground" />
-										<Rename.Cancel size="sm" class="text-muted-foreground" />
-									{:else}
-										<Rename.Edit size="sm" class="text-muted-foreground" />
-									{/if}
-									<Rename.Root
-										this="p"
-										class="mt-2"
-										bind:value={desciptionValue}
-										bind:mode={descriptionMode}
-										inputTag="textarea"
-										validate={(value) => value.length > 0}
-										onSave={(value) => {
-											updateDescription(template, value);
-										}}
-									/>
-								</Rename.Provider>
+								<Rename.Root
+									this="p"
+									bind:value={desciptionValue}
+									inputTag="textarea"
+									validate={(value: string | any[]) => value.length > 0}
+									onSave={(value: string) => {
+										updateDescription(template, value);
+									}}
+								/>
 							</Accordion.Content>
 						</Accordion.Item>
 						<Accordion.Item value="item-2" class={!templateData.trusted ? 'text-accent' : ''}>
@@ -276,7 +268,6 @@
 				<Separator class="my-2" />
 			</Dialog.Description>
 			<Dialog.Footer class="flex justify-start gap-2">
-				<Button disabled={loading} href={`${base}/workbench?template=${template}`}>Edit</Button>
 				<TwostepButton disabled={loading} onclick={() => removeTemplate(template)}
 					>Delete</TwostepButton
 				>
@@ -308,7 +299,7 @@
 						class="ml-auto"
 						variant="cta"
 						disabled={loading}
-						onclick={() => createSessionFromTemplate(template)}>Start session</Button
+						href={`${base}/workbench?template=${template}`}>Load template</Button
 					>
 				{/if}
 			</Dialog.Footer>

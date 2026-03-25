@@ -37,7 +37,6 @@
 	import { useDebounce, watch } from 'runed';
 	import config from '$lib/config';
 	import SessionSwitcher from './SessionSwitcher.svelte';
-	import SidebarMenuSubItem from '@coral-os/component-library/components/ui/sidebar/sidebar-menu-sub-item.svelte';
 
 	let ctx = appContext.get();
 	let tools = socketCtx.get();

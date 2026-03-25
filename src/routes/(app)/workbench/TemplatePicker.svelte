@@ -3,46 +3,57 @@
 	import * as HoverCard from '@coral-os/component-library/ui/hover-card/index.js';
 	import type { CoralServer } from '$lib/CoralServer.svelte';
 	import type { components } from '$generated/api';
+	import { onMount } from 'svelte';
+
+	import {
+		normalizeTemplate,
+		fetchTemplatesFromStorage,
+		safeJSONParse
+	} from './templates/TemplateLib';
+
+	let templates = $state<string[]>([]);
+
+	onMount(() => {
+		templates = fetchTemplatesFromStorage();
+	});
 
 	let {
 		server,
 		onSelect
 	}: {
 		server: CoralServer;
-		onSelect?: (
-			agent: { name: string; versions: string[] },
-			catalogId: components['schemas']['AgentRegistrySource']['identifier']
-		) => void;
+		onSelect?: (template: string) => void;
 	} = $props();
 </script>
 
 <Command.Root>
-	<Command.Input placeholder="Search agents..." />
+	<Command.Input placeholder="Search templates..." />
 	<Command.List>
-		<Command.Empty>No agents found.</Command.Empty>
-		{#each Object.values(server.catalogs) as catalog}
-			<Command.Group heading={catalog.identifier.type}>
-				{#each Object.values(catalog.agents) as agent}
+		<Command.Empty>No templates found.</Command.Empty>
+		{#if templates.length > 0}
+			<Command.Group heading="Templates">
+				{#each templates as template, i}
+					{@const templateData = normalizeTemplate(
+						safeJSONParse(localStorage.getItem(`template_${template}`), {})
+					)}
 					<HoverCard.Root>
 						<HoverCard.Trigger class="m-0">
 							<Command.Item
 								class="w-full cursor-pointer border-b px-4 py-2"
-								onSelect={() => onSelect?.(agent, catalog.identifier)}
+								onSelect={() => onSelect?.(template)}
 							>
-								<span class="grow">{agent.name}</span>
+								<span class="grow">{templateData.name}</span>
 							</Command.Item>
 						</HoverCard.Trigger>
 
 						<HoverCard.Content side="right" class="max-w-1/2 min-w-full whitespace-pre-wrap">
-							{#await server.lookupAgent( { name: agent.name, version: agent.versions[0]!, registrySourceId: catalog.identifier } )}
-								<span class="text-muted">loading...</span>
-							{:then details}
-								{details.registryAgent.info.description}
-							{/await}
+							{templateData.description != ''
+								? templateData.description
+								: 'no description for template'}
 						</HoverCard.Content>
 					</HoverCard.Root>
 				{/each}
 			</Command.Group>
-		{/each}
+		{/if}
 	</Command.List>
 </Command.Root>
