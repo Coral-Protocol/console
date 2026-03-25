@@ -116,6 +116,18 @@
 			}
 		}
 		if (template) {
+			loadTemplate(template);
+		}
+	});
+	interface ParsedAgent {
+		source: AgentSource;
+		name: string;
+		version: string;
+		raw: string;
+	}
+
+	const loadTemplate = (template: string) => {
+		if (template) {
 			toast('Loading template...', { duration: 2000 });
 			try {
 				const templateSessionData = getSessionDataFromTemplateName(template);
@@ -129,13 +141,7 @@
 				toast.error('Failed to load template: ' + err);
 			}
 		}
-	});
-	interface ParsedAgent {
-		source: AgentSource;
-		name: string;
-		version: string;
-		raw: string;
-	}
+	};
 
 	function parseAgentsQuery(query: string | null) {
 		if (!query) return { agents: [], errors: [] as string[] };
@@ -482,7 +488,7 @@
 						>
 							<Menubar.Root class="bg-sidebar border-0 border-b">
 								<Menubar.Menu>
-									<Menubar.Trigger>Session</Menubar.Trigger>
+									<Menubar.Trigger class="gap-1">Session<IconCaretDown /></Menubar.Trigger>
 									<Menubar.Content>
 										<Menubar.Item onSelect={clearSession}>Clear session</Menubar.Item>
 										<Menubar.Separator />
@@ -506,10 +512,10 @@
 									</Menubar.Content>
 								</Menubar.Menu>
 								<Menubar.Menu>
-									<Menubar.Trigger>View</Menubar.Trigger>
+									<Menubar.Trigger class="gap-1">View<IconCaretDown /></Menubar.Trigger>
 									<Menubar.Content>
 										<Menubar.CheckboxItem bind:checked={settings.current.enableAgentGraphView}
-											>Always Switch to Graph</Menubar.CheckboxItem
+											>Enable graph in groups</Menubar.CheckboxItem
 										>
 										<Menubar.Separator />
 										<Menubar.Sub>
@@ -524,7 +530,19 @@
 									</Menubar.Content>
 								</Menubar.Menu>
 								<Menubar.Menu>
-									<Menubar.Trigger class="relative">
+									<Menubar.Trigger class="gap-1">Templates<IconCaretDown /></Menubar.Trigger>
+									<Menubar.Content>
+										<TemplatePicker
+											server={ctx.server}
+											onSelect={(template) => {
+												loadTemplate(template);
+											}}
+										/>
+									</Menubar.Content>
+								</Menubar.Menu>
+								<Menubar.Menu>
+									<Menubar.Trigger class="relative ml-auto gap-2">
+										<IconPlusCircle class="size-5" />
 										Add agents
 										{#if $formData.agents.length < 1}
 											<Pip size={2} color="accent" />
@@ -578,11 +596,21 @@
 													</Table.Cell>
 
 													<Table.Cell class="flex gap-2">
-														<TwostepButton
-															disabled={sessCtx.selectedAgent === null}
-															class="hover:bg-destructive/50 my-2 grow truncate"
-															onclick={() => removeAgent(i)}>Remove</TwostepButton
-														>
+														<Tooltip.Provider>
+															<Tooltip.Root>
+																<Tooltip.Trigger>
+																	<TwostepButton
+																		disabled={sessCtx.selectedAgent === null}
+																		class="m-auto"
+																		variant="ghost"
+																		onclick={() => removeAgent(i)}
+																		><span class="sr-only">remove agent</span><IconTrashRegular
+																		></IconTrashRegular></TwostepButton
+																	>
+																</Tooltip.Trigger>
+																<Tooltip.Content>Remove agent</Tooltip.Content>
+															</Tooltip.Root>
+														</Tooltip.Provider>
 													</Table.Cell>
 												</Table.Row>
 											{/each}
