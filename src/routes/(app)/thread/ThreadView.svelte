@@ -1,14 +1,18 @@
 <script lang="ts">
-	import * as Resizable from '@coral-os/component-library/ui/resizable/index.js';
 	import { appContext } from '$lib/context';
-	import type { Message as AgentMessage, Thread } from '$lib/threads';
+	import type { Message as AgentMessage } from '$lib/threads';
 	import Message from './Message.svelte';
 	import { cn } from '$lib/utils';
 	import { stringToColor } from '$lib/color';
 	import type { Session } from '$lib/session.svelte';
-	import { Toggle } from '@coral-os/component-library/ui/toggle/index.js';
 	import { SvelteSet } from 'svelte/reactivity';
 	import VList from '$lib/components/VList.svelte';
+
+	import * as Resizable from '@coral-os/component-library/ui/resizable/index.js';
+	import * as Tooltip from '@coral-os/component-library/ui/tooltip/index.js';
+
+	import { Toggle } from '@coral-os/component-library/ui/toggle/index.js';
+	import { Input } from '@coral-os/component-library/components/ui/input/index.js';
 
 	let ctx = appContext.get();
 
@@ -25,6 +29,8 @@
 	let messagesSet = $derived(
 		messages.map((msg) => ({ message: msg, mentions: new Set(msg.mentionNames) }))
 	);
+
+	let message = $state('');
 
 	const agentFilters: SvelteSet<string> = new SvelteSet();
 
@@ -63,6 +69,45 @@
 					</div>
 				{/snippet}
 			</VList>
+			<footer class="p-2">
+				<form
+					class="contents"
+					onsubmit={async (e) => {
+						e.preventDefault();
+						const agent = ctx.session?.possessed;
+						if (!ctx.session || !agent || !thread.participants.has(agent)) return;
+						await ctx.server.sendMessage(ctx.session.sessionId, agent, {
+							threadId: thread.id,
+							content: message,
+							mentions: Array.from(thread.participants.keys().filter((p) => p !== agent))
+						});
+						thread.unread = 0;
+						message = '';
+					}}
+				>
+					<Tooltip.Provider>
+						<Tooltip.Root>
+							<Tooltip.Trigger
+								disabled={!!ctx.session?.possessed &&
+									thread.participants.has(ctx.session.possessed)}
+								class="size-full"
+							>
+								<Input
+									bind:value={message}
+									disabled={!ctx.session?.possessed ||
+										!thread.participants.has(ctx.session.possessed)}
+									placeholder={ctx.session?.possessed
+										? `send a message as '${ctx.session?.possessed}'`
+										: 'send a message'}
+								/>
+							</Tooltip.Trigger>
+							<Tooltip.Content>
+								You must be possessing an agent that is a participant of this thread.
+							</Tooltip.Content>
+						</Tooltip.Root>
+					</Tooltip.Provider>
+				</form>
+			</footer>
 		</main>
 	</Resizable.Pane>
 	{#if memberListOpen}

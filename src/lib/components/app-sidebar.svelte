@@ -37,6 +37,9 @@
 	import { useDebounce, watch } from 'runed';
 	import config from '$lib/config';
 	import SessionSwitcher from './SessionSwitcher.svelte';
+	import { fade } from 'svelte/transition';
+	import { Badge } from '@coral-os/component-library/components/ui/badge/index.js';
+	import IconXRegular from 'phosphor-icons-svelte/IconXRegular.svelte';
 
 	let ctx = appContext.get();
 	let tools = socketCtx.get();
@@ -323,6 +326,24 @@
 				<Sidebar.Menu>
 					<Sidebar.GroupLabel class="text-muted-foreground">Session</Sidebar.GroupLabel>
 					<SessionSwitcher />
+					{#if ctx.session?.possessed}
+						{@const agent = ctx.session.possessed}
+						<section
+							transition:fade={{ duration: 100 }}
+							class="text-muted-foreground mx-2 -mt-1 mb-2 flex items-center gap-2 text-xs"
+						>
+							Acting as <Badge href="{base}/agent/#{agent}">{agent}</Badge>
+							<Button
+								size="icon"
+								variant="ghost"
+								class="size-5"
+								onclick={() => {
+									if (!ctx.session) return;
+									ctx.session.possessed = null;
+								}}><IconXRegular /></Button
+							>
+						</section>
+					{/if}
 
 					<NavBundle
 						items={[
@@ -344,6 +365,7 @@
 								icon: IconRobot,
 								items: conn
 									? Object.entries(conn.agents).map(([title, agent]) => ({
+											id: title,
 											title,
 											url: `${base}/agent/#${title}`,
 											state: agent.status
