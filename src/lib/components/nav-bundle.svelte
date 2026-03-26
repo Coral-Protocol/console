@@ -10,7 +10,7 @@
 
 	import { cn } from '$lib/utils';
 	import type { SessionAgentStatus } from '$lib/session.svelte';
-	import { type SessionAgentStatusMap, resolveStateMap } from '$lib';
+	import { type SessionAgentStatusMap, humanReadableMap, resolveStateMap } from '$lib';
 
 	import type { Component } from 'svelte';
 
@@ -83,7 +83,10 @@
 																	class={cn(
 																		'size-2 rounded-full',
 																		resolveStateMap(subItem.state, stateColors)
-																	)}><span class="sr-only">({subItem.state})</span></span
+																	)}
+																	><span class="sr-only"
+																		>({resolveStateMap(subItem.state, humanReadableMap)})</span
+																	></span
 																>
 															{/if}
 															<span class="truncate font-sans font-medium tracking-wide"
@@ -96,7 +99,11 @@
 													{/snippet}
 												</Tooltip.Trigger>
 												<Tooltip.Content
-													><p>{subItem.title} - {subItem.state || ''}</p></Tooltip.Content
+													><p>
+														{subItem.title} - {subItem.state
+															? resolveStateMap(subItem.state, humanReadableMap)
+															: ''}
+													</p></Tooltip.Content
 												>
 											</Tooltip.Root>
 										</Tooltip.Provider>
