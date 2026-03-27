@@ -85,27 +85,24 @@
 						message = '';
 					}}
 				>
-					<Tooltip.Provider>
-						<Tooltip.Root>
-							<Tooltip.Trigger
-								disabled={!!ctx.session?.possessed &&
-									thread.participants.has(ctx.session.possessed)}
-								class="size-full"
-							>
-								<Input
-									bind:value={message}
-									disabled={!ctx.session?.possessed ||
-										!thread.participants.has(ctx.session.possessed)}
-									placeholder={ctx.session?.possessed
-										? `send a message as '${ctx.session?.possessed}'`
-										: 'send a message'}
-								/>
-							</Tooltip.Trigger>
-							<Tooltip.Content>
-								You must be possessing an agent that is a participant of this thread.
-							</Tooltip.Content>
-						</Tooltip.Root>
-					</Tooltip.Provider>
+					<Tooltip.Root>
+						<Tooltip.Trigger
+							disabled={!!ctx.session?.possessed && thread.participants.has(ctx.session.possessed)}
+							class="size-full"
+						>
+							<Input
+								bind:value={message}
+								disabled={!ctx.session?.possessed ||
+									!thread.participants.has(ctx.session.possessed)}
+								placeholder={ctx.session?.possessed
+									? `send a message as '${ctx.session?.possessed}'`
+									: 'send a message'}
+							/>
+						</Tooltip.Trigger>
+						<Tooltip.Content>
+							You must be possessing an agent that is a participant of this thread.
+						</Tooltip.Content>
+					</Tooltip.Root>
 				</form>
 			</footer>
 		</main>

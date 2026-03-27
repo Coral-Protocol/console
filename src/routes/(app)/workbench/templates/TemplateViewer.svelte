@@ -260,18 +260,16 @@
 				>
 				<Button disabled={loading} onclick={() => downloadTemplate(template)}>Download</Button>
 				{#if templateData.version != 1}
-					<Tooltip.Provider>
-						<Tooltip.Root delayDuration={0}>
-							<Tooltip.Trigger class="text-accent opacity-70 hover:opacity-100"
-								>Outdated template</Tooltip.Trigger
-							>
-							<Tooltip.Content>
-								<p>
-									Template version ({templateData.version}) is outdated, it may not work properly.
-								</p>
-							</Tooltip.Content>
-						</Tooltip.Root>
-					</Tooltip.Provider>
+					<Tooltip.Root delayDuration={0}>
+						<Tooltip.Trigger class="text-accent opacity-70 hover:opacity-100"
+							>Outdated template</Tooltip.Trigger
+						>
+						<Tooltip.Content>
+							<p>
+								Template version ({templateData.version}) is outdated, it may not work properly.
+							</p>
+						</Tooltip.Content>
+					</Tooltip.Root>
 				{/if}
 				{#if !templateData.trusted}
 					<TwostepButton

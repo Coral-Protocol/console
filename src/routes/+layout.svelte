@@ -2,6 +2,7 @@
 	import { Toaster } from '@coral-os/component-library/ui/sonner/index.js';
 	import { ModeWatcher } from 'mode-watcher';
 	import '../app.css';
+	import { TooltipProvider } from '@coral-os/component-library/components/ui/tooltip/index.js';
 
 	let { children } = $props();
 </script>
@@ -13,4 +14,6 @@
 <ModeWatcher />
 <Toaster />
 
-{@render children()}
+<TooltipProvider>
+	{@render children()}
+</TooltipProvider>

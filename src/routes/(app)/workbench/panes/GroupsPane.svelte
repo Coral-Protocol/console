@@ -17,22 +17,20 @@
 		collaborate.
 	</p>
 	{#if ($formData.groups.at(-1)?.length ?? 1) == 0}
-		<Tooltip.Provider>
-			<Tooltip.Root delayDuration={100}>
-				<Tooltip.Trigger class="w-fit"
-					><Button
-						class="gap-1 px-3"
-						disabled={($formData.groups.at(-1)?.length ?? 1) == 0}
-						onclick={() => {
-							$formData.groups = [...$formData.groups, []];
-						}}>Create a new group</Button
-					></Tooltip.Trigger
-				>
-				<Tooltip.Content>
-					Empty group already exists, please add agents to it before creating another.
-				</Tooltip.Content>
-			</Tooltip.Root>
-		</Tooltip.Provider>
+		<Tooltip.Root delayDuration={100}>
+			<Tooltip.Trigger class="w-fit"
+				><Button
+					class="gap-1 px-3"
+					disabled={($formData.groups.at(-1)?.length ?? 1) == 0}
+					onclick={() => {
+						$formData.groups = [...$formData.groups, []];
+					}}>Create a new group</Button
+				></Tooltip.Trigger
+			>
+			<Tooltip.Content>
+				Empty group already exists, please add agents to it before creating another.
+			</Tooltip.Content>
+		</Tooltip.Root>
 	{:else}
 		<Button
 			class="w-fit gap-1 px-3"

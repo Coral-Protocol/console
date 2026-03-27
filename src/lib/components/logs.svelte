@@ -104,38 +104,32 @@
 						i % 2 == 1 && 'bg-background'
 					)}
 				>
-					<Tooltip.Provider>
-						<Tooltip.Root>
-							<Tooltip.Trigger class="pr-1 opacity-40">
-								<LogIcon class={cn('opacity-50', typeColors[log.type])} />
-							</Tooltip.Trigger>
-							<Tooltip.Content
-								><span class="capitalize select-all">{log.type}</span></Tooltip.Content
-							>
-						</Tooltip.Root>
-					</Tooltip.Provider>
-					<Tooltip.Provider>
-						<Tooltip.Root>
-							<Tooltip.Trigger class="pr-1 opacity-40">
-								{ts_fmt(log.timestamp)}
-							</Tooltip.Trigger>
-							<Tooltip.Content
-								><span class="select-all"
-									>{log.timestamp.toLocaleDateString()}
-									{log.timestamp.getHours()}:{log.timestamp
-										.getMinutes()
-										.toString()
-										.padStart(2, '0')}:{log.timestamp
-										.getSeconds()
-										.toString()
-										.padStart(2, '0')}.{log.timestamp
-										.getMilliseconds()
-										.toString()
-										.padStart(3, '0')}</span
-								></Tooltip.Content
-							>
-						</Tooltip.Root>
-					</Tooltip.Provider>
+					<Tooltip.Root>
+						<Tooltip.Trigger class="pr-1 opacity-40">
+							<LogIcon class={cn('opacity-50', typeColors[log.type])} />
+						</Tooltip.Trigger>
+						<Tooltip.Content><span class="capitalize select-all">{log.type}</span></Tooltip.Content>
+					</Tooltip.Root>
+					<Tooltip.Root>
+						<Tooltip.Trigger class="pr-1 opacity-40">
+							{ts_fmt(log.timestamp)}
+						</Tooltip.Trigger>
+						<Tooltip.Content
+							><span class="select-all"
+								>{log.timestamp.toLocaleDateString()}
+								{log.timestamp.getHours()}:{log.timestamp
+									.getMinutes()
+									.toString()
+									.padStart(2, '0')}:{log.timestamp
+									.getSeconds()
+									.toString()
+									.padStart(2, '0')}.{log.timestamp
+									.getMilliseconds()
+									.toString()
+									.padStart(3, '0')}</span
+							></Tooltip.Content
+						>
+					</Tooltip.Root>
 					<span>{log.text}</span>
 				</li>
 			{/snippet}
