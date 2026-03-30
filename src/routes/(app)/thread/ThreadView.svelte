@@ -10,9 +10,12 @@
 
 	import * as Resizable from '@coral-os/component-library/ui/resizable/index.js';
 	import * as Tooltip from '@coral-os/component-library/ui/tooltip/index.js';
+	import * as InputGroup from '@coral-os/component-library/ui/input-group/index.js';
 
 	import { Toggle } from '@coral-os/component-library/ui/toggle/index.js';
 	import { Input } from '@coral-os/component-library/components/ui/input/index.js';
+
+	import IconPaperPlaneRight from 'phosphor-icons-svelte/IconPaperPlaneRightRegular.svelte';
 
 	let ctx = appContext.get();
 
@@ -76,9 +79,11 @@
 						e.preventDefault();
 						const agent = ctx.session?.possessed;
 						if (!ctx.session || !agent || !thread.participants.has(agent)) return;
+						const msg = message.trim();
+						if (msg.length === 0) return;
 						await ctx.server.sendMessage(ctx.session.sessionId, agent, {
 							threadId: thread.id,
-							content: message,
+							content: msg,
 							mentions: Array.from(thread.participants.keys().filter((p) => p !== agent))
 						});
 						thread.unread = 0;
@@ -90,14 +95,28 @@
 							disabled={!!ctx.session?.possessed && thread.participants.has(ctx.session.possessed)}
 							class="size-full"
 						>
-							<Input
-								bind:value={message}
-								disabled={!ctx.session?.possessed ||
-									!thread.participants.has(ctx.session.possessed)}
-								placeholder={ctx.session?.possessed
-									? `send a message as '${ctx.session?.possessed}'`
-									: 'send a message'}
-							/>
+							<InputGroup.Root>
+								<InputGroup.Input
+									bind:value={message}
+									disabled={!ctx.session?.possessed ||
+										!thread.participants.has(ctx.session.possessed)}
+									placeholder={ctx.session?.possessed
+										? `send a message as '${ctx.session?.possessed}'`
+										: 'send a message'}
+								/>
+								<InputGroup.Addon align="inline-end">
+									<InputGroup.Button
+										type="submit"
+										variant="default"
+										size="icon-xs"
+										disabled={!ctx.session?.possessed ||
+											!thread.participants.has(ctx.session.possessed)}
+									>
+										<IconPaperPlaneRight />
+										<span class="sr-only">Send</span>
+									</InputGroup.Button>
+								</InputGroup.Addon>
+							</InputGroup.Root>
 						</Tooltip.Trigger>
 						<Tooltip.Content>
 							You must be possessing an agent that is a participant of this thread.
