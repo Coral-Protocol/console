@@ -4,9 +4,13 @@
 	import type { FormSchema } from './schemas';
 	import type z from 'zod';
 
+	// FIXME: why is this hardcoded
+	export type AgentSource = 'marketplace' | 'linked' | 'local';
+
 	export type SessionCreatorContext = {
 		payload: CreateSessionRequest | null;
 		importSession: (options: { success?: string; from: string }) => boolean;
+		addAgent: (name: string, source: AgentSource, version: string) => Promise<void>;
 
 		selectedAgent: number | null;
 		detailedAgent: Awaited<ReturnType<CoralServer['lookupAgent']>> | null;
@@ -27,15 +31,13 @@
 	import * as Menubar from '@coral-os/component-library/ui/menubar/index.js';
 	import * as Table from '@coral-os/component-library/ui/table/index.js';
 	import * as Form from '@coral-os/component-library/ui/form/index.js';
-	import { Button } from '@coral-os/component-library/ui/button/index.js';
+	import * as Popover from '@coral-os/component-library/ui/popover/index.js';
+	import { Button, buttonVariants } from '@coral-os/component-library/ui/button/index.js';
 	import * as Tooltip from '@coral-os/component-library/ui/tooltip/index.js';
 
 	import IconWrenchRegular from 'phosphor-icons-svelte/IconWrenchRegular.svelte';
 	import IconUsersThreeRegular from 'phosphor-icons-svelte/IconUsersThreeRegular.svelte';
 	import IconRobotRegular from 'phosphor-icons-svelte/IconRobotRegular.svelte';
-	import IconTrashRegular from 'phosphor-icons-svelte/IconTrashSimpleRegular.svelte';
-	import IconCaretDown from 'phosphor-icons-svelte/IconCaretDownRegular.svelte';
-	import IconPlusCircle from 'phosphor-icons-svelte/IconPlusCircleRegular.svelte';
 
 	import { Checkbox } from '@coral-os/component-library/ui/checkbox/index.js';
 	import { Separator } from '@coral-os/component-library/ui/separator/index.js';
@@ -70,7 +72,6 @@
 	import AgentPane from './panes/AgentPane.svelte';
 	import TemplateSaver from './TemplateSaver.svelte';
 	import { getSessionDataFromTemplateName } from './templates/TemplateLib';
-	import TemplatePicker from './TemplatePicker.svelte';
 
 	function sourceToRegistryId(source: AgentSource): RegistryAgentIdentifier['registrySourceId'] {
 		switch (source) {
@@ -85,54 +86,8 @@
 		}
 	}
 
-	const addAgent = async (name: string, source: any, version: string) => {
-		try {
-			const existingCount = $formData.agents.filter((a) => a.id.name === name).length;
-			const registrySourceId = sourceToRegistryId(source as AgentSource);
-			const detailed = await ctx.server
-				.lookupAgent({ name, version, registrySourceId })
-				.catch((e) => {
-					toast.error(`${e}`);
-					console.error(e);
-					return null;
-				});
-			if (detailed) {
-				try {
-					$formData.agents.push({
-						id: {
-							name,
-							version,
-							registrySourceId
-						},
-						name: name + (existingCount > 0 ? `-${existingCount}` : ''),
-						description: '',
-						providerType: 'local',
-						provider: {
-							runtime: Object.keys(detailed.registryAgent.runtimes)[0] as any,
-							remote_request: {
-								maxCost: { type: 'micro_coral', amount: 1000 },
-								serverSource: { type: 'servers', servers: [] }
-							}
-						},
-						customToolAccess: new Set(),
-						blocking: false,
-						options: {}
-					});
-					sessCtx.detailedAgent = null;
-					$formData.agents = $formData.agents;
-					sessCtx.selectedAgent = $formData.agents.length - 1;
-				} catch (error) {
-					console.error('Failed to add agent:', error);
-				}
-			}
-		} catch (error) {
-			console.error('Failed to lookup agent:', error);
-		}
-	};
-
 	const AGENT_REGEX = /^(marketplace|linked|local):(.+?)@(\d+\.\d+\.\d+)$/;
 
-	type AgentSource = 'marketplace' | 'linked' | 'local';
 	let parsedAgents: ParsedAgent[] = [];
 
 	onMount(async () => {
@@ -154,24 +109,12 @@
 							agent.source +
 							' '
 					);
-					await addAgent(agent.name, agent.source, agent.version);
+					await sessCtx.addAgent(agent.name, agent.source, agent.version);
 				}
 			} catch (err) {
 				console.error('Failed to parse agents:', err);
 			}
 		}
-		if (template) {
-			loadTemplate(template);
-		}
-	});
-	interface ParsedAgent {
-		source: AgentSource;
-		name: string;
-		version: string;
-		raw: string;
-	}
-
-	const loadTemplate = (template: string) => {
 		if (template) {
 			toast('Loading template...', { duration: 2000 });
 			try {
@@ -186,7 +129,13 @@
 				toast.error('Failed to load template: ' + err);
 			}
 		}
-	};
+	});
+	interface ParsedAgent {
+		source: AgentSource;
+		name: string;
+		version: string;
+		raw: string;
+	}
 
 	function parseAgentsQuery(query: string | null) {
 		if (!query) return { agents: [], errors: [] as string[] };
@@ -365,6 +314,51 @@
 				toast.error('Failed to update session from JSON: ' + e);
 				return false;
 			}
+		},
+
+		addAgent: async (name: string, source: any, version: string) => {
+			try {
+				const existingCount = $formData.agents.filter((a) => a.id.name === name).length;
+				const registrySourceId = sourceToRegistryId(source as AgentSource);
+				const detailed = await ctx.server
+					.lookupAgent({ name, version, registrySourceId })
+					.catch((e) => {
+						toast.error(`${e}`);
+						console.error(e);
+						return null;
+					});
+				if (detailed) {
+					try {
+						$formData.agents.push({
+							id: {
+								name,
+								version,
+								registrySourceId
+							},
+							name: name + (existingCount > 0 ? `-${existingCount}` : ''),
+							description: '',
+							providerType: 'local',
+							provider: {
+								runtime: Object.keys(detailed.registryAgent.runtimes)[0] as any,
+								remote_request: {
+									maxCost: { type: 'micro_coral', amount: 1000 },
+									serverSource: { type: 'servers', servers: [] }
+								}
+							},
+							customToolAccess: new Set(),
+							blocking: false,
+							options: {}
+						});
+						sessCtx.detailedAgent = null;
+						$formData.agents = $formData.agents;
+						sessCtx.selectedAgent = $formData.agents.length - 1;
+					} catch (error) {
+						console.error('Failed to add agent:', error);
+					}
+				}
+			} catch (error) {
+				console.error('Failed to lookup agent:', error);
+			}
 		}
 	}) as SessionCreatorContext;
 	createSessionContext.set(sessCtx);
@@ -458,7 +452,11 @@
 	<Breadcrumb.Root class="flex-grow">
 		<Breadcrumb.List>
 			<Breadcrumb.Item class="hidden md:block">
-				<Breadcrumb.Link>Workbench</Breadcrumb.Link>
+				<Breadcrumb.Link>Templates</Breadcrumb.Link>
+			</Breadcrumb.Item>
+			<Breadcrumb.Separator />
+			<Breadcrumb.Item class="hidden md:block">
+				<Breadcrumb.Page>Create</Breadcrumb.Page>
 			</Breadcrumb.Item>
 		</Breadcrumb.List>
 	</Breadcrumb.Root>
@@ -484,7 +482,7 @@
 						>
 							<Menubar.Root class="bg-sidebar border-0 border-b">
 								<Menubar.Menu>
-									<Menubar.Trigger class="gap-1">Session<IconCaretDown /></Menubar.Trigger>
+									<Menubar.Trigger>Session</Menubar.Trigger>
 									<Menubar.Content>
 										<Menubar.Item onSelect={clearSession}>Clear session</Menubar.Item>
 										<Menubar.Separator />
@@ -508,60 +506,51 @@
 									</Menubar.Content>
 								</Menubar.Menu>
 								<Menubar.Menu>
-									<Menubar.Trigger class="gap-1">View<IconCaretDown /></Menubar.Trigger>
+									<Menubar.Trigger>View</Menubar.Trigger>
 									<Menubar.Content>
 										<Menubar.CheckboxItem bind:checked={settings.current.enableAgentGraphView}
-											>Enable graph in groups</Menubar.CheckboxItem
+											>Always Switch to Graph</Menubar.CheckboxItem
 										>
 										<Menubar.Separator />
 										<Menubar.Sub>
 											<Menubar.SubTrigger disabled class="opacity-50">Columns</Menubar.SubTrigger>
 											<Menubar.SubContent>
-												<Menubar.CheckboxItem>Agent Name</Menubar.CheckboxItem>
+												<Menubar.CheckboxItem>Name</Menubar.CheckboxItem>
 												<Menubar.CheckboxItem>Version</Menubar.CheckboxItem>
-												<Menubar.CheckboxItem>Source</Menubar.CheckboxItem>
+												<Menubar.CheckboxItem>Registry Source</Menubar.CheckboxItem>
 												<Menubar.CheckboxItem>Agent</Menubar.CheckboxItem>
 											</Menubar.SubContent>
 										</Menubar.Sub>
 									</Menubar.Content>
 								</Menubar.Menu>
 								<Menubar.Menu>
-									<Menubar.Trigger class="gap-1">Templates<IconCaretDown /></Menubar.Trigger>
-									<Menubar.Content>
-										<TemplatePicker
-											server={ctx.server}
-											onSelect={(template) => {
-												loadTemplate(template);
-											}}
-										/>
-									</Menubar.Content>
-								</Menubar.Menu>
-								<Menubar.Menu>
-									<Menubar.Trigger class="relative ml-auto gap-2">
-										<IconPlusCircle class="size-5" />
+									<Menubar.Trigger class="relative">
 										Add agents
+										{#if $formData.agents.length < 1}
+											<Pip size={2} color="accent" />
+										{/if}
 									</Menubar.Trigger>
 									<Menubar.Content>
 										<AgentPicker
 											server={ctx.server}
 											onSelect={(agent, catalogId) => {
-												addAgent(agent.name, catalogId.type, agent.versions[0]!);
+												sessCtx.addAgent(agent.name, catalogId.type, agent.versions[0]!);
 											}}
 										/>
 									</Menubar.Content>
 								</Menubar.Menu>
 							</Menubar.Root>
 							<Tabs.Root bind:value={agentsListTabs} class="min-h-0 flex-1 overflow-hidden">
-								<Tabs.Content value="table" class="flex min-h-0 flex-1 overflow-hidden ">
+								<Tabs.Content value="table" class="flex min-h-0 flex-1 flex-col overflow-hidden">
 									<Table.Root class="w-full">
 										<Table.Header>
 											<Table.Row>
 												<Table.Head class="w-12"><Checkbox /></Table.Head>
 												<Table.Head>Name</Table.Head>
 												<Table.Head>Version</Table.Head>
-												<Table.Head>Source</Table.Head>
+												<Table.Head>Registry source</Table.Head>
 												<Table.Head>Agent</Table.Head>
-												<Table.Head class="w-24"></Table.Head>
+												<Table.Head class="w-24">Actions</Table.Head>
 											</Table.Row>
 										</Table.Header>
 										<Table.Body>
@@ -589,26 +578,39 @@
 													</Table.Cell>
 
 													<Table.Cell class="flex gap-2">
-														<Tooltip.Provider>
-															<Tooltip.Root>
-																<Tooltip.Trigger>
-																	<TwostepButton
-																		disabled={sessCtx.selectedAgent === null}
-																		class="m-auto"
-																		variant="ghost"
-																		onclick={() => removeAgent(i)}
-																		><span class="sr-only">remove agent</span><IconTrashRegular
-																		></IconTrashRegular></TwostepButton
-																	>
-																</Tooltip.Trigger>
-																<Tooltip.Content>Remove agent</Tooltip.Content>
-															</Tooltip.Root>
-														</Tooltip.Provider>
+														<TwostepButton
+															disabled={sessCtx.selectedAgent === null}
+															class="hover:bg-destructive/50 my-2 grow truncate"
+															onclick={() => removeAgent(i)}>Remove</TwostepButton
+														>
 													</Table.Cell>
 												</Table.Row>
 											{/each}
 										</Table.Body>
 									</Table.Root>
+									{#if $formData.agents.length == 0}
+										<section
+											class="flex grow flex-col items-center justify-center gap-2 text-center"
+										>
+											<p>No agents.</p>
+											<p class="flex flex-col gap-1">
+												<Popover.Root>
+													<Popover.Trigger class={buttonVariants({ size: 'sm' })}
+														>Add an agent</Popover.Trigger
+													>
+													<Popover.Content class="p-1">
+														<AgentPicker
+															server={ctx.server}
+															onSelect={(agent, catalogId) => {
+																sessCtx.addAgent(agent.name, catalogId.type, agent.versions[0]!);
+															}}
+														/>
+													</Popover.Content>
+												</Popover.Root>
+												<span class="text-muted-foreground text-sm">to get started.</span>
+											</p>
+										</section>
+									{/if}
 								</Tabs.Content>
 								<Tabs.Content value="graph" class="flex min-h-0 flex-1 overflow-hidden ">
 									{#if $formData.agents.length !== 0}
@@ -628,11 +630,7 @@
 					</Resizable.PaneGroup>
 				</Resizable.Pane>
 				<Resizable.Handle withHandle />
-				<Resizable.Pane
-					class=" flex h-full min-h-0 flex-col !overflow-y-scroll"
-					minSize={25}
-					defaultSize={50}
-				>
+				<Resizable.Pane class="flex h-full min-h-0 flex-col" minSize={25} defaultSize={50}>
 					<CodePane />
 					<footer class="bg-sidebar flex justify-end gap-2 border-t p-4">
 						{#if sendingForm || !$formData.agents.length}
@@ -694,7 +692,7 @@
 					>
 				</Tabs.List>
 				{#key sessCtx.selectedAgent}
-					<Tabs.Content value="agent" class="flex min-h-0 flex-col gap-2 overflow-y-scroll ">
+					<Tabs.Content value="agent" class="flex min-h-0 flex-col gap-2 overflow-y-auto ">
 						<AgentPane />
 					</Tabs.Content>
 				{/key}
