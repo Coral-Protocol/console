@@ -3,7 +3,7 @@
 	import * as Kbd from '@coral-os/component-library/ui/kbd/index.js';
 	import * as Tooltip from '@coral-os/component-library/ui/tooltip/index.js';
 	import { toast } from 'svelte-sonner';
-	import { Button } from '@coral-os/component-library/ui/button/index.js';
+	import { Button, buttonVariants } from '@coral-os/component-library/ui/button/index.js';
 	import Quickswitch from '$lib/components/dialogs/quickswitch.svelte';
 	import DebugTools from '$lib/components/dialogs/debugtools.svelte';
 	import Login from './Login.svelte';
@@ -19,6 +19,7 @@
 	import IconNotepad from 'phosphor-icons-svelte/IconNotepadRegular.svelte';
 	import IconCircuity from 'phosphor-icons-svelte/IconCircuitryRegular.svelte';
 	import IconFolder from 'phosphor-icons-svelte/IconFolderRegular.svelte';
+	import IconPlus from 'phosphor-icons-svelte/IconPlusRegular.svelte';
 
 	import * as Popover from '@coral-os/component-library/ui/popover/index.js';
 
@@ -40,6 +41,7 @@
 	import { fade } from 'svelte/transition';
 	import { Badge } from '@coral-os/component-library/components/ui/badge/index.js';
 	import IconXRegular from 'phosphor-icons-svelte/IconXRegular.svelte';
+	import CreateThreadForm from './CreateThreadForm.svelte';
 
 	let ctx = appContext.get();
 	let tools = socketCtx.get();
@@ -204,6 +206,8 @@
 	let namespaceSwitcher = $state(null) as unknown as HTMLButtonElement;
 	let creator = $state(null) as unknown as HTMLButtonElement;
 	let tourOpen = $state(false);
+
+	let threadCreateOpen = $state(false);
 </script>
 
 <Tour
@@ -245,24 +249,22 @@
 			<Kbd.Root>K</Kbd.Root>
 		</Kbd.Group>
 	</button>
-	<Tooltip.Provider delayDuration={0}>
-		<Tooltip.Root>
-			<Tooltip.Trigger>
-				{#snippet child({ props })}
-					<button
-						{...props}
-						class=" text-muted-foreground flex size-9 items-center justify-center rounded-md border"
-						onclick={() => (welcomeOpen = true)}
-					>
-						<IconQuestion class="size-4" />
-					</button>
-				{/snippet}
-			</Tooltip.Trigger>
-			<Tooltip.Content>
-				<p>Help & Documentation</p>
-			</Tooltip.Content>
-		</Tooltip.Root>
-	</Tooltip.Provider>
+	<Tooltip.Root delayDuration={0}>
+		<Tooltip.Trigger>
+			{#snippet child({ props })}
+				<button
+					{...props}
+					class=" text-muted-foreground flex size-9 items-center justify-center rounded-md border"
+					onclick={() => (welcomeOpen = true)}
+				>
+					<IconQuestion class="size-4" />
+				</button>
+			{/snippet}
+		</Tooltip.Trigger>
+		<Tooltip.Content>
+			<p>Help & Documentation</p>
+		</Tooltip.Content>
+	</Tooltip.Root>
 </div>
 
 <Sidebar.Root>
@@ -273,25 +275,23 @@
 				class="text-muted-foreground w-full grow font-sans font-medium tracking-wide select-none"
 				>Server</span
 			>
-			<Tooltip.Provider delayDuration={0}>
-				<Tooltip.Root>
-					<Tooltip.Trigger disabled={error === null}>
-						<span
-							class={cn(
-								'text-muted-foreground font-normal',
-								(error || !ctx.server.alive) && 'text-destructive'
-							)}
-						>
-							{#if error || !ctx.server.alive}
-								disconnected
-							{:else}
-								connected
-							{/if}
-						</span>
-					</Tooltip.Trigger>
-					<Tooltip.Content><p>{error}</p></Tooltip.Content>
-				</Tooltip.Root>
-			</Tooltip.Provider>
+			<Tooltip.Root delayDuration={0}>
+				<Tooltip.Trigger disabled={error === null}>
+					<span
+						class={cn(
+							'text-muted-foreground font-normal',
+							(error || !ctx.server.alive) && 'text-destructive'
+						)}
+					>
+						{#if error || !ctx.server.alive}
+							disconnected
+						{:else}
+							connected
+						{/if}
+					</span>
+				</Tooltip.Trigger>
+				<Tooltip.Content><p>{error}</p></Tooltip.Content>
+			</Tooltip.Root>
 			<Button
 				size="icon"
 				variant="ghost"
@@ -346,33 +346,65 @@
 					{/if}
 
 					<NavBundle
-						items={[
-							{
-								title: 'Threads',
-								icon: IconFileArchive,
-								sumBadges: true,
-								items: conn
-									? Object.values(conn.threads).map((thread) => ({
-											id: thread.id,
-											title: thread.name,
-											url: `${base}/thread/#${thread.id}`,
-											badge: thread.unread
-										}))
-									: []
-							},
-							{
-								title: 'Agents',
-								icon: IconRobot,
-								items: conn
-									? Object.entries(conn.agents).map(([title, agent]) => ({
-											id: title,
-											title,
-											url: `${base}/agent/#${title}`,
-											state: agent.status
-										}))
-									: []
-							}
-						]}
+						title="Threads"
+						icon={IconFileArchive}
+						items={conn
+							? Object.values(conn.threads).map((thread) => ({
+									id: thread.id,
+									title: thread.name,
+									url: `${base}/thread/#${thread.id}`,
+									badge: thread.unread
+								}))
+							: []}
+						emptyLabel="No threads."
+					>
+						{#snippet actions()}
+							<Popover.Root bind:open={threadCreateOpen}>
+								<Tooltip.Root disabled={!ctx.session || ctx.session.possessed !== null}>
+									<Tooltip.Trigger>
+										<Popover.Trigger
+											disabled={!ctx.session || !ctx.session?.possessed}
+											onclick={(e) => {
+												e.stopPropagation();
+											}}
+											class={cn(buttonVariants({ size: 'icon', variant: 'ghost' }), 'size-6')}
+										>
+											<IconPlus />
+										</Popover.Trigger>
+									</Tooltip.Trigger>
+									<Tooltip.Content
+										><span>You must be possessing an agent to create a thread!</span
+										></Tooltip.Content
+									>
+								</Tooltip.Root>
+								<Popover.Content>
+									{@const agent =
+										ctx.session?.possessed && ctx.session?.agents[ctx.session?.possessed]}
+									{#if ctx.session && agent}
+										<CreateThreadForm
+											{agent}
+											session={ctx.session}
+											onCreate={() => {
+												threadCreateOpen = false;
+											}}
+										/>
+									{/if}
+								</Popover.Content>
+							</Popover.Root>
+						{/snippet}
+					</NavBundle>
+					<NavBundle
+						title="Agents"
+						icon={IconRobot}
+						items={conn
+							? Object.entries(conn.agents).map(([title, agent]) => ({
+									id: title,
+									title,
+									url: `${base}/agent/#${title}`,
+									state: agent.status
+								}))
+							: []}
+						emptyLabel="No agents."
 					/>
 				</Sidebar.Menu>
 			</Sidebar.GroupContent>
