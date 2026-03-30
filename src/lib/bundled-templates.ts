@@ -1,5 +1,5 @@
-import type { Template } from '../routes/(app)/templates/TemplateV1';
-import type { CreateSessionRequest } from '../routes/(app)/templates/create/schemas/types';
+import type { Template } from '../routes/(app)/workbench/templates/TemplateV1';
+import type { CreateSessionRequest } from '../routes/(app)/workbench/schemas/types';
 
 const qotdPayload: CreateSessionRequest = {
 	agentGraphRequest: {

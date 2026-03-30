@@ -28,6 +28,7 @@
 	import {
 		normalizeTemplate,
 		refreshTemplateFromStorage,
+		fetchBundledTemplates,
 		fetchTemplatesFromStorage,
 		fetchBundledTemplates,
 		safeJSONParse,
@@ -201,9 +202,7 @@
 					{@const templateData = normalizeTemplate(
 						safeJSONParse(localStorage.getItem(`template_${template}`), {})
 					)}
-					{@const graphData = safeJSONParse(templateData.payload?.data || '{}') as {
-						agentGraphRequest?: { agents?: any[]; groups?: any[] };
-					}}
+					{@const graphData = safeJSONParse(templateData?.payload?.data || '{}')}
 
 					<li class="col-span-1">
 						<Card.Root class="rounded-md p-0">
@@ -229,7 +228,7 @@
 									<Card.Footer class="flex justify-between gap-2 border-t px-6 !py-4">
 										<span class="flex flex-col gap-2">
 											<Card.Title>{template}</Card.Title>
-											{#if !templateData.trusted}
+											{#if !templateData?.trusted}
 												<Tooltip.Provider>
 													<Tooltip.Root delayDuration={0}>
 														<Tooltip.Trigger
