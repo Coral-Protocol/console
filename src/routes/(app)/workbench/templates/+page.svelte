@@ -5,7 +5,6 @@
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { base } from '$app/paths';
-	import { goto } from '$app/navigation';
 
 	import { Button } from '@coral-os/component-library/ui/button/index.js';
 	import * as Card from '@coral-os/component-library/ui/card/index.js';
@@ -17,8 +16,6 @@
 	import { Separator } from '@coral-os/component-library/ui/separator/index.js';
 	import { formatDistanceToNow } from 'date-fns';
 
-	import IconPencilRegular from 'phosphor-icons-svelte/IconPencilFill.svelte';
-	import IconDownloadRegular from 'phosphor-icons-svelte/IconDownloadFill.svelte';
 	import IconPlus from 'phosphor-icons-svelte/IconPlusRegular.svelte';
 
 	import AgentGraph from '$lib/components/AgentGraph.svelte';
@@ -30,7 +27,6 @@
 		refreshTemplateFromStorage,
 		fetchBundledTemplates,
 		fetchTemplatesFromStorage,
-		fetchBundledTemplates,
 		safeJSONParse,
 		pickAndParseTemplateFile,
 		checkTemplateOverwrite,

@@ -11,8 +11,6 @@
 	import * as Rename from '@coral-os/component-library/ui/rename/index.js';
 	import { Highlight } from 'svelte-highlight';
 	import { downloadTemplate } from './TemplateLib';
-	import { base } from '$app/paths';
-
 	import json from 'svelte-highlight/languages/json';
 	import { base } from '$app/paths';
 

@@ -1,6 +1,4 @@
 import type { Template } from "./TemplateV1";
-import { bundledTemplates } from "$lib/bundled-templates";
-
 export const TEMPLATE_NAME_REGEX = /^[a-zA-Z0-9_-]{1,32}$/;
 import { bundledTemplates } from "$lib/bundled-templates";
 
