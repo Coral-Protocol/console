@@ -226,17 +226,15 @@
 										<span class="flex flex-col gap-2">
 											<Card.Title>{template}</Card.Title>
 											{#if !templateData?.trusted}
-												<Tooltip.Provider>
-													<Tooltip.Root delayDuration={0}>
-														<Tooltip.Trigger
-															class="text-accent absolute right-0 opacity-70 hover:opacity-100"
-															><IconWarningCircleRegular class="size-5" /></Tooltip.Trigger
-														>
-														<Tooltip.Content>
-															<p>Imported from external source</p>
-														</Tooltip.Content>
-													</Tooltip.Root>
-												</Tooltip.Provider>
+												<Tooltip.Root delayDuration={0}>
+													<Tooltip.Trigger
+														class="text-accent absolute right-0 opacity-70 hover:opacity-100"
+														><IconWarningCircleRegular class="size-5" /></Tooltip.Trigger
+													>
+													<Tooltip.Content>
+														<p>Imported from external source</p>
+													</Tooltip.Content>
+												</Tooltip.Root>
 											{/if}
 											<span class="text-muted-foreground text-xs"
 												>Updated {formatDistanceToNow(templateData.updated, {
