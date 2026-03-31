@@ -221,24 +221,9 @@
 		</ol>
 	{/if}
 {:else}
-	<!-- <div class="text-muted-foreground m-auto h-full w-full content-center text-center"> -->
-	<!-- 	Add an agent to begin. -->
-	<!-- </div> -->
-	<section class="flex grow flex-col items-center justify-center gap-2 text-center">
-		<p>No agents.</p>
-		<p class="flex flex-col gap-1">
-			<Popover.Root>
-				<Popover.Trigger class={buttonVariants({ size: 'sm' })}>Add an agent</Popover.Trigger>
-				<Popover.Content class="p-1">
-					<AgentPicker
-						server={appCtx.server}
-						onSelect={(agent, catalogId) => {
-							ctx.addAgent(agent.name, catalogId.type, agent.versions[0]!);
-						}}
-					/>
-				</Popover.Content>
-			</Popover.Root>
-			<span class="text-muted-foreground text-sm">to get started.</span>
-		</p>
+	<section
+		class="text-muted-foreground flex grow flex-col items-center justify-center gap-2 text-center"
+	>
+		<p>No agent selected</p>
 	</section>
 {/if}
