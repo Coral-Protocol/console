@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Button } from '@coral-os/component-library/ui/button/index.js';
+	import * as Tabs from '@coral-os/component-library/ui/tabs/index.js';
 	import { toast } from 'svelte-sonner';
 	import * as Tooltip from '@coral-os/component-library/ui/tooltip/index.js';
 	import * as Dialog from '@coral-os/component-library/ui/dialog/index.js';
@@ -212,10 +213,8 @@
 
 				<Separator class="my-2" />
 
-				<section
-					class="flex h-[400px] w-[800px] max-w-[800px] gap-2 overflow-x-hidden overflow-y-scroll"
-				>
-					<div class="bg-sidebar sticky top-0 aspect-square w-[400px] overflow-clip rounded-lg">
+				<section class="flex h-[400px] w-[800px] max-w-[800px] gap-2 overflow-hidden">
+					<div class="bg-sidebar sticky top-0 aspect-square w-[400px] overflow-clip">
 						<AgentGraph
 							agents={payload.agentGraphRequest?.agents || []}
 							groups={payload.agentGraphRequest?.groups || []}
@@ -228,40 +227,30 @@
 						/>
 					</div>
 
-					<Accordion.Root
-						type="single"
-						value={!templateData.trusted ? 'item-2' : 'item-1'}
-						class="aspect-square max-h-[400px] w-[400px] max-w-[400px] overflow-clip rounded-lg border"
-					>
-						<Accordion.Item value="item-1">
-							<Accordion.Trigger class="w-[400px] grow" variant="compact"
-								>Description</Accordion.Trigger
-							>
-							<Accordion.Content
-								class="max-h-[340px] min-h-0 w-[400px] overflow-x-hidden overflow-y-scroll pt-2"
-							>
-								<Rename.Root
-									this="p"
-									bind:value={desciptionValue}
-									inputTag="textarea"
-									validate={(value: string | any[]) => value.length > 0}
-									onSave={(value: string) => {
-										updateDescription(template, value);
-									}}
-								/>
-							</Accordion.Content>
-						</Accordion.Item>
-						<Accordion.Item value="item-2" class={!templateData.trusted ? 'text-accent' : ''}>
-							<Accordion.Trigger class=" w-[400px] grow" variant="compact">Data</Accordion.Trigger>
-							<Accordion.Content class="max-h-[280px] min-h-0 grow overflow-y-scroll">
-								<Highlight
-									class="[&>code]:bg-sidebar text-xs leading-relaxed"
-									language={json}
-									code={JSON.stringify(payload, null, 2)}
-								></Highlight>
-							</Accordion.Content>
-						</Accordion.Item>
-					</Accordion.Root>
+					<Tabs.Root value="description" class="w-[400px]">
+						<Tabs.List class="bg-sidebar flex w-full rounded-none  *:rounded-none">
+							<Tabs.Trigger value="description">Description</Tabs.Trigger>
+							<Tabs.Trigger value="data">Data</Tabs.Trigger>
+						</Tabs.List>
+						<Tabs.Content value="description" class="overflow-y-scroll">
+							<Rename.Root
+								this="p"
+								bind:value={desciptionValue}
+								inputTag="textarea"
+								validate={(value: string | any[]) => value.length > 0}
+								onSave={(value: string) => {
+									updateDescription(template, value);
+								}}
+							/>
+						</Tabs.Content>
+						<Tabs.Content value="data" class="overflow-y-scroll">
+							<Highlight
+								class="[&>code]:bg-sidebar max-h-fit text-xs leading-relaxed text-wrap"
+								language={json}
+								code={JSON.stringify(payload, null, 2)}
+							></Highlight>
+						</Tabs.Content>
+					</Tabs.Root>
 				</section>
 				<Separator class="my-2" />
 			</Dialog.Description>

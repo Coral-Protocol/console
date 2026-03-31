@@ -15,6 +15,7 @@
 	import * as AlertDialog from '@coral-os/component-library/ui/alert-dialog/index.js';
 	import { Separator } from '@coral-os/component-library/ui/separator/index.js';
 	import { formatDistanceToNow } from 'date-fns';
+	import { cn } from '$lib/utils.js';
 
 	import IconPlus from 'phosphor-icons-svelte/IconPlusRegular.svelte';
 
@@ -181,7 +182,7 @@
 		<Button
 			variant="default"
 			href="{base}/workbench"
-			class=" {templates.length > 0 && !loading ? '' : 'border-accent/50!'} h-9 w-fit"
+			class={cn('h-9 w-fit', templates.length > 0 && !loading && 'border-accent/50!')}
 			><IconPlus /> Create</Button
 		>
 		<Button variant="outline" onclick={() => importTemplate()} class="h-9 w-fit">Import</Button>
