@@ -32,7 +32,7 @@
 		emptyLabel = 'No items.',
 		actions,
 		itemActions,
-		itemContextMenu,
+		itemContextMenu
 	}: {
 		disabled?: boolean;
 		title: string;
@@ -102,7 +102,7 @@
 									<ContextMenu.Root>
 										<ContextMenu.Trigger {...props} disabled={!itemContextMenu}>
 											{#snippet child({ props })}
-												<Tooltip.Root>
+												<Tooltip.Root delayDuration={700}>
 													<Tooltip.Trigger {...props}>
 														{#snippet child({ props })}
 															<a
