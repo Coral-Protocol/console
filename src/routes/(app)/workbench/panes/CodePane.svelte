@@ -39,21 +39,19 @@
 			<CopyButton value={payloadJson} />
 			{#if jsonDirty}
 				<span transition:fade={{ duration: 100 }}>
-					<Tooltip.Provider>
-						<Tooltip.Root>
-							<Tooltip.Trigger
-								class={cn(buttonVariants({ size: 'icon' }), '')}
-								onclick={() => {
-									if (ctx.importSession({ from: payloadJson })) {
-										jsonDirty = false;
-									}
-								}}
-							>
-								<IconArrowsClockwise /></Tooltip.Trigger
-							>
-							<Tooltip.Content>Update session graph from JSON</Tooltip.Content>
-						</Tooltip.Root>
-					</Tooltip.Provider>
+					<Tooltip.Root>
+						<Tooltip.Trigger
+							class={cn(buttonVariants({ size: 'icon' }), '')}
+							onclick={() => {
+								if (ctx.importSession({ from: payloadJson })) {
+									jsonDirty = false;
+								}
+							}}
+						>
+							<IconArrowsClockwise /></Tooltip.Trigger
+						>
+						<Tooltip.Content>Update session graph from JSON</Tooltip.Content>
+					</Tooltip.Root>
 				</span>
 			{/if}
 		</section>

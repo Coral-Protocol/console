@@ -131,19 +131,17 @@
 						{meta.display?.label ?? name}
 					</TooltipLabel>
 					{#if meta.default !== undefined && $value !== undefined && !valuesEqual($value, meta.default)}
-						<Tooltip.Provider>
-							<Tooltip.Root>
-								<Tooltip.Trigger
-									class={cn(buttonVariants({ size: 'icon' }))}
-									onclick={() => {
-										$value = meta.default as any;
-									}}
-								>
-									<IconArrowUUpLeft />
-								</Tooltip.Trigger>
-								<Tooltip.Content>Revert to default</Tooltip.Content>
-							</Tooltip.Root>
-						</Tooltip.Provider>
+						<Tooltip.Root>
+							<Tooltip.Trigger
+								class={cn(buttonVariants({ size: 'icon' }))}
+								onclick={() => {
+									$value = meta.default as any;
+								}}
+							>
+								<IconArrowUUpLeft />
+							</Tooltip.Trigger>
+							<Tooltip.Content>Revert to default</Tooltip.Content>
+						</Tooltip.Root>
 					{/if}
 				</div>
 				{#if type}

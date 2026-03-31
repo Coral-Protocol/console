@@ -634,23 +634,21 @@
 					<CodePane />
 					<footer class="bg-sidebar flex justify-end gap-2 border-t p-4">
 						{#if sendingForm || !$formData.agents.length}
-							<Tooltip.Provider>
-								<Tooltip.Root>
-									<Tooltip.Trigger>
-										<Form.Button disabled={sendingForm || $formData.agents.length === 0}>
-											{#if sendingForm}
-												<Spinner />
-											{/if}Run</Form.Button
-										>
-										<Button disabled={sendingForm || $formData.agents.length === 0}
-											>Save template</Button
-										>
-									</Tooltip.Trigger>
-									<Tooltip.Content>
-										<p>You need to add at least one agent first!</p>
-									</Tooltip.Content>
-								</Tooltip.Root>
-							</Tooltip.Provider>
+							<Tooltip.Root>
+								<Tooltip.Trigger>
+									<Form.Button disabled={sendingForm || $formData.agents.length === 0}>
+										{#if sendingForm}
+											<Spinner />
+										{/if}Run</Form.Button
+									>
+									<Button disabled={sendingForm || $formData.agents.length === 0}
+										>Save template</Button
+									>
+								</Tooltip.Trigger>
+								<Tooltip.Content>
+									<p>You need to add at least one agent first!</p>
+								</Tooltip.Content>
+							</Tooltip.Root>
 						{:else}
 							<Form.Button
 								disabled={sendingForm || $formData.agents.length === 0}

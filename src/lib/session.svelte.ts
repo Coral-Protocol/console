@@ -21,6 +21,8 @@ export class Session {
 
 	public agentId: string | null = $state(null);
 
+	public possessed: string | null = $state(null);
+
 	public agents: { [id: string]: SessionAgentState } = $state({});
 	public threads: {
 		[id: string]: Omit<SessionThread, 'participants'> & {

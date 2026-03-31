@@ -260,33 +260,27 @@
 				>
 				<Button disabled={loading} onclick={() => downloadTemplate(template)}>Download</Button>
 				{#if templateData.version != 1}
-					<Tooltip.Provider>
-						<Tooltip.Root delayDuration={0}>
-							<Tooltip.Trigger class="text-accent opacity-70 hover:opacity-100"
-								>Outdated template</Tooltip.Trigger
-							>
-							<Tooltip.Content>
-								<p>
-									Template version ({templateData.version}) is outdated, it may not work properly.
-								</p>
-							</Tooltip.Content>
-						</Tooltip.Root>
-					</Tooltip.Provider>
+					<Tooltip.Root delayDuration={0}>
+						<Tooltip.Trigger class="text-accent opacity-70 hover:opacity-100"
+							>Outdated template</Tooltip.Trigger
+						>
+						<Tooltip.Content>
+							<p>
+								Template version ({templateData.version}) is outdated, it may not work properly.
+							</p>
+						</Tooltip.Content>
+					</Tooltip.Root>
 				{/if}
 				{#if !templateData.trusted}
 					<TwostepButton
 						detail="Are you sure you want to mark this template as trusted? This will remove the warning and let you run the template without confirmation."
-						variant="cta"
 						detailClass=""
 						class="ml-auto"
 						onclick={() => markTrusted(template)}>Mark as trusted</TwostepButton
 					>
 				{:else}
-					<Button
-						class="ml-auto"
-						variant="cta"
-						disabled={loading}
-						href={`${base}/workbench?template=${template}`}>Load template</Button
+					<Button class="ml-auto" disabled={loading} href={`${base}/workbench?template=${template}`}
+						>Load template</Button
 					>
 				{/if}
 			</Dialog.Footer>
