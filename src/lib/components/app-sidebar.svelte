@@ -2,6 +2,9 @@
 	import * as Sidebar from '@coral-os/component-library/ui/sidebar/index.js';
 	import * as Kbd from '@coral-os/component-library/ui/kbd/index.js';
 	import * as Tooltip from '@coral-os/component-library/ui/tooltip/index.js';
+	import * as ContextMenu from '@coral-os/component-library/ui/context-menu/index.js';
+	import * as DropdownMenu from '@coral-os/component-library/ui/dropdown-menu/index.js';
+
 	import { toast } from 'svelte-sonner';
 	import { Button, buttonVariants } from '@coral-os/component-library/ui/button/index.js';
 	import Quickswitch from '$lib/components/dialogs/quickswitch.svelte';
@@ -20,6 +23,11 @@
 	import IconCircuity from 'phosphor-icons-svelte/IconCircuitryRegular.svelte';
 	import IconFolder from 'phosphor-icons-svelte/IconFolderRegular.svelte';
 	import IconPlus from 'phosphor-icons-svelte/IconPlusRegular.svelte';
+	import IconXRegular from 'phosphor-icons-svelte/IconXRegular.svelte';
+	import IconGhost from 'phosphor-icons-svelte/IconGhostRegular.svelte';
+	import IconSkull from 'phosphor-icons-svelte/IconSkullRegular.svelte';
+	import IconEnvelopeOpen from 'phosphor-icons-svelte/IconEnvelopeOpenRegular.svelte';
+	import IconDotsThree from 'phosphor-icons-svelte/IconDotsThreeRegular.svelte';
 
 	import * as Popover from '@coral-os/component-library/ui/popover/index.js';
 
@@ -40,7 +48,6 @@
 	import SessionSwitcher from './SessionSwitcher.svelte';
 	import { fade } from 'svelte/transition';
 	import { Badge } from '@coral-os/component-library/components/ui/badge/index.js';
-	import IconXRegular from 'phosphor-icons-svelte/IconXRegular.svelte';
 	import CreateThreadForm from './CreateThreadForm.svelte';
 
 	let ctx = appContext.get();
@@ -358,6 +365,16 @@
 							: []}
 						emptyLabel="No threads."
 					>
+						{#snippet itemContextMenu({ item })}
+							{@const thread = item.id !== undefined ? ctx.session?.threads[item.id] : undefined}
+							<ContextMenu.Item
+								disabled={!thread || thread.unread === 0}
+								onSelect={() => {
+									if (!ctx.session || !item.id || !(item.id in ctx.session.threads)) return;
+									ctx.session.threads[item.id]!.unread = 0;
+								}}><IconEnvelopeOpen /> Mark as read</ContextMenu.Item
+							>
+						{/snippet}
 						{#snippet actions()}
 							<Popover.Root bind:open={threadCreateOpen}>
 								<Tooltip.Root disabled={!ctx.session || ctx.session.possessed !== null}>
@@ -405,7 +422,33 @@
 								}))
 							: []}
 						emptyLabel="No agents."
-					/>
+					>
+						{#snippet itemContextMenu({ item })}
+							<ContextMenu.Item
+								onSelect={() => {
+									if (!ctx.session) return;
+									ctx.session.possessed = item.id ?? null;
+								}}><IconGhost /> Possess</ContextMenu.Item
+							>
+							<ContextMenu.Item
+								class="bg-destructive/70 hover:bg-destructive dark:hover:bg-destructive"
+								onSelect={() => {
+									if (!ctx.session) return;
+									ctx.session.possessed = item.id ?? null;
+								}}><IconSkull /> Kill</ContextMenu.Item
+							>
+						{/snippet}
+						{#snippet itemActions({ item })}
+							<DropdownMenu.Root>
+								<DropdownMenu.Trigger>
+									{#snippet child({ props })}
+										<Button {...props} variant="ghost" size="icon"><IconDotsThree /></Button>
+									{/snippet}
+								</DropdownMenu.Trigger>
+								<DropdownMenu.Content class="w-56" align="start"></DropdownMenu.Content>
+							</DropdownMenu.Root>
+						{/snippet}
+					</NavBundle>
 				</Sidebar.Menu>
 			</Sidebar.GroupContent>
 		</Sidebar.Group>
