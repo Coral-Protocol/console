@@ -38,6 +38,9 @@
 	import IconWrenchRegular from 'phosphor-icons-svelte/IconWrenchRegular.svelte';
 	import IconUsersThreeRegular from 'phosphor-icons-svelte/IconUsersThreeRegular.svelte';
 	import IconRobotRegular from 'phosphor-icons-svelte/IconRobotRegular.svelte';
+	import IconCaretDown from 'phosphor-icons-svelte/IconCaretDownRegular.svelte';
+	import IconPlusCircle from 'phosphor-icons-svelte/IconPlusCircleRegular.svelte';
+	import IconTrashRegular from 'phosphor-icons-svelte/IconTrashRegular.svelte';
 
 	import { Checkbox } from '@coral-os/component-library/ui/checkbox/index.js';
 	import { Separator } from '@coral-os/component-library/ui/separator/index.js';
@@ -66,6 +69,7 @@
 	import { toPayload } from './schemas';
 	import { importFromPayload } from './schemas';
 	import AgentPicker from './AgentPicker.svelte';
+	import TemplatePicker from './TemplatePicker.svelte';
 	import CodePane from './panes/CodePane.svelte';
 	import GroupsPane from './panes/GroupsPane.svelte';
 	import SessionPane from './panes/SessionPane.svelte';
