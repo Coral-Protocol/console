@@ -430,13 +430,18 @@
 									ctx.session.possessed = item.id ?? null;
 								}}><IconGhost /> Possess</ContextMenu.Item
 							>
-							<ContextMenu.Item
-								class="bg-destructive/70 hover:bg-destructive dark:hover:bg-destructive"
-								onSelect={() => {
-									if (!ctx.session) return;
-									ctx.session.possessed = item.id ?? null;
-								}}><IconSkull /> Kill</ContextMenu.Item
-							>
+							<!-- <ContextMenu.Item -->
+							<!-- 	class="bg-destructive/50 hover:bg-destructive dark:hover:bg-destructive" -->
+							<!-- 	onSelect={async () => { -->
+							<!-- 		if (!ctx.session || !item.id) return; -->
+							<!-- 		try { -->
+							<!-- 			await ctx.server.killAgent(ctx.session.sessionId, item.id); -->
+							<!-- 			toast.success(`Agent '${item.id}' killed.`); -->
+							<!-- 		} catch (e) { -->
+							<!-- 			toast.error(`${e}`); -->
+							<!-- 		} -->
+							<!-- 	}}><IconSkull /> Kill</ContextMenu.Item -->
+							<!-- > -->
 						{/snippet}
 						{#snippet itemActions({ item })}
 							<DropdownMenu.Root>
@@ -445,7 +450,27 @@
 										<Button {...props} variant="ghost" size="icon"><IconDotsThree /></Button>
 									{/snippet}
 								</DropdownMenu.Trigger>
-								<DropdownMenu.Content class="w-56" align="start"></DropdownMenu.Content>
+								<DropdownMenu.Content class="w-56" align="start">
+									<DropdownMenu.Item
+										onSelect={() => {
+											if (!ctx.session) return;
+											ctx.session.possessed = item.id ?? null;
+										}}
+										><IconGhost /> Possess
+									</DropdownMenu.Item>
+									<!-- <DropdownMenu.Item -->
+									<!-- 	class="bg-destructive/50 hover:bg-destructive dark:hover:bg-destructive" -->
+									<!-- 	onSelect={async () => { -->
+									<!-- 		if (!ctx.session || !item.id) return; -->
+									<!-- 		try { -->
+									<!-- 			await ctx.server.killAgent(ctx.session.sessionId, item.id); -->
+									<!-- 			toast.success(`Agent '${item.id}' killed.`); -->
+									<!-- 		} catch (e) { -->
+									<!-- 			toast.error(`${e}`); -->
+									<!-- 		} -->
+									<!-- 	}}><IconSkull /> Kill</DropdownMenu.Item -->
+									<!-- > -->
+								</DropdownMenu.Content>
 							</DropdownMenu.Root>
 						{/snippet}
 					</NavBundle>
