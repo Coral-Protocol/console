@@ -1,10 +1,10 @@
 <script lang="ts">
+	import TemplateSkeleton from './TemplateSkeleton.svelte';
 	import TemplateViewer from './TemplateViewer.svelte';
 
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { base } from '$app/paths';
-	import { goto } from '$app/navigation';
 
 	import { Button } from '@coral-os/component-library/ui/button/index.js';
 	import * as Card from '@coral-os/component-library/ui/card/index.js';
@@ -14,10 +14,10 @@
 	import * as Tooltip from '@coral-os/component-library/ui/tooltip/index.js';
 	import * as AlertDialog from '@coral-os/component-library/ui/alert-dialog/index.js';
 	import { Separator } from '@coral-os/component-library/ui/separator/index.js';
-	import { Skeleton } from '@coral-os/component-library/ui/skeleton/index.js';
+	import { formatDistanceToNow } from 'date-fns';
+	import { cn } from '$lib/utils.js';
 
-	import IconPencilRegular from 'phosphor-icons-svelte/IconPencilFill.svelte';
-	import IconDownloadRegular from 'phosphor-icons-svelte/IconDownloadFill.svelte';
+	import IconPlus from 'phosphor-icons-svelte/IconPlusRegular.svelte';
 
 	import AgentGraph from '$lib/components/AgentGraph.svelte';
 
@@ -26,8 +26,8 @@
 	import {
 		normalizeTemplate,
 		refreshTemplateFromStorage,
-		fetchTemplatesFromStorage,
 		fetchBundledTemplates,
+		fetchTemplatesFromStorage,
 		safeJSONParse,
 		pickAndParseTemplateFile,
 		checkTemplateOverwrite,
@@ -125,21 +125,15 @@
 	<Breadcrumb.Root class="flex-grow">
 		<Breadcrumb.List>
 			<Breadcrumb.Item class="hidden md:block">
+				<Breadcrumb.Link href="/workbench">Workbench</Breadcrumb.Link>
+			</Breadcrumb.Item>
+			<Breadcrumb.Separator class="hidden md:block" />
+			<Breadcrumb.Item>
 				<Breadcrumb.Link>Templates</Breadcrumb.Link>
 			</Breadcrumb.Item>
 		</Breadcrumb.List>
 	</Breadcrumb.Root>
 </header>
-
-<section class="mx-auto my-8 flex gap-2">
-	<Button
-		variant="outline"
-		href="{base}/templates/create"
-		class=" {templates.length > 0 && !loading ? '' : 'border-accent/50!'} w-fit"
-		>Create new template</Button
-	>
-	<Button variant="outline" onclick={() => importTemplate()} class="w-fit">Import from file</Button>
-</section>
 
 <TemplateViewer
 	{template}
@@ -182,114 +176,95 @@
 	</AlertDialog.Content>
 </AlertDialog.Root>
 
+<section class="mx-auto flex w-full justify-between p-12 md:max-w-4/5">
+	<h1 class="text-2xl">Your templates</h1>
+	<section class="flex gap-2">
+		<Button
+			variant="default"
+			href="{base}/workbench"
+			class={cn('h-9 w-fit', templates.length > 0 && !loading && 'border-accent/50!')}
+			><IconPlus /> Create</Button
+		>
+		<Button variant="outline" onclick={() => importTemplate()} class="h-9 w-fit">Import</Button>
+	</section>
+</section>
+
 {#key templates}
-	{#if templates.length > 0 && !loading}
-		<ul
-			class="grid grid-cols-[repeat(auto-fit,minmax(20rem,24em))] justify-center gap-4 overflow-y-scroll p-4"
-		>
-			{#each templates as template, i}
-				{@const templateData = normalizeTemplate(
-					safeJSONParse(localStorage.getItem(`template_${template}`), {})
-				)}
-				{@const graphData = safeJSONParse(templateData?.payload?.data || '{}')}
+	<ul
+		class="grid grid-cols-[repeat(auto-fit,minmax(20rem,24em))] justify-center gap-4 overflow-y-scroll p-4"
+	>
+		{#if templates.length > 0}
+			{#if !loading}
+				{#each templates as template, i}
+					{@const templateData = normalizeTemplate(
+						safeJSONParse(localStorage.getItem(`template_${template}`), {})
+					)}
+					{@const graphData = safeJSONParse(templateData?.payload?.data || '{}')}
 
-				<li class="col-span-1">
-					<Card.Root>
-						<Dialog.Root bind:open={dialogOpen}>
-							<Card.Content class="flex flex-col gap-4 ">
-								<Card.Header class="relative flex justify-between px-0">
-									<Card.Title>{template}</Card.Title>
-									{#if !templateData?.trusted}
-										<Tooltip.Provider>
-											<Tooltip.Root delayDuration={0}>
-												<Tooltip.Trigger
-													class="text-accent absolute right-0 opacity-70 hover:opacity-100"
-													><IconWarningCircleRegular class="size-5" /></Tooltip.Trigger
-												>
-												<Tooltip.Content>
-													<p>Imported from external source</p>
-												</Tooltip.Content>
-											</Tooltip.Root>
-										</Tooltip.Provider>
-									{/if}
-								</Card.Header>
-								<button
-									class=" bg-sidebar hover:bg-accent-foreground/10 aspect-square w-full overflow-clip rounded-lg transition-all"
-									onclick={() => openTemplate(template)}
-								>
-									<AgentGraph
-										agents={graphData?.agentGraphRequest?.agents || []}
-										groups={graphData?.agentGraphRequest?.groups || []}
-										options={{
-											disableZoom: true,
-											disableDrag: true,
-											disableBrush: true,
-											nodeSubLabel: null,
-											selectedNodeId: null
-										}}
-									/>
-								</button>
+					<li class="col-span-1">
+						<Card.Root class="rounded-md p-0">
+							<Dialog.Root bind:open={dialogOpen}>
+								<Card.Content class="flex flex-col p-0 ">
+									<button
+										class=" bg-sidebar hover:bg-accent-foreground/10 aspect-video w-full overflow-clip transition-all"
+										onclick={() => openTemplate(template)}
+									>
+										<AgentGraph
+											agents={graphData?.agentGraphRequest?.agents || []}
+											groups={graphData?.agentGraphRequest?.groups || []}
+											options={{
+												disableZoom: true,
+												disableDrag: true,
+												disableBrush: true,
+												nodeSubLabel: null,
+												selectedNodeId: null
+											}}
+										/>
+									</button>
 
-								<Card.Footer class="flex justify-between gap-2 border-t px-0">
-									<span class="flex gap-2">
-										<Tooltip.Provider>
-											<Tooltip.Root delayDuration={300}>
-												<Tooltip.Trigger
-													><Button
-														class="self-start"
-														variant="ghostHover"
-														size="sm"
-														href="{base}/templates/create?template={template}"
-														><IconPencilRegular />
-														<div class="sr-only">Edit</div></Button
-													></Tooltip.Trigger
-												>
-												<Tooltip.Content>
-													<p>Edit</p>
-												</Tooltip.Content>
-											</Tooltip.Root>
-										</Tooltip.Provider>
-
-										<Tooltip.Provider>
-											<Tooltip.Root delayDuration={300}>
-												<Tooltip.Trigger
-													><Button
-														class="self-start"
-														variant="ghostHover"
-														size="sm"
-														onclick={() => downloadTemplate(template)}
-														><IconDownloadRegular />
-														<div class="sr-only">Download</div></Button
-													></Tooltip.Trigger
-												>
-												<Tooltip.Content>
-													<p>Download</p>
-												</Tooltip.Content>
-											</Tooltip.Root>
-										</Tooltip.Provider>
-									</span>
-
-									<Button onclick={() => openTemplate(template)}>View</Button>
-								</Card.Footer>
-							</Card.Content>
-						</Dialog.Root>
-					</Card.Root>
-				</li>
+									<Card.Footer class="flex justify-between gap-2 border-t px-6 !py-4">
+										<span class="flex flex-col gap-2">
+											<Card.Title>{template}</Card.Title>
+											{#if !templateData?.trusted}
+												<Tooltip.Provider>
+													<Tooltip.Root delayDuration={0}>
+														<Tooltip.Trigger
+															class="text-accent absolute right-0 opacity-70 hover:opacity-100"
+															><IconWarningCircleRegular class="size-5" /></Tooltip.Trigger
+														>
+														<Tooltip.Content>
+															<p>Imported from external source</p>
+														</Tooltip.Content>
+													</Tooltip.Root>
+												</Tooltip.Provider>
+											{/if}
+											<span class="text-muted-foreground text-xs"
+												>Updated {formatDistanceToNow(templateData.updated, {
+													addSuffix: true
+												})}</span
+											>
+										</span>
+									</Card.Footer>
+								</Card.Content>
+							</Dialog.Root>
+						</Card.Root>
+					</li>
+				{/each}
+			{/if}
+		{:else if loading}
+			{#each templates}
+				<TemplateSkeleton />
+			{:else}
+				<TemplateSkeleton />
 			{/each}
-		</ul>
-	{:else if loading}
-		<section class="m-auto flex flex-col gap-2">
-			<Skeleton class="bg-muted h-4 w-42 rounded-lg" />
-			<Skeleton class="bg-muted h-4 w-32 rounded-lg" />
-			<Skeleton class="bg-muted h-4 w-56 rounded-lg" />
-		</section>
-	{:else}
-		<section
-			class="bg-sidebar m-auto flex max-w-md flex-col items-center gap-4 rounded-lg border p-8 text-center"
-		>
-			<p class="text-muted-foreground">
-				No templates found. Create your first template to get started!
-			</p>
-		</section>
-	{/if}
+		{:else}
+			<section
+				class="bg-sidebar m-auto flex max-w-md flex-col items-center gap-4 rounded-lg border p-8 text-center"
+			>
+				<p class="text-muted-foreground">
+					No templates found. Create your first template to get started!
+				</p>
+			</section>
+		{/if}
+	</ul>
 {/key}

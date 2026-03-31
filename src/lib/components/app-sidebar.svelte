@@ -17,6 +17,7 @@
 	import IconQuestion from 'phosphor-icons-svelte/IconQuestionRegular.svelte';
 	import IconPackage from 'phosphor-icons-svelte/IconPackageRegular.svelte';
 	import IconNotepad from 'phosphor-icons-svelte/IconNotepadRegular.svelte';
+	import IconCircuity from 'phosphor-icons-svelte/IconCircuitryRegular.svelte';
 	import IconFolder from 'phosphor-icons-svelte/IconFolderRegular.svelte';
 
 	import * as Popover from '@coral-os/component-library/ui/popover/index.js';
@@ -180,8 +181,8 @@
 				return;
 			}
 			if (k === 'n') {
-				if (window.location.pathname !== `${base}/templates/create`) {
-					goto(`${base}/templates/create`);
+				if (window.location.pathname !== `${base}/workbench`) {
+					goto(`${base}/workbench`);
 					toast.info('Navigated to session creation page');
 				}
 				return;
@@ -303,19 +304,19 @@
 				<!-- <SidebarLink url="{base}/" icon={IconHome} title="Home" /> -->
 				<SidebarLink url="{base}/server/registry" icon={IconPackage} title="Agent Registry" />
 				<SidebarLink url="{base}/server/logs" icon={IconNotepad} title="Logs" disabled />
+
+				<Sidebar.MenuItem>
+					<SidebarLink url="{base}/workbench" icon={IconCircuity} title="Workbench" />
+					<Sidebar.MenuSub>
+						<Sidebar.MenuSubItem>
+							<SidebarLink url="{base}/workbench/templates/" icon={IconFolder} title="Templates" />
+						</Sidebar.MenuSubItem>
+					</Sidebar.MenuSub>
+				</Sidebar.MenuItem>
 			</Sidebar.Menu>
 		</Sidebar.GroupContent>
 	</Sidebar.Header>
 	<Sidebar.Content class="gap-0 overflow-hidden">
-		<Sidebar.Group>
-			<Sidebar.Separator />
-			<Sidebar.GroupContent>
-				<Sidebar.Menu>
-					<Sidebar.GroupLabel class="text-muted-foreground">My library</Sidebar.GroupLabel>
-					<SidebarLink url="{base}/templates/" icon={IconFolder} title="Templates" />
-				</Sidebar.Menu>
-			</Sidebar.GroupContent>
-		</Sidebar.Group>
 		<Sidebar.Group>
 			<Sidebar.Separator />
 			<Sidebar.GroupContent>
