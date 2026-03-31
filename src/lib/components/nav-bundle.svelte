@@ -9,8 +9,6 @@
 	import { Badge } from '@coral-os/component-library/ui/badge/index.js';
 	import { SidebarLink } from '@coral-os/component-library';
 
-	import IconGhost from 'phosphor-icons-svelte/IconGhostRegular.svelte';
-
 	import { cn } from '$lib/utils';
 	import type { SessionAgentStatus } from '$lib/session.svelte';
 	import { type SessionAgentStatusMap, humanReadableMap, resolveStateMap } from '$lib';
@@ -33,7 +31,8 @@
 		items,
 		emptyLabel = 'No items.',
 		actions,
-		itemActions
+		itemActions,
+		itemContextMenu,
 	}: {
 		disabled?: boolean;
 		title: string;
@@ -43,6 +42,7 @@
 		emptyLabel?: string;
 		actions?: Snippet<[]>;
 		itemActions?: Snippet<[{ item: Item }]>;
+		itemContextMenu?: Snippet<[{ item: Item }]>;
 	} = $props();
 
 	let ctx = appContext.get();
@@ -87,7 +87,7 @@
 				{/snippet}
 			</Collapsible.Trigger>
 			<Collapsible.Content>
-				<Sidebar.MenuSub>
+				<Sidebar.MenuSub class="mr-0">
 					{#if items.length === 0}
 						<Sidebar.MenuSubItem class="pointer-events-none">
 							<Sidebar.MenuSubButton class="text-muted-foreground">
@@ -100,12 +100,16 @@
 							<Sidebar.MenuSubButton isActive={activeSubitems[i]}>
 								{#snippet child({ props })}
 									<ContextMenu.Root>
-										<ContextMenu.Trigger {...props}>
+										<ContextMenu.Trigger {...props} disabled={!itemContextMenu}>
 											{#snippet child({ props })}
 												<Tooltip.Root>
 													<Tooltip.Trigger {...props}>
 														{#snippet child({ props })}
-															<a href={item.url} {...props}>
+															<a
+																href={item.url}
+																{...props}
+																class={cn(props.class as any, !!itemActions && 'pr-0')}
+															>
 																{#if item.state}
 																	<span
 																		class={cn(
@@ -139,12 +143,7 @@
 											{/snippet}
 										</ContextMenu.Trigger>
 										<ContextMenu.Content class="w-52">
-											<ContextMenu.Item
-												onclick={() => {
-													if (!ctx.session) return;
-													ctx.session.possessed = item.id ?? null;
-												}}><IconGhost /> Possess</ContextMenu.Item
-											>
+											{@render itemContextMenu?.({ item })}
 										</ContextMenu.Content>
 									</ContextMenu.Root>
 								{/snippet}
