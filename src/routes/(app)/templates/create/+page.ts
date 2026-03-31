@@ -3,9 +3,8 @@ import { base } from '$app/paths';
 import { browser } from '$app/environment';
 
 export const load = ({ url }) => {
-    if (!browser) return;
     
-    const query = url.search; // includes leading "?" if present
+    const query = browser ? url.search : ""; 
 
     throw redirect(301, `${base}/workbench${query}`);
 };
