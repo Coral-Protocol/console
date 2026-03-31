@@ -125,7 +125,7 @@
 	<Breadcrumb.Root class="flex-grow">
 		<Breadcrumb.List>
 			<Breadcrumb.Item class="hidden md:block">
-				<Breadcrumb.Link href="/workbench">Workbench</Breadcrumb.Link>
+				<Breadcrumb.Link href="{base}/workbench">Workbench</Breadcrumb.Link>
 			</Breadcrumb.Item>
 			<Breadcrumb.Separator class="hidden md:block" />
 			<Breadcrumb.Item>
