@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.5](https://github.com/Coral-Protocol/console/compare/v0.3.4...v0.3.5) (2026-04-01)
+
+
+### Bug Fixes
+
+* catch empty error on 500's in GET wrapper ([#125](https://github.com/Coral-Protocol/console/issues/125)) ([d369cd8](https://github.com/Coral-Protocol/console/commit/d369cd8d1a36dfeccffdb6218046c5bfad4265c6))
+* sidebar hydration issues ([#124](https://github.com/Coral-Protocol/console/issues/124)) ([432bbcc](https://github.com/Coral-Protocol/console/commit/432bbcc16628b59672ff26aaee42e612fb17a372))
+
 ## [0.3.4](https://github.com/Coral-Protocol/console/compare/v0.3.3...v0.3.4) (2026-03-31)
 
 
