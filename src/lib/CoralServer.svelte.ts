@@ -58,6 +58,14 @@ export class CoralServer {
 					throw new Error('Invalid auth token!');
 				}
 
+				case 500: {
+					this.alive = false;
+					if (!res.error) {
+						throw new Error('Unknown internal server error');
+					}
+					return res;
+				}
+
 				case 200: {
 					this.alive = true;
 					break;
