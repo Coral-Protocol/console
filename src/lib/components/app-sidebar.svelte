@@ -315,14 +315,17 @@
 				<SidebarLink url="{base}/server/registry" icon={IconPackage} title="Agent Registry" />
 				<SidebarLink url="{base}/server/logs" icon={IconNotepad} title="Logs" disabled />
 
-				<Sidebar.MenuItem>
+				<Sidebar.Menu>
 					<SidebarLink url="{base}/workbench" icon={IconCircuity} title="Workbench" />
 					<Sidebar.MenuSub>
-						<Sidebar.MenuSubItem>
-							<SidebarLink url="{base}/workbench/templates/" icon={IconFolder} title="Templates" />
-						</Sidebar.MenuSubItem>
+						<SidebarLink
+							sub
+							url="{base}/workbench/templates/"
+							icon={IconFolder}
+							title="Templates"
+						/>
 					</Sidebar.MenuSub>
-				</Sidebar.MenuItem>
+				</Sidebar.Menu>
 			</Sidebar.Menu>
 		</Sidebar.GroupContent>
 	</Sidebar.Header>
@@ -379,15 +382,18 @@
 							<Popover.Root bind:open={threadCreateOpen}>
 								<Tooltip.Root disabled={!ctx.session || ctx.session.possessed !== null}>
 									<Tooltip.Trigger>
-										<Popover.Trigger
-											disabled={!ctx.session || !ctx.session?.possessed}
-											onclick={(e) => {
-												e.stopPropagation();
-											}}
-											class={cn(buttonVariants({ size: 'icon', variant: 'ghost' }), 'size-6')}
-										>
-											<IconPlus />
-										</Popover.Trigger>
+										{#snippet child({ props })}
+											<Popover.Trigger
+												{...props}
+												disabled={!ctx.session || !ctx.session?.possessed}
+												onclick={(e) => {
+													e.stopPropagation();
+												}}
+												class={cn(buttonVariants({ size: 'icon', variant: 'ghost' }), 'size-6')}
+											>
+												<IconPlus />
+											</Popover.Trigger>
+										{/snippet}
 									</Tooltip.Trigger>
 									<Tooltip.Content
 										><span>You must be possessing an agent to create a thread!</span
