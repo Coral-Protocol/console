@@ -3,9 +3,9 @@
 @import 'tw-animate-css';
 
 @import '@coral-os/component-library/theme.css';
-@source "../node_modules/@coral-os/component-library/src/lib";
 
-
+@source "../node_modules/@coral-os/component-library";
+@source "../../../../node_modules/@coral-os/component-library";
 
 :root {
 	--telemetry-assistant: oklch(0.75 0.23 145);
