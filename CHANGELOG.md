@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.6](https://github.com/Coral-Protocol/console/compare/v0.3.5...v0.3.6) (2026-04-02)
+
+
+### Bug Fixes
+
+* tailwind component lib scanning in nix build ([#127](https://github.com/Coral-Protocol/console/issues/127)) ([c6480cc](https://github.com/Coral-Protocol/console/commit/c6480ccc4343de400411415012c84ee86c075fb4))
+
 ## [0.3.5](https://github.com/Coral-Protocol/console/compare/v0.3.4...v0.3.5) (2026-04-01)
 
 
