@@ -125,7 +125,7 @@ export class Session {
 					}
 					this.agents[data.name]!.status = {
 						type: 'running',
-						connectionStatus: { type: 'not_connected' }
+						connectionStatus: { type: 'connected', communicationStatus: { type: 'thinking' } }
 					};
 					break;
 				case 'agent_wait_start':
@@ -140,7 +140,49 @@ export class Session {
 						toast.warning("Got agent update about an agent we don't know!");
 						return;
 					}
-					this.agents[data.name]!.status = { type: 'stopped' };
+					this.agents[data.name]!.status = {
+						type: 'running',
+						connectionStatus: { type: 'connected', communicationStatus: { type: 'thinking' } }
+					};
+					break;
+				case 'agent_sleep_start':
+					if (!this.agents[data.name]) {
+						toast.warning("Got agent update about an agent we don't know!");
+						return;
+					}
+					this.agents[data.name]!.status = {
+						type: 'running',
+						connectionStatus: { type: 'connected', communicationStatus: { type: 'sleeping' } }
+					};
+					break;
+				case 'agent_sleep_stop':
+					if (!this.agents[data.name]) {
+						toast.warning("Got agent update about an agent we don't know!");
+						return;
+					}
+					this.agents[data.name]!.status = {
+						type: 'running',
+						connectionStatus: { type: 'connected', communicationStatus: { type: 'thinking' } }
+					};
+					break;
+				case 'runtime_started':
+					if (!this.agents[data.name]) {
+						toast.warning("Got agent update about an agent we don't know!");
+						return;
+					}
+					this.agents[data.name]!.status = {
+						type: 'running',
+						connectionStatus: { type: 'not_connected' }
+					};
+					break;
+				case 'runtime_stopped':
+					if (!this.agents[data.name]) {
+						toast.warning("Got agent update about an agent we don't know!");
+						return;
+					}
+					this.agents[data.name]!.status = {
+						type: 'stopped'
+					};
 					break;
 				case 'thread_created':
 					console.log('new thread');
