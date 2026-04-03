@@ -76,6 +76,7 @@
 	import AgentPane from './panes/AgentPane.svelte';
 	import TemplateSaver from './TemplateSaver.svelte';
 	import { getSessionDataFromTemplateName } from './templates/TemplateLib';
+	import { tourTarget } from '$lib/components/tour/tourTarget';
 
 	function sourceToRegistryId(source: AgentSource): RegistryAgentIdentifier['registrySourceId'] {
 		switch (source) {
@@ -545,13 +546,15 @@
 									</Menubar.Content>
 								</Menubar.Menu>
 								<Menubar.Menu>
-									<Menubar.Trigger class="relative ml-auto gap-2">
-										<IconPlusCircle class="size-5" />
-										Add agents
-										{#if $formData.agents.length < 1}
-											<Pip size={2} color="accent" />
-										{/if}
-									</Menubar.Trigger>
+									<div use:tourTarget={'add-agents'}>
+										<Menubar.Trigger class="relative ml-auto gap-2">
+											<IconPlusCircle class="size-5" />
+											Add agents
+											{#if $formData.agents.length < 1}
+												<Pip size={2} color="accent" />
+											{/if}
+										</Menubar.Trigger>
+									</div>
 									<Menubar.Content>
 										<AgentPicker
 											server={ctx.server}

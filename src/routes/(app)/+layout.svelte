@@ -6,6 +6,9 @@
 	import { CoralServer } from '$lib/CoralServer.svelte';
 	import { onMount } from 'svelte';
 
+	import TourOverlay from '$lib/components/tour/TourOverlay.svelte';
+	import { tour } from '$lib/components/tour/tour.svelte';
+
 	let { children } = $props();
 
 	let ctx: AppContext = $state({
@@ -22,28 +25,16 @@
 		ctx.server.fetchAll();
 	});
 
-	//if we get problems we just need to logCtx.logs[agent]?.close() before assigning, according to our good developer friend, Alan.
-
-	// watch([() => ctx.session, () => Object.keys(ctx.session?.agents ?? {})], () => {
-	// 	if (!ctx.session) return;
-	// 	if (ctx.logs !== null && ctx.logs.session !== ctx.session.sessionId) {
-	// 		ctx.logs = null;
-	// 		console.log('invalidating session logs');
-	// 	}
-	//        ctx.logs = new Logs({session: ctx.session.session}, );
-	// 	for (const agent of Object.keys(ctx.session.agents)) {
-	// 		if (!(agent in logCtx.logs)) {
-	// 			logCtx.logs[agent] = new Logs({ session: ctx.session.sessionId }, agent);
-	// 			console.log(`opening agent logs for '${agent}'`);
-	// 		}
-	// 	}
-	// });
-
 	let socket = $state({
 		userInput: new UserInput()
 	});
+
 	socketCtx.set(socket);
 </script>
+
+{#if tour.currentTarget}
+	<TourOverlay items={tour.steps} />
+{/if}
 
 <Sidebar.Provider>
 	<AppSidebar />

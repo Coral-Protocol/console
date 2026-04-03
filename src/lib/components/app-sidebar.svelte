@@ -10,6 +10,7 @@
 	import Quickswitch from '$lib/components/dialogs/quickswitch.svelte';
 	import DebugTools from '$lib/components/dialogs/debugtools.svelte';
 	import Login from './Login.svelte';
+	import Welcome from './dialogs/welcome.svelte';
 
 	import IconFileArchive from 'phosphor-icons-svelte/IconFileArchiveRegular.svelte';
 	import MoonIcon from 'phosphor-icons-svelte/IconMoonRegular.svelte';
@@ -49,6 +50,7 @@
 	import { fade } from 'svelte/transition';
 	import { Badge } from '@coral-os/component-library/components/ui/badge/index.js';
 	import CreateThreadForm from './CreateThreadForm.svelte';
+	import { tourTarget } from './tour/tourTarget';
 
 	let ctx = appContext.get();
 	let tools = socketCtx.get();
@@ -210,28 +212,10 @@
 		throw new Error('Function not implemented.');
 	}
 
-	let namespaceSwitcher = $state(null) as unknown as HTMLButtonElement;
-	let creator = $state(null) as unknown as HTMLButtonElement;
 	let tourOpen = $state(false);
 
 	let threadCreateOpen = $state(false);
 </script>
-
-<Tour
-	bind:open={tourOpen}
-	items={[
-		{
-			target: namespaceSwitcher,
-			side: 'right',
-			text: "Welcome to Coral Studio!\n\nFirst, let's create a new Template"
-		}
-		// {
-		// 	target: sessionSwitcher,
-		// 	side: 'right',
-		// 	text: 'Then, once connected:\n\nCreate a session here.'
-		// }
-	]}
-/>
 
 <svelte:window on:keydown={handleKeydown} />
 
@@ -240,11 +224,12 @@
 <Quickswitch {ctx} bind:open={openQuickswitch} bind:debugMenu={debugToolsOpen} />
 <Shortcuts bind:open={openShortcuts} />
 <DebugTools bind:open={debugToolsOpen} />
-<!-- <Welcome bind:open={welcomeOpen} bind:tourToggle={tourOpen} /> -->
+<Welcome bind:open={welcomeOpen} bind:tourToggle={tourOpen} />
 
 <div class="fixed top-3 right-3 z-50 flex items-center gap-2">
-	<button
-		class="flex max-w-64 cursor-text items-center justify-between gap-6 rounded-md border p-2"
+	<Button
+		class="flex max-w-64 cursor-text items-center justify-between gap-6 "
+		variant="outline"
 		onclick={() => (openQuickswitch = true)}
 	>
 		<div class="text-muted-foreground flex items-center gap-2">
@@ -255,28 +240,16 @@
 			<Kbd.Root>CTRL</Kbd.Root>
 			<Kbd.Root>K</Kbd.Root>
 		</Kbd.Group>
-	</button>
-	<Tooltip.Root delayDuration={0}>
-		<Tooltip.Trigger>
-			{#snippet child({ props })}
-				<button
-					{...props}
-					class=" text-muted-foreground flex size-9 items-center justify-center rounded-md border"
-					onclick={() => (welcomeOpen = true)}
-				>
-					<IconQuestion class="size-4" />
-				</button>
-			{/snippet}
-		</Tooltip.Trigger>
-		<Tooltip.Content>
-			<p>Help & Documentation</p>
-		</Tooltip.Content>
-	</Tooltip.Root>
+	</Button>
+
+	<Button size="icon" variant="outline" onclick={() => (welcomeOpen = true)}>
+		<IconQuestion class="size-4" />
+	</Button>
 </div>
 
 <Sidebar.Root>
 	<Sidebar.Header>
-		<ServerSwitcher bind:ref={namespaceSwitcher} />
+		<ServerSwitcher />
 		<Sidebar.GroupLabel class="pr-0">
 			<span
 				class="text-muted-foreground w-full grow font-sans font-medium tracking-wide select-none"
@@ -315,8 +288,10 @@
 				<SidebarLink url="{base}/server/registry" icon={IconPackage} title="Agent Registry" />
 				<SidebarLink url="{base}/server/logs" icon={IconNotepad} title="Logs" disabled />
 
-				<Sidebar.Menu>
-					<SidebarLink url="{base}/workbench" icon={IconCircuity} title="Workbench" />
+				<Sidebar.MenuItem>
+					<div use:tourTarget={'workbench'}>
+						<SidebarLink url="{base}/workbench" icon={IconCircuity} title="Workbench" />
+					</div>
 					<Sidebar.MenuSub>
 						<SidebarLink
 							sub
@@ -382,18 +357,15 @@
 							<Popover.Root bind:open={threadCreateOpen}>
 								<Tooltip.Root disabled={!ctx.session || ctx.session.possessed !== null}>
 									<Tooltip.Trigger>
-										{#snippet child({ props })}
-											<Popover.Trigger
-												{...props}
-												disabled={!ctx.session || !ctx.session?.possessed}
-												onclick={(e) => {
-													e.stopPropagation();
-												}}
-												class={cn(buttonVariants({ size: 'icon', variant: 'ghost' }), 'size-6')}
-											>
-												<IconPlus />
-											</Popover.Trigger>
-										{/snippet}
+										<Popover.Trigger
+											disabled={!ctx.session || !ctx.session?.possessed}
+											onclick={(e: any) => {
+												e.stopPropagation();
+											}}
+											class={cn(buttonVariants({ size: 'icon', variant: 'ghost' }), 'size-6')}
+										>
+											<IconPlus />
+										</Popover.Trigger>
 									</Tooltip.Trigger>
 									<Tooltip.Content
 										><span>You must be possessing an agent to create a thread!</span
