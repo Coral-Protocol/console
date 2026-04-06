@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.7](https://github.com/Coral-Protocol/console/compare/v0.3.6...v0.3.7) (2026-04-06)
+
+
+### Bug Fixes
+
+* agent ws state updates ([#129](https://github.com/Coral-Protocol/console/issues/129)) ([721c647](https://github.com/Coral-Protocol/console/commit/721c64737766bc5fbb52d87abc70e9e355bc970b))
+* update logo kerning to match designs ([3921914](https://github.com/Coral-Protocol/console/commit/3921914d0a3a12c5b66225ac4dcb85e8480433ce))
+
 ## [0.3.6](https://github.com/Coral-Protocol/console/compare/v0.3.5...v0.3.6) (2026-04-02)
 
 
