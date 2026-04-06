@@ -65,8 +65,8 @@
 							<Logo class="text-foreground size-8" />
 						</div>
 						<div class="flex flex-col gap-0.5 text-lg leading-none">
-							<span class="font-[Oxanium] font-bold tracking-widest"
-								>Coral<span class="text-primary/50">OS</span>
+							<span class="font-[Oxanium] font-semibold tracking-widest"
+								>Coral<span class="text-primary/50 font-bold tracking-normal">OS</span>
 							</span>
 							<span class="text-primary/50 font-sans text-sm">Console</span>
 						</div>
