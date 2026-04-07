@@ -46,7 +46,7 @@ export const makeFormSchema = (server: CoralServer) =>
 		);
 	});
 
-export const RuntimeIdSchema = z.enum(['executable', 'docker', 'function']);
+export const RuntimeIdSchema = z.enum(['executable', 'docker', 'function', 'prototype']);
 export type RuntimeId = z.infer<typeof RuntimeIdSchema>;
 
 export const GraphAgentServerAttributeTypeSchema = z.enum(['geographic_location', 'attested_by']);
