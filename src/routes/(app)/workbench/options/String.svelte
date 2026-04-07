@@ -5,10 +5,9 @@
 
 	import type { OptionProps } from '../OptionField.svelte';
 
-	type Props = OptionProps<'string' | 'secret'>;
+	type Props = OptionProps<'string'>;
 
 	let { meta, value, props, errors }: Props = $props();
-	let isSecret = $derived(meta.type === 'secret' ? true : meta.secret);
 </script>
 
 {#if meta.display?.multiline === true}
@@ -22,7 +21,7 @@
 {:else}
 	<Input
 		{...props}
-		type={isSecret ? 'password' : 'string'}
+		type={meta.secret ? 'password' : 'string'}
 		bind:value={$value}
 		class="m-0 w-full"
 		defaultValue={meta.default}
