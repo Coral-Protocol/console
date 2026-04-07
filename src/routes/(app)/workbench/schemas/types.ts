@@ -187,7 +187,8 @@ export const CustomToolSchema = z.object({
 	id: z.string().nonempty(),
 	name: z.string(),
 	transport: ToolTransport,
-	schema: ToolSchema
+	inputSchema: ToolSchema,
+	outputSchema: ToolSchema
 });
 
 export type CustomTool = z.output<typeof CustomToolSchema>;
@@ -223,7 +224,6 @@ const formSchema = z.object({
 						z.object({ type: z.literal('number'), value: z.number() }),
 						z.object({ type: z.literal('bool'), value: z.boolean() }),
 						z.object({ type: z.literal('string'), value: z.string() }),
-						z.object({ type: z.literal('secret'), value: z.string() }),
 
 						z.object({ type: z.literal('blob'), value: z.file() }),
 						z.object({
