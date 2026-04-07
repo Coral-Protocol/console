@@ -125,6 +125,7 @@ export class Session {
 					}
 					this.agents[data.name]!.status = {
 						type: 'running',
+						startTime: data.timestamp, // FIXME: make this actually correct
 						connectionStatus: { type: 'connected', communicationStatus: { type: 'thinking' } }
 					};
 					break;
@@ -142,6 +143,7 @@ export class Session {
 					}
 					this.agents[data.name]!.status = {
 						type: 'running',
+						startTime: data.timestamp, // FIXME: make this actually correct
 						connectionStatus: { type: 'connected', communicationStatus: { type: 'thinking' } }
 					};
 					break;
@@ -152,6 +154,7 @@ export class Session {
 					}
 					this.agents[data.name]!.status = {
 						type: 'running',
+						startTime: data.timestamp, // FIXME: make this actually correct
 						connectionStatus: { type: 'connected', communicationStatus: { type: 'sleeping' } }
 					};
 					break;
@@ -162,6 +165,7 @@ export class Session {
 					}
 					this.agents[data.name]!.status = {
 						type: 'running',
+						startTime: data.timestamp, // FIXME: make this actually correct
 						connectionStatus: { type: 'connected', communicationStatus: { type: 'thinking' } }
 					};
 					break;
@@ -172,6 +176,7 @@ export class Session {
 					}
 					this.agents[data.name]!.status = {
 						type: 'running',
+						startTime: data.timestamp, // FIXME: make this actually correct
 						connectionStatus: { type: 'not_connected' }
 					};
 					break;
