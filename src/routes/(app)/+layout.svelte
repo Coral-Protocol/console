@@ -7,7 +7,7 @@
 	import { onMount } from 'svelte';
 
 	import TourOverlay from '$lib/components/tour/TourOverlay.svelte';
-	import { tour } from '$lib/components/tour/tour.svelte';
+	import { tour } from '$lib/components/tour/tourLib.svelte';
 
 	let { children } = $props();
 

@@ -7,7 +7,8 @@
 
 	let { open = $bindable(false), tourToggle = $bindable(false) } = $props();
 
-	import { tour } from '$lib/components/tour/tour.svelte';
+	import { tour } from '$lib/components/tour/tourLib.svelte';
+	import type { TourStep } from '$lib/components/tour/tourLib.svelte';
 
 	const STORAGE_KEY = 'coral-console-welcome-shown';
 
@@ -18,11 +19,50 @@
 			localStorage.setItem(STORAGE_KEY, 'true');
 		}
 	});
+
+	const tourDetails: TourStep[] = [
+		{
+			id: 'registry',
+			text: 'This displays all agents currently available in the system. You can click into any agent to view details and interact with it.',
+			title: 'Agent Registry',
+			side: 'right'
+		},
+		{
+			id: 'logs',
+			text: 'View agent interactions and debug here (coming soon)',
+			title: 'Logs',
+			side: 'right'
+		},
+		{
+			id: 'workbench',
+			text: 'This is your playground for using Agents and building configurations.\n\nCreate Sessions to interact with agents in real-time, and save Templates to build reusable agent configurations.',
+			title: 'Workbench',
+			side: 'right'
+		},
+		{
+			id: 'templates',
+			text: 'Share, store and manage your Templates here to reuse them in the Workbench so you can quickly spin up new Sessions with pre-configured Agents.',
+			title: 'Templates management',
+			side: 'right'
+		},
+		{
+			id: 'session-section',
+			text: 'Each active Session is displayed here alongside its respective Agents and Threads.\n\nYou can switch between any active Sessions created in the Workbench, or programmatically with our API. ',
+			title: 'Sessions and Threads',
+			side: 'right'
+		},
+		{
+			id: 'quick-switch',
+			text: 'Use this search bar to quickly navigate to any Session, Agent, or Thread in the console. Just click or press Ctrl+K to jump in. \n\nClick the Question Mark icon to view this tour again anytime.',
+			title: 'Quick Navigation',
+			side: 'bottom'
+		}
+	];
 </script>
 
 <Dialog.Root bind:open>
 	<Dialog.Content
-		class="mx-auto flex h-fit w-4xl max-w-full! flex-col overflow-hidden *:font-sans! sm:max-w-fit! "
+		class="mx-auto flex h-fit w-4xl max-w-full! flex-col overflow-hidden  sm:max-w-fit! "
 	>
 		<Dialog.Header>
 			<Dialog.Title class="text-xl font-semibold">Welcome to Coral Console</Dialog.Title>
@@ -43,29 +83,25 @@
 					<Accordion.Item value="item-2">
 						<Accordion.Trigger variant="compact">Browsing Agents</Accordion.Trigger>
 						<Accordion.Content>
-							<p class="text-muted-foreground">
-								Navigate through the sidebar to explore the agent registry and view all available
-								agents. You can create sessions to interact with agents and test their capabilities
-								in real-time.
-							</p>
+							Navigate through the sidebar to explore the agent registry and view all available
+							agents. You can create sessions to interact with agents and test their capabilities in
+							real-time.
 						</Accordion.Content>
 					</Accordion.Item>
 					<Accordion.Item value="item-3">
 						<Accordion.Trigger variant="compact">Creating Agents Programmatically</Accordion.Trigger
 						>
 						<Accordion.Content>
-							<p class="text-muted-foreground">
-								Agents are intended to be created programmatically in your application code. The
-								console serves as a testing and exploration tool, but for production use, you'll
-								want to integrate agents directly into your codebase.
-							</p>
+							Agents are intended to be created programmatically in your application code. The
+							console serves as a testing and exploration tool, but for production use, you'll want
+							to integrate agents directly into your codebase.
 						</Accordion.Content>
 					</Accordion.Item>
 					<Accordion.Item value="item-4">
 						<Accordion.Trigger variant="compact">Using the Network Tab</Accordion.Trigger>
 						<Accordion.Content>
-							<p class="text-muted-foreground mb-2">To use an agent in your own application:</p>
-							<ol class="text-muted-foreground list-inside list-decimal space-y-2">
+							To use an agent in your own application:
+							<ol class=" list-inside list-decimal space-y-2">
 								<li>Open your browser's Developer Tools (F12 or Cmd+Option+I)</li>
 								<li>Navigate to the <strong>Network</strong> tab</li>
 								<li>Interact with an agent in the console</li>
@@ -112,12 +148,8 @@
 
 			<Button
 				onclick={() => {
-					tour.start([
-						{ id: 'workbench', text: 'Click here to create a new session' },
-						{ id: 'add-agents', text: 'Add a new agent here' }
-					]),
-						(open = false);
-				}}>Quickstart</Button
+					tour.start(tourDetails), (open = false);
+				}}>Start tour</Button
 			>
 		</Dialog.Footer>
 	</Dialog.Content>

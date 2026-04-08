@@ -1,9 +1,11 @@
-type TourStep = {
+export type TourStep = {
   id: string;
   text: string;
+  title: string;
+  side?: 'top' | 'bottom' | 'left' | 'right';
 };
 
-class TourState {
+export class TourState {
   targets = $state(new Map<string, HTMLElement>());
   steps = $state<TourStep[]>([]);
   stepIndex = $state(0);
@@ -39,6 +41,11 @@ class TourState {
 
   start(steps: TourStep[]) {
     this.steps = steps;
+    this.stepIndex = 0;
+  }
+
+  end() {
+    this.steps = [];
     this.stepIndex = 0;
   }
 }

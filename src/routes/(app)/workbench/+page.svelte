@@ -491,7 +491,7 @@
 							minSize={25}
 							defaultSize={50}
 						>
-							<Menubar.Root class="bg-sidebar border-0 border-b">
+							<Menubar.Root class="bg-sidebar w-full border-0 border-b">
 								<Menubar.Menu>
 									<Menubar.Trigger class="gap-1">Session<IconCaretDown /></Menubar.Trigger>
 									<Menubar.Content>
@@ -546,13 +546,10 @@
 									</Menubar.Content>
 								</Menubar.Menu>
 								<Menubar.Menu>
-									<div use:tourTarget={'add-agents'}>
-										<Menubar.Trigger class="relative ml-auto gap-2">
+									<div use:tourTarget={'add-agents'} class="ml-auto">
+										<Menubar.Trigger class="relative  gap-2">
 											<IconPlusCircle class="size-5" />
 											Add agents
-											{#if $formData.agents.length < 1}
-												<Pip size={2} color="accent" />
-											{/if}
 										</Menubar.Trigger>
 									</div>
 									<Menubar.Content>
