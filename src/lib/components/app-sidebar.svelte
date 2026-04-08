@@ -307,7 +307,7 @@
 							</div>
 						</Sidebar.MenuSubItem>
 					</Sidebar.MenuSub>
-				</Sidebar.Menu>
+				</Sidebar.MenuItem>
 			</Sidebar.Menu>
 		</Sidebar.GroupContent>
 	</Sidebar.Header>
