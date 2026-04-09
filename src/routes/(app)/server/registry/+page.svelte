@@ -53,7 +53,7 @@
 	</Breadcrumb.Root>
 </header>
 <main class="flex min-h-0 grow flex-col overflow-hidden p-4">
-	<header class="mb-2 w-1/2">
+	<header class="mb-2 md:w-[400px]">
 		<InputGroup.Root>
 			<InputGroup.Input placeholder="Search..." bind:value={search} />
 			<InputGroup.Addon>
@@ -79,64 +79,64 @@
 				{/if}
 				<ol class="grid grid-cols-[repeat(auto-fit,minmax(320px,0fr))] gap-4">
 					{#each catalog.agents as agent}
-						<li class="h-[250px] w-xs grow rounded-md">
-							<Dialog.Root>
-								<Dialog.Trigger class="h-[250px] w-full text-left">
-									<Card.Root class="h-full grow">
-										<Card.Header class="flex gap-2">
-											<Avatar.Root class="size-12">
-												<Avatar.Image
-													class="bg-cover object-cover"
-													src={agent.icon_url}
-													alt={agent.name.charAt(0).toUpperCase()}
-												/>
-												<Avatar.Fallback>{agent.name.charAt(0).toUpperCase()}</Avatar.Fallback>
-											</Avatar.Root>
-											<div class="flex flex-col gap-1">
-												<Card.Title class="font-bold">{agent.name}</Card.Title>
-												<Card.Description>By {agent.name ?? 'Unknown developer'}</Card.Description>
-											</div>
-										</Card.Header>
-										<Card.Content class="flex w-full grow flex-col gap-2">
-											{#await ctx.server.lookupAgent( { name: agent.name, version: agent.versions[0]!, registrySourceId: catalog.identifier } )}
-												<Skeleton class="h-4 w-full" />
-											{:then details}
+						{#await ctx.server.lookupAgent( { name: agent.name, version: agent.versions[0]!, registrySourceId: catalog.identifier } )}
+							<Skeleton class="h-4 w-full" />
+						{:then details}
+							<li class="h-[250px] w-xs grow rounded-md">
+								<Dialog.Root>
+									<Dialog.Trigger class=" h-[250px] w-full text-left">
+										<Card.Root class="hover:dark:bg-ring/20 hover:bg-ring/10 h-full grow">
+											<Card.Header class="flex gap-2">
+												<Avatar.Root class="size-12">
+													<Avatar.Image
+														class="bg-cover object-cover"
+														src={details.extension?.iconUrl}
+														alt={agent.name.charAt(0).toUpperCase()}
+													/>
+													<Avatar.Fallback>{agent.name.charAt(0).toUpperCase()}</Avatar.Fallback>
+												</Avatar.Root>
+												<div class="flex flex-col gap-1">
+													<Card.Title class="font-bold">{agent.name}</Card.Title>
+													<Card.Description>
+														{details.extension?.developer
+															? 'By ' + details.extension.developer
+															: 'Unknown developer'}</Card.Description
+													>
+												</div>
+											</Card.Header>
+											<Card.Content class="flex w-full grow flex-col gap-2">
 												<p class="line-clamp-4 overflow-ellipsis">
 													{details.registryAgent.info.description}
 												</p>
-											{/await}
-											<!-- {#if agent.tags.length > 0}
+												{#if details.registryAgent?.marketplace?.keywords && details.registryAgent.marketplace.keywords.length > 0}
 													<div class="flex flex-wrap gap-1">
-														{#each agent.tags.slice(0, 3) as tag}
-															<span class="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs">
-																{tag}
+														{#each details.registryAgent.marketplace.keywords.slice(0, 3) as keyword}
+															<span
+																class="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs"
+															>
+																{keyword}
 															</span>
 														{/each}
 													</div>
-												{/if} -->
-										</Card.Content>
-									</Card.Root>
-								</Dialog.Trigger>
-								<Dialog.Content>
-									<Dialog.Header>
-										<Dialog.Title>{agent.name}</Dialog.Title>
-										<Dialog.Description class="min-h-52">
-											{#await ctx.server.lookupAgent( { name: agent.name, version: agent.versions[0]!, registrySourceId: catalog.identifier } )}
-												<Skeleton class="h-4 w-full" />
-											{:then details}
-												{details.registryAgent.info.description}
-											{/await}
-										</Dialog.Description>
-									</Dialog.Header>
-								</Dialog.Content>
-							</Dialog.Root>
-							<Button
-								href="/{agent.developer ?? 'coral_protocol'}/{encodeURI(agent.slug)}"
-								variant="ghost"
-								size="sm"
-								class="h-fit w-full rounded-md p-0 drop-shadow-[#ff5c0026]! transition hover:drop-shadow-lg"
-							></Button>
-						</li>
+												{/if}
+											</Card.Content>
+										</Card.Root>
+									</Dialog.Trigger>
+									<Dialog.Content>
+										<Dialog.Header>
+											<Dialog.Title>{agent.name}</Dialog.Title>
+											<Dialog.Description class="min-h-52">
+												{#await ctx.server.lookupAgent( { name: agent.name, version: agent.versions[0]!, registrySourceId: catalog.identifier } )}
+													<Skeleton class="h-4 w-full" />
+												{:then details}
+													{details.registryAgent.info.description}
+												{/await}
+											</Dialog.Description>
+										</Dialog.Header>
+									</Dialog.Content>
+								</Dialog.Root>
+							</li>
+						{/await}
 					{/each}
 				</ol>
 			</li>
