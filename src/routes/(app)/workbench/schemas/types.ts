@@ -194,7 +194,7 @@ export type CustomTool = z.output<typeof CustomToolSchema>;
 
 const formSchema = z.object({
 	sessionRuntimeSettings: z.object({
-		ttl: z.number().min(10000).max(15778476000)
+		ttl: z.number().min(10000).max(15778476000).default(900000)
 	}),
 	tools: z.record(z.string().nonempty(), CustomToolSchema),
 	agents: z.array(
