@@ -77,7 +77,11 @@ export const toPayload = async (server: CoralServer, data: z.output<FormSchema>)
 		execution: {
 			mode: 'immediate',
 			runtimeSettings: {
-				extendedEndReport: false,
+				extendedEndReport: true,
+				persistenceMode: {
+					mode: "hold_after_exit",
+					duration: 1800000
+				},
 				ttl: data.sessionRuntimeSettings.ttl
 			}
 		}
