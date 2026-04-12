@@ -510,6 +510,7 @@
 	use:enhance
 	class="flex h-full flex-col overflow-hidden"
 	enctype="multipart/form-data"
+	autocomplete="off"
 >
 	<Resizable.PaneGroup
 		direction={isMobile.current ? 'vertical' : 'horizontal'}
