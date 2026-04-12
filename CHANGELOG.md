@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.3.8](https://github.com/Coral-Protocol/console/compare/v0.3.7...v0.3.8) (2026-04-12)
+
+
+### Features
+
+* show missing agents from templates ([06558fb](https://github.com/Coral-Protocol/console/commit/06558fb7010ae1cc5c33ab5199d58b2881c9af31))
+
+
+### Bug Fixes
+
+* checkbox to close the last session for saving resources during development ([bd0ed8f](https://github.com/Coral-Protocol/console/commit/bd0ed8f9eb57e43445d4813a5934a8dc5ad22a4f))
+* default to reasonable hold after exit for development ([1c8977f](https://github.com/Coral-Protocol/console/commit/1c8977fbb883d7d118e6469e3298d432a227a3ba))
+* issues with special number types, temporarily remove cost display ([75fae50](https://github.com/Coral-Protocol/console/commit/75fae50d002c369feb5308536a2f82f2376d5e4e))
+* remove annoying browser interactions for secret options ([d6daf07](https://github.com/Coral-Protocol/console/commit/d6daf0768042d5d6cfc2ee2baca0319706bee3c6))
+* set default ttl to 15m ([d220d39](https://github.com/Coral-Protocol/console/commit/d220d39218a0970c4fb1278619e138e84065ec83))
+* share the arcane wisdom of making namespaces in namespace switcher ([d957ea0](https://github.com/Coral-Protocol/console/commit/d957ea00b75b5d5ea539503688776744bd27cc63))
+
 ## [0.3.7](https://github.com/Coral-Protocol/console/compare/v0.3.6...v0.3.7) (2026-04-06)
 
 
