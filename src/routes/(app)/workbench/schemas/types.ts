@@ -260,7 +260,7 @@ const formSchema = z.object({
 
 						z.object({
 							type: z.literal('i64'),
-							value: z.string().refine(async (val) => {
+							value: z.union([z.string(), z.number().transform(String)]).refine(async (val) => {
 								try {
 									const n = BigInt(val);
 									return n >= -9223372036854775808n && n <= 9223372036854775808n;
@@ -271,7 +271,7 @@ const formSchema = z.object({
 						}),
 						z.object({
 							type: z.literal('list[i64]'),
-							value: z.array(z.number())
+							value: z.array(z.union([z.string(), z.number().transform(String)]))
 						}),
 
 						z.object({
@@ -304,7 +304,7 @@ const formSchema = z.object({
 						z.object({
 							type: z.literal('u64'),
 							value: z
-								.string()
+								.union([z.string(), z.number().transform(String)])
 								.refine(
 									(val) => {
 										try {
@@ -320,14 +320,14 @@ const formSchema = z.object({
 									error: 'Number cannot be greater than 18446744073709551615',
 									abort: true
 								})
-								.refine((val) => BigInt(val) > 0, {
+								.refine((val) => BigInt(val) >= 0, {
 									error: 'Number cannot be less than 0',
 									abort: true
 								})
 						}),
 						z.object({
 							type: z.literal('list[u64]'),
-							value: z.array(z.number().min(0))
+							value: z.array(z.number().min(0)) // TODO: surely this is missing a max?
 						}),
 
 						z.object({ type: z.literal('f32'), value: z.number() }),

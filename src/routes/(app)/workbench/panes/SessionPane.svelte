@@ -31,16 +31,18 @@
 		return [hours, minutes, seconds].map((v) => String(v).padStart(2, '0')).join(':');
 	}
 
-	const usdFormatter = new Intl.NumberFormat('en-US', {
-		style: 'currency',
-		currency: 'USD',
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 2
-	});
+	// Todo: Show only when some agents actually have a cost, and show only based on their actual time-based cost
 
-	const maxCostEstimate = $derived(
-		(($formData.sessionRuntimeSettings.ttl ?? 0) * $formData.agents.length * 10) / 60000
-	);
+	// const usdFormatter = new Intl.NumberFormat('en-US', {
+	// 	style: 'currency',
+	// 	currency: 'USD',
+	// 	minimumFractionDigits: 2,
+	// 	maximumFractionDigits: 2
+	// });
+
+	// const maxCostEstimate = $derived(
+	// 	(($formData.sessionRuntimeSettings.ttl ?? 0) * $formData.agents.length * 10) / 60000
+	// );
 
 	let selectedTool: string | null = $state(null);
 </script>
@@ -53,7 +55,7 @@
 			{#snippet children({ props })}
 				<TooltipLabel
 					title="Time to live (TTL)"
-					tooltip="Measured in milliseconds, the time to live is the maximum duration a session can last"
+					tooltip="Measured in milliseconds, the time to live is the maximum duration the session can last"
 					extra={{
 						required: true,
 						type: 'number'
@@ -79,12 +81,13 @@
 				'HH:MM:SS'}
 		</TooltipLabel>
 
-		<TooltipLabel
-			tooltip="Maximum cost of the session, calculated by number of agents, per minute."
-			class="max-w-fit"
-		>
-			Maximum cost of session: {usdFormatter.format((maxCostEstimate ?? 0) / 100)}
-		</TooltipLabel>
+<!--		Todo: Show only when some agents actually have a cost, and show only based on their actual time-based cost-->
+<!--		<TooltipLabel-->
+<!--			tooltip="Maximum cost of the session, calculated by number of agents, per minute."-->
+<!--			class="max-w-fit"-->
+<!--		>-->
+<!--			Maximum cost of session: {usdFormatter.format((maxCostEstimate ?? 0) / 10000)}-->
+<!--		</TooltipLabel>-->
 	</span>
 	{#if $errors?.sessionRuntimeSettings?.ttl && JSON.stringify($errors.sessionRuntimeSettings?.ttl) !== '{}' && JSON.stringify($errors.sessionRuntimeSettings?.ttl) !== '{}'}
 		<span class="text-xs">

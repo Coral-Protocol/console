@@ -104,7 +104,12 @@
 
 	const valuesEqual = (a: any, b: any) => {
 		if (Array.isArray(a) && Array.isArray(b)) {
-			return a.every((v, i) => v === b[i]);
+			return a.length === b.length && a.every((v, i) => valuesEqual(v, b[i]));
+		}
+		// TODO: This was added because special number types need to be represented as different types sometimes
+		// TODO: Probably they should always be represented using a value that doesn't need to change type?
+		if (typeof a !== typeof b) {
+			return String(a) === String(b);
 		}
 		return a === b;
 	};
