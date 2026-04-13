@@ -26,8 +26,8 @@
 		class="m-0 w-full"
 		defaultValue={meta.default}
 		aria-invalid={errors.length > 0}
-		autocomplete={isSecret ? 'off' : undefined}
-		data-1p-ignore={isSecret ? 'true' : undefined}
-		spellcheck={isSecret ? 'false' : undefined}
+		autocomplete={meta.secret ? 'off' : undefined}
+		data-1p-ignore={meta.secret ? 'true' : undefined}
+		spellcheck={meta.secret ? 'false' : undefined}
 	/>
 {/if}

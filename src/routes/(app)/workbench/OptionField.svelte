@@ -22,7 +22,7 @@
 	};
 
 	import Bool from './options/Bool.svelte';
-	import String from './options/String.svelte';
+	import StringOption from './options/String.svelte';
 	import Number from './options/Number.svelte';
 	import Blob from './options/Blob.svelte';
 	import List from './options/List.svelte';
@@ -30,7 +30,7 @@
 	export const componentMap: {
 		[K in OptionTypes]: Component<any> | undefined;
 	} = {
-		string: String,
+		string: StringOption,
 
 		bool: Bool,
 		blob: Blob,
@@ -101,7 +101,7 @@
 		)
 	);
 
-	const valuesEqual = (a: any, b: any) => {
+	const valuesEqual = (a: any, b: any): boolean => {
 		if (Array.isArray(a) && Array.isArray(b)) {
 			return a.length === b.length && a.every((v, i) => valuesEqual(v, b[i]));
 		}
