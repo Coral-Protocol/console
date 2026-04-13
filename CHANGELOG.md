@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.9](https://github.com/Coral-Protocol/console/compare/v0.3.8...v0.3.9) (2026-04-13)
+
+
+### Features
+
+* registry overhaul ([#133](https://github.com/Coral-Protocol/console/issues/133)) ([7c69fcc](https://github.com/Coral-Protocol/console/commit/7c69fccb752cf264308995f71f8e110856d062e1))
+* support coral server (prototype runtime pr) ([#131](https://github.com/Coral-Protocol/console/issues/131)) ([730c0f6](https://github.com/Coral-Protocol/console/commit/730c0f60aa1661fee5864a78a43935d3c1a6bb02))
+
+
+### Bug Fixes
+
+* quick fix on string name collision and related ([54736b9](https://github.com/Coral-Protocol/console/commit/54736b95291ac8e4217c1353ba472b836e3cfc78))
+
 ## [0.3.8](https://github.com/Coral-Protocol/console/compare/v0.3.7...v0.3.8) (2026-04-12)
 
 
