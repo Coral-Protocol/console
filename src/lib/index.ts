@@ -3,7 +3,7 @@ import type { SessionAgentStatus } from './session.svelte';
 type Prettify<T> = {
 	[K in keyof T]: T[K];
 } & {};
-type ChildKeys<T, K> = Omit<Extract<T, { type: K }>, 'type'>;
+type ChildKeys<T, K> = Omit<Extract<T, { type: K }>, 'type' | 'startTime'>;
 
 type DeepMap<T, V> = [T] extends [{ type: string }]
 	? {

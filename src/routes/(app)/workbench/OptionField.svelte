@@ -31,7 +31,6 @@
 		[K in OptionTypes]: Component<any> | undefined;
 	} = {
 		string: String,
-		secret: String,
 
 		bool: Bool,
 		blob: Blob,
