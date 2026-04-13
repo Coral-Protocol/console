@@ -7,13 +7,14 @@
 	import { Separator } from '@coral-os/component-library/ui/separator/index.js';
 	import AgentGraph from '$lib/components/AgentGraph.svelte';
 	import { TwostepButton } from '@coral-os/component-library';
-	import * as Accordion from '@coral-os/component-library/ui/accordion/index.js';
 	import { type Template } from './TemplateV1';
 	import * as Rename from '@coral-os/component-library/ui/rename/index.js';
 	import { Highlight } from 'svelte-highlight';
 	import { downloadTemplate } from './TemplateLib';
 	import json from 'svelte-highlight/languages/json';
 	import { base } from '$app/paths';
+	import { appContext } from '$lib/context';
+	import { registryIdOf } from '$lib/CoralServer.svelte';
 
 	const TEMPLATE_NAME_REGEX = /^[a-zA-Z0-9_-]{1,32}$/;
 
@@ -38,6 +39,23 @@
 	let desciptionValue = $derived(templateData.description || 'No description');
 	let titleMode = $state<'edit' | 'view'>('view');
 
+	const server = appContext.get().server;
+
+	let missingAgents = $derived.by(() => {
+		const agents = payload.agentGraphRequest?.agents || [];
+		return agents.filter((agent: { id: { name: string; version: string; registrySourceId: any } }) => {
+			const regId = registryIdOf(agent.id.registrySourceId);
+			const catalog = server.catalogs[regId];
+			if (!catalog) return true;
+			const catalogAgent = catalog.agents[agent.id.name];
+			if (!catalogAgent) return true;
+			if (!catalogAgent.versions.includes(agent.id.version)) return true;
+			return false;
+		});
+	});
+
+	let allAgentsAvailable = $derived(missingAgents.length === 0);
+
 	const removeTemplate = (name: string) => {
 		try {
 			localStorage.removeItem(`template_${name}`);
@@ -53,43 +71,6 @@
 		}
 	};
 
-	const createSessionFromTemplate = async (templateName: string) => {
-		loading = true;
-
-		try {
-			if (!templateData?.payload?.data) throw new Error('Template data not found');
-
-			if (templateData?.version !== 1) throw new Error('Template outdated');
-
-			toast.promise(
-				fetch('/api/v1/local/session', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json'
-					},
-					body: JSON.stringify(payload)
-				}).then(async (res) => {
-					if (!res.ok) {
-						const text = await res.text();
-						throw new Error(`${res.status} ${res.statusText}: ${text || 'Request failed'}`);
-					}
-					return res.json();
-				}),
-				{
-					loading: 'Creating session...',
-					success: 'Session created!',
-					error: (err) =>
-						`Failed to create session: ${err instanceof Error ? err.message : String(err)}`
-				}
-			);
-
-			open = false;
-		} catch (err) {
-			console.error(err);
-		} finally {
-			loading = false;
-		}
-	};
 
 	const markTrusted = (templateName: string) => {
 		try {
@@ -202,6 +183,11 @@
 							? 's'
 							: ''}.
 					</li>
+					{#if !allAgentsAvailable}
+						<li class="text-accent font-semibold">
+							Contains unavailable agents: {missingAgents.map((a: any) => a.id.name).join(', ')}
+						</li>
+					{/if}
 				</ol>
 
 				{#if !templateData.trusted}
@@ -279,9 +265,24 @@
 						onclick={() => markTrusted(template)}>Mark as trusted</TwostepButton
 					>
 				{:else}
-					<Button class="ml-auto" disabled={loading} href={`${base}/workbench?template=${template}`}
-						>Load template</Button
-					>
+					<Tooltip.Root delayDuration={0}>
+						<Tooltip.Trigger class="ml-auto">
+							<Button
+								disabled={loading || !allAgentsAvailable}
+								href={`${base}/workbench?template=${template}`}>Load template</Button
+							>
+						</Tooltip.Trigger>
+						{#if !allAgentsAvailable}
+							<Tooltip.Content>
+								<p>Some agents in this template are not available:</p>
+								<ul class="list-disc pl-4">
+									{#each missingAgents as agent (agent.id.name + agent.id.version)}
+										<li>{agent.id.name} ({agent.id.version})</li>
+									{/each}
+								</ul>
+							</Tooltip.Content>
+						{/if}
+					</Tooltip.Root>
 				{/if}
 			</Dialog.Footer>
 		</Dialog.Header>

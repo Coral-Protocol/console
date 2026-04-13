@@ -108,12 +108,18 @@
 			}}
 		>
 			<Dialog.Header>
-				<Dialog.Title>Create a namespace</Dialog.Title>
+				<Dialog.Title>Set a new namespace to be made</Dialog.Title>
 			</Dialog.Header>
 			<section class="grid grid-cols-2">
 				<TooltipLabel>Namespace</TooltipLabel>
 				<Input placeholder="Namespace Name" maxlength={100} bind:value={newNamespace} />
 			</section>
+			<p class="text-sm text-gray-500">
+				This namespace will be created when you make a new session
+			</p>
+			<p class="text-sm text-gray-500">
+				(re-click into Workbench to refresh the namespace)
+			</p>
 			<Dialog.Footer class="items-center">
 				{#if duplicate === true}
 					<p class="mr-auto text-sm text-orange-400" transition:fade>

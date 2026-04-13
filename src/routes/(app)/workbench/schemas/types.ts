@@ -46,7 +46,7 @@ export const makeFormSchema = (server: CoralServer) =>
 		);
 	});
 
-export const RuntimeIdSchema = z.enum(['executable', 'docker', 'function']);
+export const RuntimeIdSchema = z.enum(['executable', 'docker', 'function', 'prototype']);
 export type RuntimeId = z.infer<typeof RuntimeIdSchema>;
 
 export const GraphAgentServerAttributeTypeSchema = z.enum(['geographic_location', 'attested_by']);
@@ -187,14 +187,15 @@ export const CustomToolSchema = z.object({
 	id: z.string().nonempty(),
 	name: z.string(),
 	transport: ToolTransport,
-	schema: ToolSchema
+	inputSchema: ToolSchema,
+	outputSchema: ToolSchema
 });
 
 export type CustomTool = z.output<typeof CustomToolSchema>;
 
 const formSchema = z.object({
 	sessionRuntimeSettings: z.object({
-		ttl: z.number().min(10000).max(15778476000)
+		ttl: z.number().min(10000).max(15778476000).default(900000)
 	}),
 	tools: z.record(z.string().nonempty(), CustomToolSchema),
 	agents: z.array(
@@ -223,7 +224,6 @@ const formSchema = z.object({
 						z.object({ type: z.literal('number'), value: z.number() }),
 						z.object({ type: z.literal('bool'), value: z.boolean() }),
 						z.object({ type: z.literal('string'), value: z.string() }),
-						z.object({ type: z.literal('secret'), value: z.string() }),
 
 						z.object({ type: z.literal('blob'), value: z.file() }),
 						z.object({
@@ -260,7 +260,7 @@ const formSchema = z.object({
 
 						z.object({
 							type: z.literal('i64'),
-							value: z.string().refine(async (val) => {
+							value: z.union([z.string(), z.number().transform(String)]).refine(async (val) => {
 								try {
 									const n = BigInt(val);
 									return n >= -9223372036854775808n && n <= 9223372036854775808n;
@@ -271,7 +271,7 @@ const formSchema = z.object({
 						}),
 						z.object({
 							type: z.literal('list[i64]'),
-							value: z.array(z.number())
+							value: z.array(z.union([z.string(), z.number().transform(String)]))
 						}),
 
 						z.object({
@@ -304,7 +304,7 @@ const formSchema = z.object({
 						z.object({
 							type: z.literal('u64'),
 							value: z
-								.string()
+								.union([z.string(), z.number().transform(String)])
 								.refine(
 									(val) => {
 										try {
@@ -320,14 +320,14 @@ const formSchema = z.object({
 									error: 'Number cannot be greater than 18446744073709551615',
 									abort: true
 								})
-								.refine((val) => BigInt(val) > 0, {
+								.refine((val) => BigInt(val) >= 0, {
 									error: 'Number cannot be less than 0',
 									abort: true
 								})
 						}),
 						z.object({
 							type: z.literal('list[u64]'),
-							value: z.array(z.number().min(0))
+							value: z.array(z.number().min(0)) // TODO: surely this is missing a max?
 						}),
 
 						z.object({ type: z.literal('f32'), value: z.number() }),

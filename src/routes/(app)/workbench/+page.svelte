@@ -43,6 +43,7 @@
 	import IconTrashRegular from 'phosphor-icons-svelte/IconTrashRegular.svelte';
 
 	import { Checkbox } from '@coral-os/component-library/ui/checkbox/index.js';
+	import { Label } from '@coral-os/component-library/ui/label/index.js';
 	import { Separator } from '@coral-os/component-library/ui/separator/index.js';
 
 	import { Spinner } from '@coral-os/component-library/ui/spinner/index.js';
@@ -76,6 +77,7 @@
 	import AgentPane from './panes/AgentPane.svelte';
 	import TemplateSaver from './TemplateSaver.svelte';
 	import { getSessionDataFromTemplateName } from './templates/TemplateLib';
+	import { tourTarget } from '$lib/components/tour/tourTarget';
 
 	function sourceToRegistryId(source: AgentSource): RegistryAgentIdentifier['registrySourceId'] {
 		switch (source) {
@@ -256,6 +258,26 @@
 			}
 			try {
 				sendingForm = true;
+
+				if (
+					lastSession.current.closeLastSession &&
+					lastSession.current.sessionId &&
+					lastSession.current.namespace
+				) {
+					await ctx.server.api
+						.DELETE('/api/v1/local/session/{namespace}/{sessionId}', {
+							params: {
+								path: {
+									namespace: lastSession.current.namespace,
+									sessionId: lastSession.current.sessionId
+								}
+							}
+						})
+						.catch((e) => {
+							console.error('Failed to close last session:', e);
+						});
+				}
+
 				const body = await toPayload(ctx.server, $formData);
 				const res = await ctx.server.api.POST('/api/v1/local/session', {
 					body
@@ -272,6 +294,8 @@
 					return;
 				}
 				if (res.data) {
+					lastSession.current.sessionId = res.data.sessionId;
+					lastSession.current.namespace = ctx.server.namespace;
 					ctx.session = new Session({
 						sessionId: res.data.sessionId,
 						namespace: ctx.server.namespace,
@@ -439,6 +463,16 @@
 		}
 	});
 
+	const lastSession = new PersistedState<{
+		sessionId: string | null;
+		namespace: string | null;
+		closeLastSession: boolean;
+	}>('lastSession', {
+		sessionId: null,
+		namespace: null,
+		closeLastSession: true
+	});
+
 	function clearSession() {
 		$formData = {
 			groups: [],
@@ -476,6 +510,7 @@
 	use:enhance
 	class="flex h-full flex-col overflow-hidden"
 	enctype="multipart/form-data"
+	autocomplete="off"
 >
 	<Resizable.PaneGroup
 		direction={isMobile.current ? 'vertical' : 'horizontal'}
@@ -490,7 +525,7 @@
 							minSize={25}
 							defaultSize={50}
 						>
-							<Menubar.Root class="bg-sidebar border-0 border-b">
+							<Menubar.Root class="bg-sidebar w-full border-0 border-b">
 								<Menubar.Menu>
 									<Menubar.Trigger class="gap-1">Session<IconCaretDown /></Menubar.Trigger>
 									<Menubar.Content>
@@ -545,13 +580,12 @@
 									</Menubar.Content>
 								</Menubar.Menu>
 								<Menubar.Menu>
-									<Menubar.Trigger class="relative ml-auto gap-2">
-										<IconPlusCircle class="size-5" />
-										Add agents
-										{#if $formData.agents.length < 1}
-											<Pip size={2} color="accent" />
-										{/if}
-									</Menubar.Trigger>
+									<div use:tourTarget={'add-agents'} class="ml-auto">
+										<Menubar.Trigger class="relative  gap-2">
+											<IconPlusCircle class="size-5" />
+											Add agents
+										</Menubar.Trigger>
+									</div>
 									<Menubar.Content>
 										<AgentPicker
 											server={ctx.server}
@@ -664,38 +698,63 @@
 				<Resizable.Handle withHandle />
 				<Resizable.Pane class="flex h-full min-h-0 flex-col" minSize={25} defaultSize={50}>
 					<CodePane />
-					<footer class="bg-sidebar flex justify-end gap-2 border-t p-4">
-						{#if sendingForm || !$formData.agents.length}
-							<Tooltip.Root>
-								<Tooltip.Trigger>
-									<Form.Button disabled={sendingForm || $formData.agents.length === 0}>
-										{#if sendingForm}
-											<Spinner />
-										{/if}Run</Form.Button
-									>
-									<Button disabled={sendingForm || $formData.agents.length === 0}
-										>Save template</Button
-									>
-								</Tooltip.Trigger>
-								<Tooltip.Content>
-									<p>You need to add at least one agent first!</p>
-								</Tooltip.Content>
-							</Tooltip.Root>
-						{:else}
-							<Form.Button
-								disabled={sendingForm || $formData.agents.length === 0}
-								class={sendingForm ? '' : 'bg-accent/80'}
-							>
-								{#if sendingForm}
-									<Spinner />
-								{/if}Run</Form.Button
-							>
-							<Button
-								onclick={() => ((templateSaverDialogOpen = true), console.log('aa'))}
-								disabled={sendingForm || $formData.agents.length === 0}
-								class={sendingForm ? '' : 'bg-accent/80'}>Save template</Button
-							>
-						{/if}
+					<footer class="bg-sidebar flex items-center justify-end gap-2 border-t p-4">
+						<Tooltip.Provider>
+							<div class="mr-auto">
+								<Tooltip.Root>
+									<Tooltip.Trigger>
+										<div class="flex items-center gap-2">
+											<Checkbox
+												id="close-last-session"
+												bind:checked={lastSession.current.closeLastSession}
+											/>
+											<Label
+												for="close-last-session"
+												class="cursor-pointer text-sm font-medium leading-none">Close last session</Label
+											>
+										</div>
+									</Tooltip.Trigger>
+									<Tooltip.Content>
+										<p>
+											Close the last session made in the console, if it is still open. This will kill
+											each of its agents.
+										</p>
+										<p>Session id: {lastSession.current.sessionId ?? ''}</p>
+									</Tooltip.Content>
+								</Tooltip.Root>
+							</div>
+							{#if sendingForm || !$formData.agents.length}
+								<Tooltip.Root>
+									<Tooltip.Trigger>
+										<Form.Button disabled={sendingForm || $formData.agents.length === 0}>
+											{#if sendingForm}
+												<Spinner />
+											{/if}Run</Form.Button
+										>
+										<Button disabled={sendingForm || $formData.agents.length === 0}
+											>Save template</Button
+										>
+									</Tooltip.Trigger>
+									<Tooltip.Content>
+										<p>You need to add at least one agent first!</p>
+									</Tooltip.Content>
+								</Tooltip.Root>
+							{:else}
+								<Form.Button
+									disabled={sendingForm || $formData.agents.length === 0}
+									class={sendingForm ? '' : 'bg-accent/80'}
+								>
+									{#if sendingForm}
+										<Spinner />
+									{/if}Run</Form.Button
+								>
+								<Button
+									onclick={() => ((templateSaverDialogOpen = true), console.log('aa'))}
+									disabled={sendingForm || $formData.agents.length === 0}
+									class={sendingForm ? '' : 'bg-accent/80'}>Save template</Button
+								>
+							{/if}
+						</Tooltip.Provider>
 					</footer>
 				</Resizable.Pane>
 			</Resizable.PaneGroup>

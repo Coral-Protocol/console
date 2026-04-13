@@ -22,7 +22,7 @@
 	};
 
 	import Bool from './options/Bool.svelte';
-	import String from './options/String.svelte';
+	import StringOption from './options/String.svelte';
 	import Number from './options/Number.svelte';
 	import Blob from './options/Blob.svelte';
 	import List from './options/List.svelte';
@@ -30,8 +30,7 @@
 	export const componentMap: {
 		[K in OptionTypes]: Component<any> | undefined;
 	} = {
-		string: String,
-		secret: String,
+		string: StringOption,
 
 		bool: Bool,
 		blob: Blob,
@@ -102,9 +101,14 @@
 		)
 	);
 
-	const valuesEqual = (a: any, b: any) => {
+	const valuesEqual = (a: any, b: any): boolean => {
 		if (Array.isArray(a) && Array.isArray(b)) {
-			return a.every((v, i) => v === b[i]);
+			return a.length === b.length && a.every((v, i) => valuesEqual(v, b[i]));
+		}
+		// TODO: This was added because special number types need to be represented as different types sometimes
+		// TODO: Probably they should always be represented using a value that doesn't need to change type?
+		if (typeof a !== typeof b) {
+			return String(a) === String(b);
 		}
 		return a === b;
 	};

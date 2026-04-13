@@ -54,7 +54,8 @@ export const toPayload = async (server: CoralServer, data: z.output<FormSchema>)
 		Object.values(data.tools).map((tool) => {
 			const value = {
 				transport: structuredClone(tool.transport),
-				schema: structuredClone(tool.schema) as any // Safety: JSON schema needs more fields according to openapi but coral server doesn't actually need them
+				inputSchema: structuredClone(tool.inputSchema) as any, // Safety: JSON schema needs more fields according to openapi but coral server doesn't actually need them
+				outputSchema: structuredClone(tool.inputSchema) as any // Safety: JSON schema needs more fields according to openapi but coral server doesn't actually need them
 			} satisfies NonNullable<CreateSessionRequest['agentGraphRequest']['customTools']>[string];
 			return [tool.name, value];
 		})
@@ -77,7 +78,11 @@ export const toPayload = async (server: CoralServer, data: z.output<FormSchema>)
 		execution: {
 			mode: 'immediate',
 			runtimeSettings: {
-				extendedEndReport: false,
+				extendedEndReport: true,
+				persistenceMode: {
+					mode: "hold_after_exit",
+					duration: 1800000
+				},
 				ttl: data.sessionRuntimeSettings.ttl
 			}
 		}
@@ -119,7 +124,8 @@ export const importFromPayload = (json: string): z.output<FormSchema> => {
 				{
 					id,
 					name: k,
-					schema: v.schema,
+					inputSchema: v.inputSchema,
+					outputSchema: v.outputSchema,
 					transport: v.transport
 				} satisfies CustomTool
 			];
