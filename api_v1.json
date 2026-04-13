@@ -3089,14 +3089,9 @@
                     "propertyName" : "type"
                   },
                   "title" : "SessionAgentConnectionStatus"
-                },
-                "startTime" : {
-                  "type" : "string",
-                  "description" : "The time that this agent started",
-                  "title" : "UTC timestamp ISO-8601"
                 }
               },
-              "required" : [ "connectionStatus", "startTime", "type" ],
+              "required" : [ "connectionStatus", "type" ],
               "title" : "running"
             }, {
               "type" : "object",
@@ -3106,11 +3101,6 @@
                   "type" : "string",
                   "enum" : [ "stopped" ],
                   "title" : "String"
-                },
-                "startTime" : {
-                  "type" : "string",
-                  "description" : "The time that this agent started",
-                  "title" : "UTC timestamp ISO-8601"
                 }
               },
               "required" : [ "type" ],
@@ -4243,7 +4233,7 @@
       },
       "RuntimeId" : {
         "type" : "string",
-        "enum" : [ "executable", "docker", "function", "prototype" ],
+        "enum" : [ "executable", "docker", "function" ],
         "title" : "RuntimeId"
       },
       "GraphAgentServer" : {
@@ -4432,25 +4422,11 @@
             },
             "title" : "GraphAgentToolTransport"
           },
-          "inputSchema" : {
+          "schema" : {
             "$ref" : "#/components/schemas/ToolSchema"
-          },
-          "outputSchema" : {
-            "$ref" : "#/components/schemas/ToolSchema"
-          },
-          "description" : {
-            "type" : "string",
-            "title" : "String"
-          },
-          "title" : {
-            "type" : "string",
-            "title" : "String"
-          },
-          "annotations" : {
-            "$ref" : "#/components/schemas/ToolAnnotations"
           }
         },
-        "required" : [ "inputSchema", "outputSchema", "transport" ],
+        "required" : [ "schema", "transport" ],
         "title" : "GraphAgentTool"
       },
       "ToolSchema" : {
@@ -4471,13 +4447,6 @@
             },
             "title" : "ArrayList<String>"
           },
-          "$defs" : {
-            "type" : "object",
-            "additionalProperties" : {
-              "$ref" : "#/components/schemas/JsonElement"
-            },
-            "title" : "JsonObject<String,JsonElement>"
-          },
           "type" : {
             "type" : "string",
             "title" : "String"
@@ -4490,32 +4459,6 @@
         "type" : "object",
         "properties" : { },
         "title" : "JsonElement"
-      },
-      "ToolAnnotations" : {
-        "type" : "object",
-        "properties" : {
-          "title" : {
-            "type" : "string",
-            "title" : "String"
-          },
-          "readOnlyHint" : {
-            "type" : "boolean",
-            "title" : "Boolean"
-          },
-          "destructiveHint" : {
-            "type" : "boolean",
-            "title" : "Boolean"
-          },
-          "idempotentHint" : {
-            "type" : "boolean",
-            "title" : "Boolean"
-          },
-          "openWorldHint" : {
-            "type" : "boolean",
-            "title" : "Boolean"
-          }
-        },
-        "title" : "ToolAnnotations"
       },
       "SessionNamespaceRequest" : {
         "type" : "object",
@@ -5796,9 +5739,6 @@
           },
           "function" : {
             "$ref" : "#/components/schemas/FunctionRuntime"
-          },
-          "prototype" : {
-            "$ref" : "#/components/schemas/PrototypeRuntime"
           }
         },
         "title" : "runtime"
@@ -5819,16 +5759,16 @@
             "title" : "ArrayList<String>"
           },
           "transport" : {
-            "$ref" : "#/components/schemas/McpTransportType"
+            "$ref" : "#/components/schemas/AgentRuntimeTransport"
           }
         },
         "required" : [ "arguments", "path", "transport" ],
         "title" : "executable"
       },
-      "McpTransportType" : {
+      "AgentRuntimeTransport" : {
         "type" : "string",
         "enum" : [ "sse", "streamable_http" ],
-        "title" : "McpTransportType"
+        "title" : "AgentRuntimeTransport"
       },
       "docker" : {
         "type" : "object",
@@ -5838,7 +5778,7 @@
             "title" : "String"
           },
           "transport" : {
-            "$ref" : "#/components/schemas/McpTransportType"
+            "$ref" : "#/components/schemas/AgentRuntimeTransport"
           },
           "command" : {
             "type" : "array",
@@ -5856,380 +5796,11 @@
         "type" : "object",
         "properties" : {
           "transport" : {
-            "$ref" : "#/components/schemas/McpTransportType"
+            "$ref" : "#/components/schemas/AgentRuntimeTransport"
           }
         },
         "required" : [ "transport" ],
         "title" : "FunctionRuntime"
-      },
-      "PrototypeRuntime" : {
-        "type" : "object",
-        "properties" : {
-          "volatile" : {
-            "type" : "boolean",
-            "title" : "Boolean"
-          },
-          "model" : {
-            "anyOf" : [ {
-              "type" : "object",
-              "properties" : {
-                "provider" : {
-                  "type" : "string",
-                  "enum" : [ "anthropic" ],
-                  "title" : "String"
-                },
-                "key" : {
-                  "$ref" : "#/components/schemas/PrototypeString"
-                },
-                "name" : {
-                  "$ref" : "#/components/schemas/PrototypeString"
-                },
-                "url" : {
-                  "anyOf" : [ {
-                    "type" : "object",
-                    "properties" : {
-                      "type" : {
-                        "type" : "string",
-                        "enum" : [ "custom" ],
-                        "title" : "String"
-                      },
-                      "value" : {
-                        "type" : "string",
-                        "title" : "String"
-                      }
-                    },
-                    "required" : [ "type", "value" ],
-                    "title" : "custom"
-                  }, {
-                    "type" : "object",
-                    "properties" : {
-                      "type" : {
-                        "type" : "string",
-                        "enum" : [ "proxy" ],
-                        "title" : "String"
-                      }
-                    },
-                    "required" : [ "type" ],
-                    "title" : "proxy"
-                  } ],
-                  "discriminator" : {
-                    "propertyName" : "type"
-                  },
-                  "title" : "PrototypeApiUrl"
-                }
-              },
-              "required" : [ "key", "name", "provider" ],
-              "title" : "anthropic"
-            }, {
-              "type" : "object",
-              "properties" : {
-                "provider" : {
-                  "type" : "string",
-                  "enum" : [ "openai" ],
-                  "title" : "String"
-                },
-                "key" : {
-                  "$ref" : "#/components/schemas/PrototypeString"
-                },
-                "name" : {
-                  "$ref" : "#/components/schemas/PrototypeString"
-                },
-                "url" : {
-                  "anyOf" : [ {
-                    "type" : "object",
-                    "properties" : {
-                      "type" : {
-                        "type" : "string",
-                        "enum" : [ "custom" ],
-                        "title" : "String"
-                      },
-                      "value" : {
-                        "type" : "string",
-                        "title" : "String"
-                      }
-                    },
-                    "required" : [ "type", "value" ],
-                    "title" : "custom"
-                  }, {
-                    "type" : "object",
-                    "properties" : {
-                      "type" : {
-                        "type" : "string",
-                        "enum" : [ "proxy" ],
-                        "title" : "String"
-                      }
-                    },
-                    "required" : [ "type" ],
-                    "title" : "proxy"
-                  } ],
-                  "discriminator" : {
-                    "propertyName" : "type"
-                  },
-                  "title" : "PrototypeApiUrl"
-                }
-              },
-              "required" : [ "key", "name", "provider" ],
-              "title" : "openai"
-            }, {
-              "type" : "object",
-              "properties" : {
-                "provider" : {
-                  "type" : "string",
-                  "enum" : [ "openrouter" ],
-                  "title" : "String"
-                },
-                "key" : {
-                  "$ref" : "#/components/schemas/PrototypeString"
-                },
-                "name" : {
-                  "$ref" : "#/components/schemas/PrototypeString"
-                },
-                "url" : {
-                  "anyOf" : [ {
-                    "type" : "object",
-                    "properties" : {
-                      "type" : {
-                        "type" : "string",
-                        "enum" : [ "custom" ],
-                        "title" : "String"
-                      },
-                      "value" : {
-                        "type" : "string",
-                        "title" : "String"
-                      }
-                    },
-                    "required" : [ "type", "value" ],
-                    "title" : "custom"
-                  }, {
-                    "type" : "object",
-                    "properties" : {
-                      "type" : {
-                        "type" : "string",
-                        "enum" : [ "proxy" ],
-                        "title" : "String"
-                      }
-                    },
-                    "required" : [ "type" ],
-                    "title" : "proxy"
-                  } ],
-                  "discriminator" : {
-                    "propertyName" : "type"
-                  },
-                  "title" : "PrototypeApiUrl"
-                }
-              },
-              "required" : [ "key", "name", "provider" ],
-              "title" : "openrouter"
-            } ],
-            "discriminator" : {
-              "propertyName" : "provider"
-            },
-            "title" : "PrototypeModelProvider"
-          },
-          "iterations" : {
-            "type" : "integer",
-            "format" : "int32",
-            "title" : "Int"
-          },
-          "delay" : {
-            "type" : "integer",
-            "format" : "int32",
-            "title" : "Int"
-          },
-          "prompts" : {
-            "$ref" : "#/components/schemas/PrototypePrompts"
-          },
-          "tools" : {
-            "type" : "array",
-            "items" : {
-              "anyOf" : [ {
-                "type" : "object",
-                "properties" : {
-                  "type" : {
-                    "type" : "string",
-                    "enum" : [ "mcp_sse" ],
-                    "title" : "String"
-                  },
-                  "url" : {
-                    "$ref" : "#/components/schemas/PrototypeString"
-                  },
-                  "auth" : {
-                    "anyOf" : [ {
-                      "type" : "object",
-                      "properties" : {
-                        "type" : {
-                          "type" : "string",
-                          "enum" : [ "authorization_header" ],
-                          "title" : "String"
-                        },
-                        "header" : {
-                          "$ref" : "#/components/schemas/PrototypeString"
-                        }
-                      },
-                      "required" : [ "header", "type" ],
-                      "title" : "authorization_header"
-                    }, {
-                      "type" : "object",
-                      "properties" : {
-                        "type" : {
-                          "type" : "string",
-                          "enum" : [ "bearer" ],
-                          "title" : "String"
-                        },
-                        "token" : {
-                          "$ref" : "#/components/schemas/PrototypeString"
-                        }
-                      },
-                      "required" : [ "token", "type" ],
-                      "title" : "bearer"
-                    }, {
-                      "type" : "object",
-                      "properties" : {
-                        "type" : {
-                          "type" : "string",
-                          "enum" : [ "none" ],
-                          "title" : "String"
-                        }
-                      },
-                      "required" : [ "type" ],
-                      "title" : "none"
-                    } ],
-                    "discriminator" : {
-                      "propertyName" : "type"
-                    },
-                    "title" : "PrototypeToolServerAuth"
-                  }
-                },
-                "required" : [ "auth", "type", "url" ],
-                "title" : "mcp_sse"
-              }, {
-                "type" : "object",
-                "properties" : {
-                  "type" : {
-                    "type" : "string",
-                    "enum" : [ "mcp_streamable_http" ],
-                    "title" : "String"
-                  },
-                  "url" : {
-                    "$ref" : "#/components/schemas/PrototypeString"
-                  },
-                  "auth" : {
-                    "anyOf" : [ {
-                      "type" : "object",
-                      "properties" : {
-                        "type" : {
-                          "type" : "string",
-                          "enum" : [ "authorization_header" ],
-                          "title" : "String"
-                        },
-                        "header" : {
-                          "$ref" : "#/components/schemas/PrototypeString"
-                        }
-                      },
-                      "required" : [ "header", "type" ],
-                      "title" : "authorization_header"
-                    }, {
-                      "type" : "object",
-                      "properties" : {
-                        "type" : {
-                          "type" : "string",
-                          "enum" : [ "bearer" ],
-                          "title" : "String"
-                        },
-                        "token" : {
-                          "$ref" : "#/components/schemas/PrototypeString"
-                        }
-                      },
-                      "required" : [ "token", "type" ],
-                      "title" : "bearer"
-                    }, {
-                      "type" : "object",
-                      "properties" : {
-                        "type" : {
-                          "type" : "string",
-                          "enum" : [ "none" ],
-                          "title" : "String"
-                        }
-                      },
-                      "required" : [ "type" ],
-                      "title" : "none"
-                    } ],
-                    "discriminator" : {
-                      "propertyName" : "type"
-                    },
-                    "title" : "PrototypeToolServerAuth"
-                  }
-                },
-                "required" : [ "auth", "type", "url" ],
-                "title" : "mcp_streamable_http"
-              } ],
-              "discriminator" : {
-                "propertyName" : "type"
-              },
-              "title" : "PrototypeToolServer"
-            },
-            "title" : "ArrayList<PrototypeToolServer>"
-          }
-        },
-        "required" : [ "delay", "iterations", "model", "prompts", "tools", "volatile" ],
-        "title" : "PrototypeRuntime"
-      },
-      "PrototypeString" : {
-        "type" : "object",
-        "properties" : { },
-        "title" : "PrototypeString"
-      },
-      "PrototypePrompts" : {
-        "type" : "object",
-        "properties" : {
-          "system" : {
-            "$ref" : "#/components/schemas/PrototypeSystemPrompt"
-          },
-          "loop" : {
-            "$ref" : "#/components/schemas/PrototypeLoopPrompt"
-          }
-        },
-        "required" : [ "loop", "system" ],
-        "title" : "PrototypePrompts"
-      },
-      "PrototypeSystemPrompt" : {
-        "type" : "object",
-        "properties" : {
-          "base" : {
-            "$ref" : "#/components/schemas/PrototypeString"
-          },
-          "extra" : {
-            "$ref" : "#/components/schemas/PrototypeString"
-          }
-        },
-        "required" : [ "base" ],
-        "title" : "PrototypeSystemPrompt"
-      },
-      "PrototypeLoopPrompt" : {
-        "type" : "object",
-        "properties" : {
-          "initial" : {
-            "$ref" : "#/components/schemas/PrototypeLoopInitialPrompt"
-          },
-          "followup" : {
-            "$ref" : "#/components/schemas/PrototypeString"
-          }
-        },
-        "required" : [ "followup", "initial" ],
-        "title" : "PrototypeLoopPrompt"
-      },
-      "PrototypeLoopInitialPrompt" : {
-        "type" : "object",
-        "properties" : {
-          "base" : {
-            "$ref" : "#/components/schemas/PrototypeString"
-          },
-          "extra" : {
-            "$ref" : "#/components/schemas/PrototypeString"
-          }
-        },
-        "required" : [ "base" ],
-        "title" : "PrototypeLoopInitialPrompt"
       },
       "AgentOptionDisplay" : {
         "type" : "object",
