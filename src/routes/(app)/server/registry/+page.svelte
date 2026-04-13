@@ -80,7 +80,7 @@
 				<ol class="grid grid-cols-[repeat(auto-fit,minmax(320px,0fr))] gap-4">
 					{#each catalog.agents as agent}
 						{#await ctx.server.lookupAgent( { name: agent.name, version: agent.versions[0]!, registrySourceId: catalog.identifier } )}
-							<Skeleton class="h-4 w-full" />
+							<div class="bg-foreground/5 h-[250px] w-xs border"></div>
 						{:then details}
 							<li class="h-[250px] w-xs grow rounded-md">
 								<Dialog.Root>
