@@ -92,10 +92,11 @@
 	let value = $derived(
 		store.toStore(
 			() => {
-				return $formData.agents[agent]?.options[name]?.value;
+				return $formData.agents[agent]?.options?.[name]?.value;
 			},
 			(value) => {
 				if (!$formData.agents[agent]) return;
+				$formData.agents[agent].options ??= {};
 				$formData.agents[agent].options[name] = { type, value } as any; // Safety: trust me
 			}
 		)

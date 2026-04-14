@@ -12,7 +12,7 @@
 
 	import { createSessionContext } from '../+page.svelte';
 	import { appContext } from '$lib/context';
-	import { registryIdOf } from '$lib/CoralServer.svelte';
+	import { agentIdOf, registryIdOf } from '$lib/CoralServer.svelte';
 	import { tick } from 'svelte';
 	import { buttonVariants } from '@coral-os/component-library/components/ui/button/index.js';
 	import AgentPicker from '../AgentPicker.svelte';
@@ -32,19 +32,26 @@
 
 	const UNGROUPED = '__ungrouped';
 
-	let groupedOptions = $derived(
-		Object.entries(ctx.detailedAgent?.registryAgent?.options ?? {}).reduce<
+	let groupedOptions = $derived.by(() => {
+		const metaId = ctx.detailedAgent?.registryAgent?.info?.identifier;
+		const currentId = curAgent?.id;
+
+		if (!metaId || !currentId || agentIdOf(metaId) !== agentIdOf(currentId)) {
+			return {};
+		}
+
+		return Object.entries(ctx.detailedAgent?.registryAgent?.options ?? {}).reduce<
 			Record<string, [string, any][]>
 		>((acc, [name, opt]) => {
 			const group = opt?.display?.group ?? UNGROUPED;
 			(acc[group] ??= []).push([name, opt]);
 			return acc;
-		}, {})
-	);
+		}, {});
+	});
 </script>
 
 {#if ctx.selectedAgent !== null && curAgent && curCatalog}
-	{#if !ctx.detailedAgent}
+	{#if !ctx.detailedAgent || !ctx.detailedAgent.registryAgent?.info?.identifier || agentIdOf(ctx.detailedAgent.registryAgent.info.identifier) !== agentIdOf(curAgent.id)}
 		<Spinner class="m-auto my-8" />
 	{:else}
 		<header class="flex flex-col gap-2 px-4">

@@ -415,9 +415,18 @@
 
 	$effect(() => {
 		if (curAgent) {
+			let active = true;
+			sessCtx.detailedAgent = null;
 			getDetailed(curAgent.id).then((d) => {
-				sessCtx.detailedAgent = d;
+				if (active) {
+					sessCtx.detailedAgent = d;
+				}
 			});
+			return () => {
+				active = false;
+			};
+		} else {
+			sessCtx.detailedAgent = null;
 		}
 	});
 
