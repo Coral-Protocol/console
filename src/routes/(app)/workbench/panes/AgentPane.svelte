@@ -32,11 +32,12 @@
 
 	const UNGROUPED = '__ungrouped';
 
+	let curAgentId = $derived(curAgent ? agentIdOf(curAgent.id) : null);
 	let groupedOptions = $derived.by(() => {
 		const metaId = ctx.detailedAgent?.registryAgent?.info?.identifier;
-		const currentId = curAgent?.id;
+		const currentId = curAgentId;
 
-		if (!metaId || !currentId || agentIdOf(metaId) !== agentIdOf(currentId)) {
+		if (!metaId || !currentId || agentIdOf(metaId) !== currentId) {
 			return {};
 		}
 

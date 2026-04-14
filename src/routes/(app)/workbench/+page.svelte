@@ -56,7 +56,7 @@
 	import { zod4 } from 'sveltekit-superforms/adapters';
 
 	import { page } from '$app/state';
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 
 	import { toast } from 'svelte-sonner';
 	import { PersistedState } from 'runed';
@@ -64,7 +64,7 @@
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
 	import { Session } from '$lib/session.svelte';
 	import { appContext } from '$lib/context';
-	import { CoralServer, type RegistryAgentIdentifier } from '$lib/CoralServer.svelte';
+ import { CoralServer, agentIdOf, type RegistryAgentIdentifier } from '$lib/CoralServer.svelte';
 
 	import { makeFormSchema, type CreateSessionRequest } from './schemas/types';
 	import { toPayload } from './schemas';
@@ -413,21 +413,25 @@
 		sessCtx.selectedAgent !== null ? $formData.agents[sessCtx.selectedAgent] : undefined
 	);
 
+	let curAgentId = $derived(curAgent ? agentIdOf(curAgent.id) : null);
 	$effect(() => {
-		if (curAgent) {
-			let active = true;
-			sessCtx.detailedAgent = null;
-			getDetailed(curAgent.id).then((d) => {
-				if (active) {
-					sessCtx.detailedAgent = d;
-				}
+		const id = curAgentId;
+		let active = true;
+		if (id) {
+			untrack(() => {
+				sessCtx.detailedAgent = null;
+				getDetailed(curAgent!.id).then((d) => {
+					if (active) {
+						sessCtx.detailedAgent = d;
+					}
+				});
 			});
-			return () => {
-				active = false;
-			};
 		} else {
 			sessCtx.detailedAgent = null;
 		}
+		return () => {
+			active = false;
+		};
 	});
 
 	const getDetailed = async (agentId: RegistryAgentIdentifier) => {
