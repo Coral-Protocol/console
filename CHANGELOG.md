@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.11](https://github.com/Coral-Protocol/console/compare/v0.3.10...v0.3.11) (2026-04-14)
+
+
+### Bug Fixes
+
+* stop unselect after each character ([44adadc](https://github.com/Coral-Protocol/console/commit/44adadc2f1fe3cf422f3013eadd5f4da8264660d))
+
 ## [0.3.10](https://github.com/Coral-Protocol/console/compare/v0.3.9...v0.3.10) (2026-04-14)
 
 
