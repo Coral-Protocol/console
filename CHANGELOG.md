@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.10](https://github.com/Coral-Protocol/console/compare/v0.3.9...v0.3.10) (2026-04-14)
+
+
+### Bug Fixes
+
+* stop coral templates loading with mixed up default options ([4fc4319](https://github.com/Coral-Protocol/console/commit/4fc4319f7d6231c19f90d70d4e89780d54bce597))
+
 ## [0.3.9](https://github.com/Coral-Protocol/console/compare/v0.3.8...v0.3.9) (2026-04-13)
 
 
