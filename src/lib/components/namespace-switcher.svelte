@@ -66,9 +66,9 @@
 						</div>
 						<div class="flex flex-col gap-0.5 text-lg leading-none">
 							<span class="font-[Oxanium] font-semibold tracking-widest"
-								>Coral<span class="text-primary/50 font-bold tracking-normal">OS</span>
+								>Coral<span class="text-brand-primary font-bold tracking-normal">OS</span>
 							</span>
-							<span class="text-primary/50 font-sans text-sm">Console</span>
+							<span class="text-brand-primary font-sans text-sm">Console</span>
 						</div>
 						<span class="ml-auto">{ctx.server.namespace}</span>
 						<CaretUpDown />
@@ -117,9 +117,7 @@
 			<p class="text-sm text-gray-500">
 				This namespace will be created when you make a new session
 			</p>
-			<p class="text-sm text-gray-500">
-				(re-click into Workbench to refresh the namespace)
-			</p>
+			<p class="text-sm text-gray-500">(re-click into Workbench to refresh the namespace)</p>
 			<Dialog.Footer class="items-center">
 				{#if duplicate === true}
 					<p class="mr-auto text-sm text-orange-400" transition:fade>
