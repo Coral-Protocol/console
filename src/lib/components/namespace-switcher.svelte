@@ -62,7 +62,7 @@
 						{...props}
 					>
 						<div>
-							<Logo class="text-foreground size-8" />
+							<Logo class="text-foreground size-10" />
 						</div>
 						<div class="flex flex-col gap-0.5 text-lg leading-none">
 							<span class="font-[Oxanium] font-semibold tracking-widest"

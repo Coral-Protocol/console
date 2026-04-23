@@ -4,6 +4,7 @@
 	import * as Tooltip from '@coral-os/component-library/ui/tooltip/index.js';
 	import * as ContextMenu from '@coral-os/component-library/ui/context-menu/index.js';
 	import * as DropdownMenu from '@coral-os/component-library/ui/dropdown-menu/index.js';
+	import { Separator } from '@coral-os/component-library/ui/separator/index.js';
 
 	import { toast } from 'svelte-sonner';
 	import { Button, buttonVariants } from '@coral-os/component-library/ui/button/index.js';
@@ -26,7 +27,6 @@
 	import IconPlus from 'phosphor-icons-svelte/IconPlusRegular.svelte';
 	import IconXRegular from 'phosphor-icons-svelte/IconXRegular.svelte';
 	import IconGhost from 'phosphor-icons-svelte/IconGhostRegular.svelte';
-	import IconSkull from 'phosphor-icons-svelte/IconSkullRegular.svelte';
 	import IconEnvelopeOpen from 'phosphor-icons-svelte/IconEnvelopeOpenRegular.svelte';
 	import IconDotsThree from 'phosphor-icons-svelte/IconDotsThreeRegular.svelte';
 
@@ -226,10 +226,13 @@
 <DebugTools bind:open={debugToolsOpen} />
 <Welcome bind:open={welcomeOpen} bind:tourToggle={tourOpen} />
 
-<div class="fixed top-3 right-3 z-50 flex items-center gap-2" use:tourTarget={'quick-switch'}>
+<div
+	class="fixed top-3.5 right-3 z-50 flex items-center justify-end gap-1"
+	use:tourTarget={'quick-switch'}
+>
 	<Button
-		class="flex max-w-64 cursor-text items-center justify-between gap-6 "
-		variant="outline"
+		class="flex w-full max-w-64 cursor-text items-center justify-between gap-6 "
+		variant="ghost"
 		onclick={() => (openQuickswitch = true)}
 	>
 		<div class="text-muted-foreground flex items-center gap-2">
@@ -242,11 +245,15 @@
 		</Kbd.Group>
 	</Button>
 
-	<Button size="icon" variant="outline" onclick={() => (welcomeOpen = true)}>
+	<Separator orientation="vertical" class="!h-6" />
+
+	<Button size="icon" variant="ghost" onclick={() => (welcomeOpen = true)}>
 		<IconQuestion class="size-4" />
 	</Button>
 
-	<Button onclick={toggleMode} variant="outline" size="icon">
+	<Separator orientation="vertical" class="!h-6" />
+
+	<Button onclick={toggleMode} variant="ghost" size="icon">
 		<SunIcon
 			class="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90"
 		/>
