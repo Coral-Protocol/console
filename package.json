@@ -15,7 +15,7 @@
 		"prepare": "svelte-kit sync && yarn gen"
 	},
 	"devDependencies": {
-		"@coral-os/component-library": "^1.4.0",
+		"@coral-os/component-library": "^1.7.2",
 		"@eslint/compat": "^1.2.5",
 		"@eslint/js": "^9.18.0",
 		"@internationalized/date": "^3.10.0",
@@ -55,7 +55,9 @@
 		"@codemirror/lang-javascript": "^6.2.4",
 		"@codemirror/lang-json": "^6.0.2",
 		"@supabase/supabase-js": "^2.57.4",
+		"@uiw/codemirror-theme-atomone": "^4.25.9",
 		"@uiw/codemirror-theme-dracula": "^4.25.4",
+		"@uiw/codemirror-theme-quietlight": "^4.25.9",
 		"@unovis/svelte": "^1.6.1",
 		"@unovis/ts": "^1.6.1",
 		"codemirror": "^6.0.2",
