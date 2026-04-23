@@ -24,7 +24,6 @@
 </script>
 
 <script lang="ts">
-	import * as Breadcrumb from '@coral-os/component-library/ui/breadcrumb/index.js';
 	import * as Sidebar from '@coral-os/component-library/ui/sidebar/index.js';
 	import * as Resizable from '@coral-os/component-library/ui/resizable/index.js';
 	import * as Tabs from '@coral-os/component-library/ui/tabs/index.js';
@@ -64,7 +63,7 @@
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
 	import { Session } from '$lib/session.svelte';
 	import { appContext } from '$lib/context';
- import { CoralServer, agentIdOf, type RegistryAgentIdentifier } from '$lib/CoralServer.svelte';
+	import { CoralServer, agentIdOf, type RegistryAgentIdentifier } from '$lib/CoralServer.svelte';
 
 	import { makeFormSchema, type CreateSessionRequest } from './schemas/types';
 	import { toPayload } from './schemas';
@@ -78,6 +77,7 @@
 	import TemplateSaver from './TemplateSaver.svelte';
 	import { getSessionDataFromTemplateName } from './templates/TemplateLib';
 	import { tourTarget } from '$lib/components/tour/tourTarget';
+	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
 
 	function sourceToRegistryId(source: AgentSource): RegistryAgentIdentifier['registrySourceId'] {
 		switch (source) {
@@ -506,17 +506,7 @@
 <header class="bg-background sticky top-0 flex h-16 shrink-0 items-center gap-2 border-b px-4">
 	<Sidebar.Trigger class="-ml-1" />
 	<Separator orientation="vertical" class="mr-2 h-4" />
-	<Breadcrumb.Root class="flex-grow">
-		<Breadcrumb.List>
-			<Breadcrumb.Item class="hidden md:block">
-				<Breadcrumb.Link>Templates</Breadcrumb.Link>
-			</Breadcrumb.Item>
-			<Breadcrumb.Separator />
-			<Breadcrumb.Item class="hidden md:block">
-				<Breadcrumb.Page>Create</Breadcrumb.Page>
-			</Breadcrumb.Item>
-		</Breadcrumb.List>
-	</Breadcrumb.Root>
+	<Breadcrumbs />
 </header>
 <form
 	method="POST"
@@ -723,14 +713,15 @@
 											/>
 											<Label
 												for="close-last-session"
-												class="cursor-pointer text-sm font-medium leading-none">Close last session</Label
+												class="cursor-pointer text-sm leading-none font-medium"
+												>Close last session</Label
 											>
 										</div>
 									</Tooltip.Trigger>
 									<Tooltip.Content>
 										<p>
-											Close the last session made in the console, if it is still open. This will kill
-											each of its agents.
+											Close the last session made in the console, if it is still open. This will
+											kill each of its agents.
 										</p>
 										<p>Session id: {lastSession.current.sessionId ?? ''}</p>
 									</Tooltip.Content>

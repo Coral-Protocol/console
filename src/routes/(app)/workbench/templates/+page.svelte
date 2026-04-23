@@ -10,7 +10,6 @@
 	import * as Card from '@coral-os/component-library/ui/card/index.js';
 	import * as Dialog from '@coral-os/component-library/ui/dialog/index.js';
 	import * as Sidebar from '@coral-os/component-library/ui/sidebar/index.js';
-	import * as Breadcrumb from '@coral-os/component-library/ui/breadcrumb/index.js';
 	import * as Tooltip from '@coral-os/component-library/ui/tooltip/index.js';
 	import * as AlertDialog from '@coral-os/component-library/ui/alert-dialog/index.js';
 	import { Separator } from '@coral-os/component-library/ui/separator/index.js';
@@ -34,6 +33,7 @@
 		saveTemplateToLocalStorage,
 		downloadTemplate
 	} from './TemplateLib';
+	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
 
 	let templates = $state<string[]>([]);
 
@@ -122,17 +122,7 @@
 <header class="bg-background sticky top-0 flex h-16 shrink-0 items-center gap-2 border-b px-4">
 	<Sidebar.Trigger class="-ml-1" />
 	<Separator orientation="vertical" class="mr-2 h-4" />
-	<Breadcrumb.Root class="flex-grow">
-		<Breadcrumb.List>
-			<Breadcrumb.Item class="hidden md:block">
-				<Breadcrumb.Link href="{base}/workbench">Workbench</Breadcrumb.Link>
-			</Breadcrumb.Item>
-			<Breadcrumb.Separator class="hidden md:block" />
-			<Breadcrumb.Item>
-				<Breadcrumb.Link>Templates</Breadcrumb.Link>
-			</Breadcrumb.Item>
-		</Breadcrumb.List>
-	</Breadcrumb.Root>
+	<Breadcrumbs />
 </header>
 
 <TemplateViewer

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import * as Breadcrumb from '@coral-os/component-library/ui/breadcrumb/index.js';
 	import * as Sidebar from '@coral-os/component-library/ui/sidebar/index.js';
 	import * as Card from '@coral-os/component-library/ui/card/index.js';
 	import * as Item from '@coral-os/component-library/ui/item/index.js';
@@ -17,6 +16,7 @@
 	import { fade } from 'svelte/transition';
 	import { Badge } from '@coral-os/component-library/ui/badge/index.js';
 	import { Skeleton } from '@coral-os/component-library/ui/skeleton/index.js';
+	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
 
 	let ctx = appContext.get();
 
@@ -40,17 +40,7 @@
 <header class="bg-background sticky top-0 flex h-16 shrink-0 items-center gap-2 border-b px-4">
 	<Sidebar.Trigger class="-ml-1" />
 	<Separator orientation="vertical" class="mr-2 h-4" />
-	<Breadcrumb.Root class="flex-grow">
-		<Breadcrumb.List>
-			<Breadcrumb.Item class="hidden md:block">
-				<Breadcrumb.Link>Server</Breadcrumb.Link>
-			</Breadcrumb.Item>
-			<Breadcrumb.Separator class="hidden md:block" />
-			<Breadcrumb.Item>
-				<Breadcrumb.Page>Agent Registry</Breadcrumb.Page>
-			</Breadcrumb.Item>
-		</Breadcrumb.List>
-	</Breadcrumb.Root>
+	<Breadcrumbs />
 </header>
 <main class="flex min-h-0 grow flex-col overflow-hidden p-4">
 	<header class="mb-2 md:w-[400px]">
