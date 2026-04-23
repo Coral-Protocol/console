@@ -40,54 +40,36 @@
 	});
 </script>
 
-<Tabs.Root bind:value={editorTab.current} class="grow gap-0 overflow-hidden">
-	<Tabs.List class="bg-sidebar  flex w-full justify-start rounded-none border-b *:rounded-none">
-		<Tabs.Trigger value="json" class="grow-0">Session editor{jsonDirty ? '*' : ''}</Tabs.Trigger>
-		<!-- <Tabs.Trigger value="js" class="grow-0">JavaScript</Tabs.Trigger>
-		<Tabs.Trigger value="py" class="grow-0">Python</Tabs.Trigger>
-		<Tabs.Trigger value="curl" class="grow-0">cURL</Tabs.Trigger> -->
-	</Tabs.List>
-	<Tabs.Content value="json" class="relative h-full overflow-hidden">
-		<section class="absolute top-5 right-5 z-10 flex flex-col gap-2">
-			<CopyButton value={payloadJson} />
-			{#if jsonDirty}
-				<span transition:fade={{ duration: 100 }}>
-					<Tooltip.Root>
-						<Tooltip.Trigger
-							class={cn(buttonVariants({ size: 'icon' }), '')}
-							onclick={() => {
-								if (ctx.importSession({ from: payloadJson })) {
-									jsonDirty = false;
-								}
-							}}
-						>
-							<IconArrowsClockwise /></Tooltip.Trigger
-						>
-						<Tooltip.Content>Update session graph from JSON</Tooltip.Content>
-					</Tooltip.Root>
-				</span>
-			{/if}
-		</section>
-		<CodeMirror
-			bind:value={payloadJson}
-			onchange={() => {
-				jsonDirty = true;
-			}}
-			lang={json()}
-			tabSize={4}
-			{theme}
-			lineWrapping={true}
-			class="size-full [&_.cm-content]:p-0! [&>*]:size-full "
-		/>
-	</Tabs.Content>
-	<!-- <Tabs.Content value="js" class="relative overflow-y-auto">
-		{#if ctx.payload}
-			<CodeSnippet snippet="javascript" body={ctx.payload} />
-		{/if}
-	</Tabs.Content>
-	<Tabs.Content value="py" class="relative overflow-y-auto">
-		{#if ctx.payload}
-			<CodeSnippet snippet="python" body={ctx.payload} />
-		{/if}
-	</Tabs.Content> -->
-</Tabs.Root>
+<section class="absolute top-5 right-5 z-10 flex flex-col gap-2">
+	<CopyButton value={payloadJson} />
+	{#if jsonDirty}
+		<span transition:fade={{ duration: 100 }}>
+			<Tooltip.Root>
+				<Tooltip.Trigger
+					class={cn(buttonVariants({ size: 'icon' }), '')}
+					onclick={() => {
+						if (ctx.importSession({ from: payloadJson })) {
+							jsonDirty = false;
+						}
+					}}
+				>
+					<IconArrowsClockwise /></Tooltip.Trigger
+				>
+				<Tooltip.Content>Update session graph from JSON</Tooltip.Content>
+			</Tooltip.Root>
+		</span>
+	{/if}
+</section>
+<ScrollArea class="size-full">
+	<CodeMirror
+		bind:value={payloadJson}
+		onchange={() => {
+			jsonDirty = true;
+		}}
+		lang={json()}
+		tabSize={4}
+		{theme}
+		lineWrapping={true}
+		class="size-full [&_.cm-content]:p-0! [&>*]:size-full "
+	/>
+</ScrollArea>
