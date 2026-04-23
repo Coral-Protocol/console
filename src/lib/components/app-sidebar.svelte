@@ -245,6 +245,16 @@
 	<Button size="icon" variant="outline" onclick={() => (welcomeOpen = true)}>
 		<IconQuestion class="size-4" />
 	</Button>
+
+	<Button onclick={toggleMode} variant="outline" size="icon">
+		<SunIcon
+			class="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90"
+		/>
+		<MoonIcon
+			class="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0"
+		/>
+		<span class="sr-only">Toggle theme</span>
+	</Button>
 </div>
 
 <Sidebar.Root>
@@ -464,20 +474,5 @@
 			</Sidebar.GroupContent>
 		</Sidebar.Group>
 	</Sidebar.Content>
-	<Sidebar.Footer>
-		<Sidebar.Menu>
-			<Sidebar.MenuItem class="flex justify-end gap-4">
-				<Button onclick={toggleMode} variant="outline" size="icon">
-					<SunIcon
-						class="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90"
-					/>
-					<MoonIcon
-						class="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0"
-					/>
-					<span class="sr-only">Toggle theme</span>
-				</Button>
-			</Sidebar.MenuItem>
-		</Sidebar.Menu>
-	</Sidebar.Footer>
 	<Sidebar.Rail />
 </Sidebar.Root>
