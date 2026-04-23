@@ -512,17 +512,7 @@
 		<Card.Content class="flex h-full items-center gap-2 px-3">
 			<Sidebar.Trigger class="-ml-1" />
 			<Separator orientation="vertical" class="mr-2 h-4" />
-			<Breadcrumb.Root class="flex-grow">
-				<Breadcrumb.List>
-					<Breadcrumb.Item class="hidden md:block">
-						<Breadcrumb.Link>Templates</Breadcrumb.Link>
-					</Breadcrumb.Item>
-					<Breadcrumb.Separator />
-					<Breadcrumb.Item class="hidden md:block">
-						<Breadcrumb.Page>Create</Breadcrumb.Page>
-					</Breadcrumb.Item>
-				</Breadcrumb.List>
-			</Breadcrumb.Root>
+			<Breadcrumbs />
 		</Card.Content>
 	</Card.Root>
 </header>
@@ -774,10 +764,10 @@
 			<Card.Root>
 				<Card.Content class="items-right flex gap-4">
 					<Tooltip.Provider>
-						<div class="mr-auto">
+						<div class="my-auto mr-auto flex items-center">
 							<Tooltip.Root>
-								<Tooltip.Trigger>
-									<div class="flex items-center gap-2">
+								<Tooltip.Trigger class="my-auto">
+									<div class=" flex h-full items-center gap-2">
 										<Checkbox
 											id="close-last-session"
 											bind:checked={lastSession.current.closeLastSession}
@@ -785,29 +775,31 @@
 										<Label
 											for="close-last-session"
 											class="cursor-pointer text-sm leading-none font-medium"
-											>Close last session</Label
+											>Terminate previous session</Label
 										>
 									</div>
 								</Tooltip.Trigger>
 								<Tooltip.Content>
 									<p>
-										Close the last session made in the console, if it is still open. This will kill
+										Closes the last session made in Console, if it is still open. This will kill
 										each of its agents.
 									</p>
-									<p>Session id: {lastSession.current.sessionId ?? ''}</p>
+									{#if lastSession.current.sessionId !== ''}
+										<p>Session id: {lastSession.current.sessionId ?? ''}</p>
+									{/if}
 								</Tooltip.Content>
 							</Tooltip.Root>
 						</div>
 						{#if sendingForm || !$formData.agents.length}
 							<Tooltip.Root>
 								<Tooltip.Trigger>
+									<Button disabled={sendingForm || $formData.agents.length === 0} variant="outline">
+										Save template</Button
+									>
 									<Form.Button disabled={sendingForm || $formData.agents.length === 0}>
 										{#if sendingForm}
 											<Spinner />
-										{/if}Run</Form.Button
-									>
-									<Button disabled={sendingForm || $formData.agents.length === 0}
-										>Save template</Button
+										{/if}Create session</Form.Button
 									>
 								</Tooltip.Trigger>
 								<Tooltip.Content>

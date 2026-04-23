@@ -37,10 +37,14 @@
 	let filteredCount = $derived(filtered.reduce((acc, cur) => acc + cur.agents.length, 0));
 </script>
 
-<header class="bg-background sticky top-0 flex h-16 shrink-0 items-center gap-2 border-b px-4">
-	<Sidebar.Trigger class="-ml-1" />
-	<Separator orientation="vertical" class="mr-2 h-4" />
-	<Breadcrumbs />
+<header class="bg-background sticky top-0 flex h-16 shrink-0 items-center gap-2 p-2">
+	<Card.Root class="h-full w-full py-0">
+		<Card.Content class="flex h-full items-center gap-2 px-3">
+			<Sidebar.Trigger class="-ml-1" />
+			<Separator orientation="vertical" class="mr-2 h-4" />
+			<Breadcrumbs />
+		</Card.Content>
+	</Card.Root>
 </header>
 <main class="flex min-h-0 grow flex-col overflow-hidden p-4">
 	<header class="mb-2 md:w-[400px]">
