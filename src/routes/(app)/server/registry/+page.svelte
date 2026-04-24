@@ -18,9 +18,12 @@
 	import { Skeleton } from '@coral-os/component-library/ui/skeleton/index.js';
 	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
 
+	import Header from '$lib/components/header.svelte';
+
 	let ctx = appContext.get();
 
 	let search = $state('');
+	let loading = $state(true);
 	let searchLower = $derived(search.trim().toLocaleLowerCase());
 
 	let filtered = $derived(
@@ -35,18 +38,12 @@
 		})
 	);
 	let filteredCount = $derived(filtered.reduce((acc, cur) => acc + cur.agents.length, 0));
+	loading = false;
 </script>
 
-<header class="bg-background sticky top-0 flex h-16 shrink-0 items-center gap-2 p-2">
-	<Card.Root class="h-full w-full py-0">
-		<Card.Content class="flex h-full items-center gap-2 px-3">
-			<Sidebar.Trigger class="-ml-1" />
-			<Separator orientation="vertical" class="mr-2 h-4" />
-			<Breadcrumbs />
-		</Card.Content>
-	</Card.Root>
-</header>
-<main class="flex min-h-0 grow flex-col overflow-hidden p-4">
+<Header />
+
+<main class="main flex min-h-0 grow flex-col overflow-hidden p-2">
 	<header class="mb-2 md:w-[400px]">
 		<InputGroup.Root>
 			<InputGroup.Input placeholder="Search..." bind:value={search} />
@@ -135,5 +132,13 @@
 				</ol>
 			</li>
 		{/each}
+		{#if filteredCount === 0 && !loading}
+			<Card.Root class="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 ">
+				<Card.Content class=" flex-col items-center gap-4  ">
+					<IconCrane class="text-muted-foreground size-16" />
+					<p class="text-muted-foreground text-sm">No agents found</p>
+				</Card.Content>
+			</Card.Root>
+		{/if}
 	</ol>
 </main>
