@@ -47,7 +47,7 @@
 	let selectedTool: string | null = $state(null);
 </script>
 
-<section class="flex flex-col gap-4 px-4">
+<section class="flex flex-col gap-4 p-4">
 	<h1 class="font-semibold">Session settings</h1>
 
 	<Form.ElementField {form} name="sessionRuntimeSettings.ttl" class="flex items-center gap-2 ">
