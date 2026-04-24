@@ -7,7 +7,7 @@
 	import { Badge } from '@coral-os/component-library/ui/badge/index.js';
 	import { TooltipLabel } from '@coral-os/component-library';
 
-	import CaretUpDown from 'phosphor-icons-svelte/IconCaretUpDownRegular.svelte';
+	import CaretUpDown from 'phosphor-svelte/lib/CaretUpDownIcon';
 
 	import Logo from '$lib/icons/logo.svelte';
 	import { watch } from 'runed';

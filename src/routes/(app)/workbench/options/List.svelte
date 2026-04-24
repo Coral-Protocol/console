@@ -6,7 +6,7 @@
 	import type { Component } from 'svelte';
 	import * as store from 'svelte/store';
 
-	import IconXRegular from 'phosphor-icons-svelte/IconXRegular.svelte';
+	import IconXRegular from 'phosphor-svelte/lib/XIcon';
 
 	type Props = OptionProps<
 		| 'list[blob]'

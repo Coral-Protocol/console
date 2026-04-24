@@ -34,12 +34,12 @@
 	import { Button, buttonVariants } from '@coral-os/component-library/ui/button/index.js';
 	import * as Tooltip from '@coral-os/component-library/ui/tooltip/index.js';
 
-	import IconWrenchRegular from 'phosphor-icons-svelte/IconWrenchRegular.svelte';
-	import IconUsersThreeRegular from 'phosphor-icons-svelte/IconUsersThreeRegular.svelte';
-	import IconRobotRegular from 'phosphor-icons-svelte/IconRobotRegular.svelte';
-	import IconCaretDown from 'phosphor-icons-svelte/IconCaretDownRegular.svelte';
-	import IconPlusCircle from 'phosphor-icons-svelte/IconPlusCircleRegular.svelte';
-	import IconTrashRegular from 'phosphor-icons-svelte/IconTrashRegular.svelte';
+	import IconWrenchRegular from 'phosphor-svelte/lib/WrenchIcon';
+	import IconUsersThreeRegular from 'phosphor-svelte/lib/UsersThreeIcon';
+	import IconRobotRegular from 'phosphor-svelte/lib/RobotIcon';
+	import IconCaretDown from 'phosphor-svelte/lib/CaretDownIcon';
+	import IconPlusCircle from 'phosphor-svelte/lib/PlusCircleIcon';
+	import IconTrashRegular from 'phosphor-svelte/lib/TrashIcon';
 
 	import { Checkbox } from '@coral-os/component-library/ui/checkbox/index.js';
 	import { Label } from '@coral-os/component-library/ui/label/index.js';

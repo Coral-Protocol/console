@@ -2,7 +2,7 @@
 	import * as Tabs from '@coral-os/component-library/ui/tabs/index.js';
 	import * as Tooltip from '@coral-os/component-library/ui/tooltip/index.js';
 
-	import IconArrowsClockwise from 'phosphor-icons-svelte/IconArrowsClockwiseRegular.svelte';
+	import IconArrowsClockwise from 'phosphor-svelte/lib/ArrowsClockwiseIcon';
 
 	import CodeMirror from 'svelte-codemirror-editor';
 	import { json } from '@codemirror/lang-json';

@@ -1,20 +1,15 @@
 <script lang="ts">
 	import * as Sidebar from '@coral-os/component-library/ui/sidebar/index.js';
 	import * as Card from '@coral-os/component-library/ui/card/index.js';
-	import * as Item from '@coral-os/component-library/ui/item/index.js';
 	import * as InputGroup from '@coral-os/component-library/ui/input-group/index.js';
 
-	import { Input } from '@coral-os/component-library/ui/input/index.js';
-	import { Button } from '@coral-os/component-library/ui/button/index.js';
 	import { Separator } from '@coral-os/component-library/ui/separator/index.js';
 	import * as Dialog from '@coral-os/component-library/ui/dialog/index.js';
 	import * as Avatar from '@coral-os/component-library/ui/avatar/index.js';
 
-	import IconCrane from 'phosphor-icons-svelte/IconCraneRegular.svelte';
 	import { appContext } from '$lib/context';
-	import IconMagnifyingGlassRegular from 'phosphor-icons-svelte/IconMagnifyingGlassRegular.svelte';
+	import IconMagnifyingGlassRegular from 'phosphor-svelte/lib/MagnifyingGlassIcon';
 	import { fade } from 'svelte/transition';
-	import { Badge } from '@coral-os/component-library/ui/badge/index.js';
 	import { Skeleton } from '@coral-os/component-library/ui/skeleton/index.js';
 	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
 

@@ -16,11 +16,11 @@
 	import { formatDistanceToNow } from 'date-fns';
 	import { cn } from '$lib/utils.js';
 
-	import IconPlus from 'phosphor-icons-svelte/IconPlusRegular.svelte';
+	import IconPlus from 'phosphor-svelte/lib/PlusIcon';
 
 	import AgentGraph from '$lib/components/AgentGraph.svelte';
 
-	import IconWarningCircleRegular from 'phosphor-icons-svelte/IconWarningCircleRegular.svelte';
+	import IconWarningCircleRegular from 'phosphor-svelte/lib/WarningCircleIcon';
 	import type { TemplateV1 } from './TemplateV1';
 	import {
 		normalizeTemplate,

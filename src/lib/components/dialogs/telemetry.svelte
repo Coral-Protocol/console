@@ -2,12 +2,12 @@
 	// import * as Dialog from '$lib/components/ui/dialog/index.js';
 	// import * as Tabs from '$lib/components/ui/tabs/index.js';
 	//
-	// import Arrow from 'phosphor-icons-svelte/IconArrowRightRegular.svelte';
-	// import Chat from 'phosphor-icons-svelte/IconChatRegular.svelte';
-	// import TextIndent from 'phosphor-icons-svelte/IconTextIndentRegular.svelte';
-	// import GlobeSimple from 'phosphor-icons-svelte/IconGlobeSimpleRegular.svelte';
+	// import Arrow from 'phosphor-svelte/lib/ArrowRightIcon';
+	// import Chat from 'phosphor-svelte/lib/ChatIcon';
+	// import TextIndent from 'phosphor-svelte/lib/TextIndentIcon';
+	// import GlobeSimple from 'phosphor-svelte/lib/GlobeSimpleIcon';
 	// import CodeBlock from '$lib/components/code-block.svelte';
-	// import Funnel from 'phosphor-icons-svelte/IconFunnelRegular.svelte';
+	// import Funnel from 'phosphor-svelte/lib/FunnelIcon';
 	//
 	// import { type paths, type components } from '../../../generated/api';
 	// import type { Session } from '$lib/session.svelte';

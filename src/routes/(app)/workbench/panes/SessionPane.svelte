@@ -2,7 +2,7 @@
 	import * as Item from '@coral-os/component-library/ui/item/index.js';
 	import * as Form from '@coral-os/component-library/ui/form/index.js';
 
-	import IconTrash from 'phosphor-icons-svelte/IconTrashRegular.svelte';
+	import IconTrash from 'phosphor-svelte/lib/TrashIcon';
 
 	import { Input } from '@coral-os/component-library/ui/input/index.js';
 	import { Separator } from '@coral-os/component-library/ui/separator/index.js';

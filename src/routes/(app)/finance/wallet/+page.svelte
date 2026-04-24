@@ -2,7 +2,7 @@
 	import * as Breadcrumb from '@coral-os/component-library/ui/breadcrumb/index.js';
 	import * as Sidebar from '@coral-os/component-library/ui/sidebar/index.js';
 	import { Separator } from '@coral-os/component-library/ui/separator/index.js';
-	import IconCrane from 'phosphor-icons-svelte/IconCraneRegular.svelte';
+	import IconCrane from 'phosphor-svelte/lib/CraneIcon';
 </script>
 
 <header class="bg-background sticky top-0 flex h-16 shrink-0 items-center gap-2 border-b px-4">

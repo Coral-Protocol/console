@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Button } from '@coral-os/component-library/ui/button/index.js';
 
-	import CaretUpDown from 'phosphor-icons-svelte/IconCaretUpDownRegular.svelte';
+	import CaretUpDown from 'phosphor-svelte/lib/CaretUpDownIcon';
 
 	import * as Command from '@coral-os/component-library/ui/command/index.js';
 	import * as Popover from '@coral-os/component-library/ui/popover/index.js';

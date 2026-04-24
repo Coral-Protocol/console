@@ -11,8 +11,8 @@
 	import LogsComponent from '$lib/components/logs.svelte';
 	import RemoteControl from '$lib/components/remote-control.svelte';
 
-	import CaretRight from 'phosphor-icons-svelte/IconCaretRightRegular.svelte';
-	import ExternalLink from 'phosphor-icons-svelte/IconArrowsOutRegular.svelte';
+	import CaretRight from 'phosphor-svelte/lib/CaretRightIcon';
+	import ExternalLink from 'phosphor-svelte/lib/ArrowsOutIcon';
 	import { appContext } from '$lib/context';
 	import { cn } from '$lib/utils';
 	import { base } from '$app/paths';

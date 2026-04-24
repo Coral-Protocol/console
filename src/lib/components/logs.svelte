@@ -11,12 +11,12 @@
 
 	import { type VirtualizerHandle } from 'virtua/svelte';
 
-	import IconWarning from 'phosphor-icons-svelte/IconWarningRegular.svelte';
-	import IconWarningCircle from 'phosphor-icons-svelte/IconWarningCircleRegular.svelte';
-	import IconInfo from 'phosphor-icons-svelte/IconInfoRegular.svelte';
-	import IconArrowDown from 'phosphor-icons-svelte/IconArrowDownRegular.svelte';
-	import IconBug from 'phosphor-icons-svelte/IconBugRegular.svelte';
-	import IconPath from 'phosphor-icons-svelte/IconPathRegular.svelte';
+	import IconWarning from 'phosphor-svelte/lib/WarningIcon';
+	import IconWarningCircle from 'phosphor-svelte/lib/WarningCircleIcon';
+	import IconInfo from 'phosphor-svelte/lib/InfoIcon';
+	import IconArrowDown from 'phosphor-svelte/lib/ArrowDownIcon';
+	import IconBug from 'phosphor-svelte/lib/BugIcon';
+	import IconPath from 'phosphor-svelte/lib/PathIcon';
 	import { Button } from '@coral-os/component-library/ui/button/index.js';
 	import { slide } from 'svelte/transition';
 	import type { Snapshot } from '@sveltejs/kit';
