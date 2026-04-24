@@ -29,18 +29,33 @@
         basePath,
         apiPath ? basePath,
       }:
-        pkgs.mkYarnPackage {
+        pkgs.stdenv.mkDerivation (finalAttrs: {
+          pname = cleanName;
           inherit (package) version;
-          name = cleanName;
+
           src = ./.;
-          packageJson = ./package.json;
-          yarnLock = ./yarn.lock;
 
           BASE_PATH = basePath;
           PUBLIC_API_PATH = apiPath;
 
+          yarnOfflineCache = pkgs.yarn-berry_4.fetchYarnBerryDeps {
+            yarnLock = finalAttrs.src + "/yarn.lock";
+            hash = "";
+          };
+
+          nativeBuildInputs = with pkgs; [
+            yarn-berry_4
+            yarn-berry_4.yarnBerryConfigHook
+            nodejs
+            npmHooks.npmInstallHook
+          ];
+
           buildPhase = ''
-            yarn --offline --frozen-lockfile build
+            runHook preBuild
+
+            yarn build
+
+            runHook postBuild
           '';
           installPhase = ''
             runHook preInstall
@@ -51,7 +66,7 @@
             runHook postInstall
           '';
           distPhase = "true";
-        };
+        });
     in {
       default = bundle {
         basePath = "/ui/console";
