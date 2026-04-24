@@ -4021,7 +4021,7 @@ supports-preserve-symlinks-flag@^1.0.0:
   resolved "https://registry.yarnpkg.com/supports-preserve-symlinks-flag/-/supports-preserve-symlinks-flag-1.0.0.tgz#6eda4bd344a3c94aea376d4cc31bc77311039e09"
   integrity sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==
 
-svelte-check@^4.0.0:
+svelte-check@^4.4.6:
   version "4.4.6"
   resolved "https://registry.yarnpkg.com/svelte-check/-/svelte-check-4.4.6.tgz#c890a102e94ef31b44bea26f5f16de14db717a3b"
   integrity sha512-kP1zG81EWaFe9ZyTv4ZXv44Csi6Pkdpb7S3oj6m+K2ec/IcDg/a8LsFsnVLqm2nxtkSwsd5xPj/qFkTBgXHXjg==
@@ -4443,11 +4443,6 @@ zod-v3-to-json-schema@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/zod-v3-to-json-schema/-/zod-v3-to-json-schema-4.0.0.tgz#a0b9f800c38ae5ebf1ef9b73d8e96f8378fcdfab"
   integrity sha512-KixLrhX/uPmRFnDgsZrzrk4x5SSJA+PmaE5adbfID9+3KPJcdxqRobaHU397EfWBqfQircrjKqvEqZ/mW5QH6w==
-
-zod@4.1.13:
-  version "4.1.13"
-  resolved "https://registry.yarnpkg.com/zod/-/zod-4.1.13.tgz#93699a8afe937ba96badbb0ce8be6033c0a4b6b1"
-  integrity sha512-AvvthqfqrAhNH9dnfmrfKzX5upOdjUVJYFqNSlkmGf64gRaTzlPwz99IHYnVs28qYAybvAlBV+H7pn0saFY4Ig==
 
 zod@^4.3.6:
   version "4.3.6"
