@@ -13,10 +13,13 @@
 	}: TabsTriggerProps & { icon: Component; invalid?: boolean } = $props();
 </script>
 
-<Tabs.Trigger class={cn('group @container flex items-center gap-1 truncate', className)} {...rest}>
+<Tabs.Trigger
+	class={cn('group @container flex max-w-28 items-center gap-1 truncate', className)}
+	{...rest}
+>
 	<Icon class={cn('size-6', invalid && 'group-not-data-[state=active]:text-destructive')} />
 	<span
-		class={cn('hidden @[11ch]:inline', invalid && 'group-not-data-[state=active]:text-destructive')}
+		class={cn('hidden @[10ch]:inline', invalid && 'group-not-data-[state=active]:text-destructive')}
 	>
 		{@render children?.()}
 	</span>
