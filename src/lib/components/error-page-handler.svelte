@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import { Button } from '@coral-os/component-library/ui/button/index.js';
 	import * as Alert from '@coral-os/component-library/ui/alert/index.js';
-	import IconAlertCircle from 'phosphor-icons-svelte/IconWarningCircleRegular.svelte';
+	import IconAlertCircle from 'phosphor-svelte/lib/WarningCircleIcon';
 	import { Spinner } from '@coral-os/component-library/ui/spinner/index.js';
 	import { base } from '$app/paths';
 

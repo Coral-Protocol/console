@@ -15,7 +15,7 @@
 	import { Toggle } from '@coral-os/component-library/ui/toggle/index.js';
 	import { Input } from '@coral-os/component-library/components/ui/input/index.js';
 
-	import IconPaperPlaneRight from 'phosphor-icons-svelte/IconPaperPlaneRightRegular.svelte';
+	import IconPaperPlaneRight from 'phosphor-svelte/lib/PaperPlaneRightIcon';
 
 	let ctx = appContext.get();
 

@@ -10,7 +10,7 @@
 <script lang="ts">
 	import { cn } from '@coral-os/component-library/utils.js';
 
-	import IconX from 'phosphor-icons-svelte/IconXRegular.svelte';
+	import IconX from 'phosphor-svelte/lib/XIcon';
 
 	import * as Popover from '@coral-os/component-library/components/ui/popover/index.js';
 	import { Button } from '@coral-os/component-library/components/ui/button/index.js';

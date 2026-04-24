@@ -12,23 +12,23 @@
 	import Login from './Login.svelte';
 	import Welcome from './dialogs/welcome.svelte';
 
-	import IconFileArchive from 'phosphor-icons-svelte/IconFileArchiveRegular.svelte';
-	import MoonIcon from 'phosphor-icons-svelte/IconMoonRegular.svelte';
-	import SunIcon from 'phosphor-icons-svelte/IconSunRegular.svelte';
-	import IconArrowsClockwise from 'phosphor-icons-svelte/IconArrowsClockwiseRegular.svelte';
-	import IconRobot from 'phosphor-icons-svelte/IconRobotRegular.svelte';
-	import IconSearch from 'phosphor-icons-svelte/IconMagnifyingGlassRegular.svelte';
-	import IconQuestion from 'phosphor-icons-svelte/IconQuestionRegular.svelte';
-	import IconPackage from 'phosphor-icons-svelte/IconPackageRegular.svelte';
-	import IconNotepad from 'phosphor-icons-svelte/IconNotepadRegular.svelte';
-	import IconCircuity from 'phosphor-icons-svelte/IconCircuitryRegular.svelte';
-	import IconFolder from 'phosphor-icons-svelte/IconFolderRegular.svelte';
-	import IconPlus from 'phosphor-icons-svelte/IconPlusRegular.svelte';
-	import IconXRegular from 'phosphor-icons-svelte/IconXRegular.svelte';
-	import IconGhost from 'phosphor-icons-svelte/IconGhostRegular.svelte';
-	import IconSkull from 'phosphor-icons-svelte/IconSkullRegular.svelte';
-	import IconEnvelopeOpen from 'phosphor-icons-svelte/IconEnvelopeOpenRegular.svelte';
-	import IconDotsThree from 'phosphor-icons-svelte/IconDotsThreeRegular.svelte';
+	import IconFileArchive from 'phosphor-svelte/lib/ArchiveIcon';
+	import MoonIcon from 'phosphor-svelte/lib/MoonIcon';
+	import SunIcon from 'phosphor-svelte/lib/SunIcon';
+	import IconArrowsClockwise from 'phosphor-svelte/lib/ArrowsClockwiseIcon';
+	import IconRobot from 'phosphor-svelte/lib/RobotIcon';
+	import IconSearch from 'phosphor-svelte/lib/MagnifyingGlassIcon';
+	import IconQuestion from 'phosphor-svelte/lib/QuestionIcon';
+	import IconPackage from 'phosphor-svelte/lib/PackageIcon';
+	import IconNotepad from 'phosphor-svelte/lib/NotepadIcon';
+	import IconCircuity from 'phosphor-svelte/lib/CircuitryIcon';
+	import IconFolder from 'phosphor-svelte/lib/FolderIcon';
+	import IconPlus from 'phosphor-svelte/lib/PlusIcon';
+	import IconXRegular from 'phosphor-svelte/lib/XIcon';
+	import IconGhost from 'phosphor-svelte/lib/GhostIcon';
+	import IconSkull from 'phosphor-svelte/lib/SkullIcon';
+	import IconEnvelopeOpen from 'phosphor-svelte/lib/EnvelopeOpenIcon';
+	import IconDotsThree from 'phosphor-svelte/lib/DotsThreeIcon';
 
 	import * as Popover from '@coral-os/component-library/ui/popover/index.js';
 

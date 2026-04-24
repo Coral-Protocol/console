@@ -5,8 +5,8 @@
 	import { Input } from '@coral-os/component-library/ui/input/index.js';
 	import type { AppContext } from '$lib/context';
 	import { Session } from '$lib/session.svelte';
-	import IconChats from 'phosphor-icons-svelte/IconChatsRegular.svelte';
-	import IconRobot from 'phosphor-icons-svelte/IconRobotRegular.svelte';
+	import IconChats from 'phosphor-svelte/lib/ChatsIcon';
+	import IconRobot from 'phosphor-svelte/lib/RobotIcon';
 
 	let {
 		ctx,

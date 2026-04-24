@@ -71,7 +71,7 @@
 	import * as Tooltip from '@coral-os/component-library/ui/tooltip/index.js';
 	import { buttonVariants } from '@coral-os/component-library/ui/button/index.js';
 
-	import IconArrowUUpLeft from 'phosphor-icons-svelte/IconArrowUUpLeftRegular.svelte';
+	import IconArrowUUpLeft from 'phosphor-svelte/lib/ArrowUUpLeftIcon';
 
 	import { cn } from '$lib/utils';
 
