@@ -24,6 +24,8 @@
 </script>
 
 <script lang="ts">
+	import Header from '$lib/components/header.svelte';
+
 	import * as Sidebar from '@coral-os/component-library/ui/sidebar/index.js';
 	import * as Resizable from '@coral-os/component-library/ui/resizable/index.js';
 	import * as Tabs from '@coral-os/component-library/ui/tabs/index.js';
@@ -507,15 +509,7 @@
 	<TemplateSaver bind:open={templateSaverDialogOpen} data={JSON.stringify(sessCtx.payload)} />
 {/if}
 
-<header class="bg-background sticky top-0 flex h-16 shrink-0 items-center gap-2 p-2">
-	<Card.Root class="h-full w-full py-0">
-		<Card.Content class="flex h-full items-center gap-2 px-3">
-			<Sidebar.Trigger class="-ml-1" />
-			<Separator orientation="vertical" class="mr-2 h-4" />
-			<Breadcrumbs />
-		</Card.Content>
-	</Card.Root>
-</header>
+<Header />
 
 <form
 	method="POST"
@@ -705,9 +699,7 @@
 					<Card.Root class=" h-full py-0">
 						<Card.Content class="flex h-full min-h-0 flex-col px-0">
 							<Tabs.Root value="editor" class="grow gap-0 overflow-hidden">
-								<Tabs.List
-									class="bg-sidebar flex w-full justify-start rounded-none border-b *:rounded-none"
-								>
+								<Tabs.List class="bg-sidebar flex w-full justify-start rounded-none border-b ">
 									<Tabs.Trigger value="editor" class="grow-0">Session editor</Tabs.Trigger>
 									<Tabs.Trigger value="session" class="grow-0">Session options</Tabs.Trigger>
 								</Tabs.List>
@@ -729,7 +721,7 @@
 			<Card.Root class="h-full py-0">
 				<Card.Content class="px-0">
 					<Tabs.Root bind:value={currentTab} class="overflow-hidden">
-						<Tabs.List class="bg-card flex w-full border-b *:rounded-none">
+						<Tabs.List class="bg-sidebar flex w-full justify-start rounded-none border-b ">
 							<SidebarTab
 								value="agent"
 								icon={IconRobotRegular}
@@ -792,7 +784,7 @@
 						</div>
 						{#if sendingForm || !$formData.agents.length}
 							<Tooltip.Root>
-								<Tooltip.Trigger>
+								<Tooltip.Trigger class="flex gap-4">
 									<Button disabled={sendingForm || $formData.agents.length === 0} variant="outline">
 										Save template</Button
 									>
@@ -807,18 +799,13 @@
 								</Tooltip.Content>
 							</Tooltip.Root>
 						{:else}
-							<Form.Button
-								disabled={sendingForm || $formData.agents.length === 0}
-								class={sendingForm ? '' : 'bg-accent/80'}
+							<Button disabled={sendingForm || $formData.agents.length === 0} variant="outline">
+								Save template</Button
 							>
+							<Form.Button disabled={sendingForm || $formData.agents.length === 0}>
 								{#if sendingForm}
 									<Spinner />
-								{/if}Run</Form.Button
-							>
-							<Button
-								onclick={() => ((templateSaverDialogOpen = true), console.log('aa'))}
-								disabled={sendingForm || $formData.agents.length === 0}
-								class={sendingForm ? '' : 'bg-accent/80'}>Save template</Button
+								{/if}Create session</Form.Button
 							>
 						{/if}
 					</Tooltip.Provider>
