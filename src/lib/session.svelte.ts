@@ -45,7 +45,7 @@ export class Session {
 			markInitialStateReady = resolve;
 		});
 
-		const socket = createWebsocket(`/ws/v1/events/session/${namespace}/${sessionId}`);
+		const socket = createWebsocket(`/ws/v1/events/session/${namespace}/${sessionId}`, 'session');
 		if (!socket) throw new Error('cannot construct for SSR');
 		this.socket = socket;
 
