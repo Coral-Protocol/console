@@ -5,7 +5,6 @@
 	import * as ContextMenu from '@coral-os/component-library/ui/context-menu/index.js';
 	import * as DropdownMenu from '@coral-os/component-library/ui/dropdown-menu/index.js';
 	import { Separator } from '@coral-os/component-library/ui/separator/index.js';
-	import * as Tabs from '@coral-os/component-library/ui/tabs/index.js';
 
 	import { toast } from 'svelte-sonner';
 	import { Button, buttonVariants } from '@coral-os/component-library/ui/button/index.js';
@@ -41,7 +40,7 @@
 	import { socketCtx } from '$lib/socket.svelte';
 	import { toggleMode } from 'mode-watcher';
 
-	import ServerSwitcher from './namespace-switcher.svelte';
+	import NamespaceSwitcher from './namespace-switcher.svelte';
 	import NavBundle from './nav-bundle.svelte';
 	import { SidebarLink, Tour } from '@coral-os/component-library';
 
@@ -56,11 +55,6 @@
 	import { Badge } from '@coral-os/component-library/components/ui/badge/index.js';
 	import CreateThreadForm from './CreateThreadForm.svelte';
 	import { tourTarget } from './tour/tourTarget';
-	import * as Dialog from '@coral-os/component-library/ui/dialog/index.js';
-	import { Input } from '@coral-os/component-library/ui/input/index.js';
-	import { TooltipLabel } from '@coral-os/component-library';
-
-	import CaretUpDown from 'phosphor-icons-svelte/IconCaretUpDownRegular.svelte';
 
 	import Logo from '$lib/icons/logo.svelte';
 	import type { WithElementRef } from 'bits-ui';
@@ -122,14 +116,14 @@
 				console.log('alive');
 				toast.success('Connected to server.');
 				toast.dismiss('server-disconnected');
-				refreshAgents();
+				refreshAgents(false);
 			}
 		}
 	);
 
 	let loginOpen = $state(false);
 
-	const refreshAgents = async () => {
+	const refreshAgents = async (notify?: boolean) => {
 		try {
 			connecting = true;
 			error = null;
@@ -137,7 +131,9 @@
 			await ctx.server.fetchAll();
 			ctx.server.alive = true;
 			connecting = false;
-			toast.success('Connection refreshed');
+			if (notify) {
+				toast.success('Connection refreshed');
+			}
 		} catch (e) {
 			connecting = false;
 			error = `${e}`;
@@ -252,50 +248,6 @@
 <DebugTools bind:open={debugToolsOpen} />
 <Welcome bind:open={welcomeOpen} bind:tourToggle={tourOpen} />
 
-<Dialog.Root bind:open={dialogOpen}>
-	<Dialog.Content>
-		<form
-			class="grid w-full gap-4"
-			onsubmit={(e) => {
-				e.preventDefault();
-				ctx.server.namespace = newNamespace;
-				if (duplicate) {
-					toast.info(`Using existing namespace '${newNamespace}'.`);
-				} else {
-					toast.info(`Using namespace '${newNamespace}'.`);
-					ctx.server.addNamespace(newNamespace);
-				}
-				newNamespace = '';
-				dialogOpen = false;
-			}}
-		>
-			<Dialog.Header>
-				<Dialog.Title>Set a new namespace to be made</Dialog.Title>
-			</Dialog.Header>
-			<section class="grid grid-cols-2">
-				<TooltipLabel>Namespace</TooltipLabel>
-				<Input placeholder="Namespace Name" maxlength={100} bind:value={newNamespace} />
-			</section>
-			<p class="text-sm text-gray-500">
-				This namespace will be created when you make a new session
-			</p>
-			<p class="text-sm text-gray-500">(re-click into Workbench to refresh the namespace)</p>
-			<Dialog.Footer class="items-center">
-				{#if duplicate === true}
-					<p class="mr-auto text-sm text-orange-400" transition:fade>
-						This namespace already exists.
-					</p>
-				{/if}
-				{#if duplicate === true}
-					<Button type="submit" variant="outline">Use</Button>
-				{:else}
-					<Button type="submit">Add</Button>
-				{/if}
-			</Dialog.Footer>
-		</form>
-	</Dialog.Content>
-</Dialog.Root>
-
 <div
 	class="fixed top-3.5 right-3 z-50 flex items-center justify-end gap-1"
 	use:tourTarget={'quick-switch'}
@@ -334,71 +286,50 @@
 	</Button>
 </div>
 
-<Sidebar.Root>
-	<Tabs.Root bind:value={ctx.server.namespace}>
-		<Sidebar.Header>
-			<a href="{base}/" class="flex">
-				<div>
-					<Logo class="text-foreground size-10" />
-				</div>
-				<div class="flex flex-col gap-0.5 text-lg leading-none">
-					<span class="font-[Oxanium] font-semibold tracking-widest"
-						>Coral<span class="text-brand-primary font-bold tracking-normal">OS</span>
-					</span>
-					<span class="text-brand-primary font-sans text-sm">Console</span>
-				</div>
-			</a>
-			<section class="bg-muted flex">
-				<Tabs.List class="relative w-full justify-start overflow-hidden">
-					<Tabs.Trigger
-						class="grow-0"
-						value="default"
-						onclick={() => (ctx.server.namespace = 'default')}>default</Tabs.Trigger
-					>
-
-					{#each namespaces as namespace}
-						{#if namespace.length >= 3}
-							<Tabs.Trigger
-								class="flex-[0_1_auto] truncate"
-								value={namespace}
-								onclick={() => (ctx.server.namespace = namespace)}
-							>
-								{namespace}
-							</Tabs.Trigger>
-						{/if}
-					{/each}
-				</Tabs.List>
-				{#if namespaces.length > -1}
-					<DropdownMenu.Root>
-						<DropdownMenu.Trigger>
-							{#snippet child({ props })}
-								<Button {...props} variant="ghost"><IconCaretDownRegular /></Button>
-							{/snippet}
-						</DropdownMenu.Trigger>
-						<DropdownMenu.Content class="w-56" align="start">
-							<DropdownMenu.Label>Namespaces</DropdownMenu.Label>
-							<DropdownMenu.Group>
-								{#each namespaces as namespace}
-									{#if namespace != ctx.server.namespace}
-										<DropdownMenu.Item onSelect={() => (ctx.server.namespace = namespace)}>
-											{namespace}
+<Sidebar.Root class="">
+	<Sidebar.Header class="mb-2 p-0">
+		<a href="{base}/" class="flex p-2">
+			<div>
+				<Logo class="text-foreground size-10" />
+			</div>
+			<div class="flex flex-col gap-0.5 text-lg leading-none">
+				<span class="font-[Oxanium] font-semibold tracking-widest"
+					>Coral<span class="text-brand-primary font-bold tracking-normal">OS</span>
+				</span>
+				<span class="text-brand-primary font-sans text-sm">Console</span>
+			</div>
+		</a>
+		<Sidebar.Group>
+			<Sidebar.GroupLabel class="text-muted-foreground">Namespace</Sidebar.GroupLabel>
+			<Sidebar.GroupContent>
+				<Sidebar.Menu>
+					<Sidebar.MenuItem class="flex">
+						<!-- <DropdownMenu.Root>
+									<DropdownMenu.Trigger class="h-full">
+										<Sidebar.MenuButton>
+											{ctx.server.namespace ? ctx.server.namespace : 'Select Namespace'}
+											<CaretUpDown class="ml-auto" />
+										</Sidebar.MenuButton>
+									</DropdownMenu.Trigger>
+									<DropdownMenu.Content class="w-(--bits-dropdown-menu-anchor-width)">
+										<DropdownMenu.Item onclick={() => (ctx.server.namespace = 'default')}>
+											<span>default</span>
 										</DropdownMenu.Item>
-									{:else}
-										<DropdownMenu.Item class="bg-foreground/20 "
-											>{namespace}
-											<Badge class="ml-auto bg-transparent"><IconCheckRegular /></Badge
-											></DropdownMenu.Item
-										>
-									{/if}
-								{/each}
-							</DropdownMenu.Group>
-						</DropdownMenu.Content>
-					</DropdownMenu.Root>
-				{/if}
-				<Button onclick={() => (dialogOpen = true)} size="icon" variant="ghost">
-					<IconPlus />
-				</Button>
-			</section>
+										{#each namespaces as namespace}
+											<DropdownMenu.Item onclick={() => (ctx.server.namespace = namespace)}>
+												<span>{namespace}</span>
+											</DropdownMenu.Item>
+										{/each}
+									</DropdownMenu.Content>
+								</DropdownMenu.Root> -->
+						<NamespaceSwitcher />
+					</Sidebar.MenuItem>
+				</Sidebar.Menu>
+			</Sidebar.GroupContent>
+		</Sidebar.Group>
+	</Sidebar.Header>
+	<Sidebar.Content class="gap-0 overflow-hidden">
+		<Sidebar.Group>
 			<Sidebar.GroupLabel class="pr-0">
 				<span
 					class="text-muted-foreground w-full grow font-sans font-medium tracking-wide select-none"
@@ -431,9 +362,10 @@
 					<IconArrowsClockwise class={cn('size-4', connecting && 'animate-spin')} />
 				</Button>
 			</Sidebar.GroupLabel>
+
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
-					<SidebarLink url="{base}/" icon={IconHome} title="Home" />
+					<!-- <SidebarLink url="{base}/" icon={IconHome} title="Home" /> -->
 					<div use:tourTarget={'registry'}>
 						<SidebarLink url="{base}/server/registry" icon={IconPackage} title="Agent Registry" />
 					</div>
@@ -459,162 +391,159 @@
 					</Sidebar.MenuItem>
 				</Sidebar.Menu>
 			</Sidebar.GroupContent>
-		</Sidebar.Header>
+		</Sidebar.Group>
 
-		<Sidebar.Content class="gap-0 overflow-hidden">
-			<Sidebar.Group>
-				<Sidebar.Separator />
-				<Sidebar.GroupContent>
-					<div use:tourTarget={'session-section'}>
-						<Sidebar.Menu>
-							<Sidebar.GroupLabel class="text-muted-foreground">Session</Sidebar.GroupLabel>
-							<SessionSwitcher />
-							{#if ctx.session?.possessed}
-								{@const agent = ctx.session.possessed}
-								<section
-									transition:fade={{ duration: 100 }}
-									class="text-muted-foreground mx-2 -mt-1 mb-2 flex items-center gap-2 text-xs"
+		<Sidebar.Group>
+			<Sidebar.GroupLabel class="text-muted-foreground">Session</Sidebar.GroupLabel>
+
+			<Sidebar.GroupContent>
+				<div use:tourTarget={'session-section'}>
+					<Sidebar.Menu class="relative">
+						<SessionSwitcher />
+						{#if ctx.session?.possessed}
+							{@const agent = ctx.session.possessed}
+							<section
+								transition:fade={{ duration: 100 }}
+								class="text-muted-foreground mx-2 -mt-1 mb-2 flex items-center gap-2 text-xs"
+							>
+								Acting as <Badge href="{base}/agent/#{agent}">{agent}</Badge>
+								<Button
+									size="icon"
+									variant="ghost"
+									class="size-5"
+									onclick={() => {
+										if (!ctx.session) return;
+										ctx.session.possessed = null;
+									}}><IconXRegular /></Button
 								>
-									Acting as <Badge href="{base}/agent/#{agent}">{agent}</Badge>
-									<Button
-										size="icon"
-										variant="ghost"
-										class="size-5"
-										onclick={() => {
-											if (!ctx.session) return;
-											ctx.session.possessed = null;
-										}}><IconXRegular /></Button
-									>
-								</section>
-							{/if}
-							<NavBundle
-								title="Threads"
-								icon={IconFileArchive}
-								items={conn
-									? Object.values(conn.threads).map((thread) => ({
-											id: thread.id,
-											title: thread.name,
-											url: `${base}/thread/#${thread.id}`,
-											badge: thread.unread
-										}))
-									: []}
-								emptyLabel="No threads."
-							>
-								{#snippet itemContextMenu({ item })}
-									{@const thread =
-										item.id !== undefined ? ctx.session?.threads[item.id] : undefined}
-									<ContextMenu.Item
-										disabled={!thread || thread.unread === 0}
-										onSelect={() => {
-											if (!ctx.session || !item.id || !(item.id in ctx.session.threads)) return;
-											ctx.session.threads[item.id]!.unread = 0;
-										}}><IconEnvelopeOpen /> Mark as read</ContextMenu.Item
-									>
-								{/snippet}
-								{#snippet actions()}
-									<Popover.Root bind:open={threadCreateOpen}>
-										<Tooltip.Root disabled={!ctx.session || ctx.session.possessed !== null}>
-											<Tooltip.Trigger>
-												<Popover.Trigger
-													disabled={!ctx.session || !ctx.session?.possessed}
-													onclick={(e: any) => {
-														e.stopPropagation();
-													}}
-													class={cn(buttonVariants({ size: 'icon', variant: 'ghost' }), 'size-6')}
-												>
-													<IconPlus />
-												</Popover.Trigger>
-											</Tooltip.Trigger>
-											<Tooltip.Content
-												><span>You must be possessing an agent to create a thread!</span
-												></Tooltip.Content
-											>
-										</Tooltip.Root>
-										<Popover.Content>
-											{@const agent =
-												ctx.session?.possessed && ctx.session?.agents[ctx.session?.possessed]}
-											{#if ctx.session && agent}
-												<CreateThreadForm
-													{agent}
-													session={ctx.session}
-													onCreate={() => {
-														threadCreateOpen = false;
-													}}
-												/>
-											{/if}
-										</Popover.Content>
-									</Popover.Root>
-								{/snippet}
-							</NavBundle>
-							<NavBundle
-								title="Agents"
-								icon={IconRobot}
-								items={conn
-									? Object.entries(conn.agents).map(([title, agent]) => ({
-											id: title,
-											title,
-											url: `${base}/agent/#${title}`,
-											state: agent.status
-										}))
-									: []}
-								emptyLabel="No agents."
-							>
-								{#snippet itemContextMenu({ item })}
-									<ContextMenu.Item
-										onSelect={() => {
-											if (!ctx.session) return;
-											ctx.session.possessed = item.id ?? null;
-										}}><IconGhost /> Possess</ContextMenu.Item
-									>
-									<!-- <ContextMenu.Item -->
-									<!-- 	class="bg-destructive/50 hover:bg-destructive dark:hover:bg-destructive" -->
-									<!-- 	onSelect={async () => { -->
-									<!-- 		if (!ctx.session || !item.id) return; -->
-									<!-- 		try { -->
-									<!-- 			await ctx.server.killAgent(ctx.session.sessionId, item.id); -->
-									<!-- 			toast.success(`Agent '${item.id}' killed.`); -->
-									<!-- 		} catch (e) { -->
-									<!-- 			toast.error(`${e}`); -->
-									<!-- 		} -->
-									<!-- 	}}><IconSkull /> Kill</ContextMenu.Item -->
-									<!-- > -->
-								{/snippet}
-								{#snippet itemActions({ item })}
-									<DropdownMenu.Root>
-										<DropdownMenu.Trigger>
-											{#snippet child({ props })}
-												<Button {...props} variant="ghost" size="icon"><IconDotsThree /></Button>
-											{/snippet}
-										</DropdownMenu.Trigger>
-										<DropdownMenu.Content class="w-56" align="start">
-											<DropdownMenu.Item
-												onSelect={() => {
-													if (!ctx.session) return;
-													ctx.session.possessed = item.id ?? null;
+							</section>
+						{/if}
+						<NavBundle
+							title="Threads"
+							icon={IconFileArchive}
+							items={conn
+								? Object.values(conn.threads).map((thread) => ({
+										id: thread.id,
+										title: thread.name,
+										url: `${base}/thread/#${thread.id}`,
+										badge: thread.unread
+									}))
+								: []}
+							emptyLabel="No threads."
+						>
+							{#snippet itemContextMenu({ item })}
+								{@const thread = item.id !== undefined ? ctx.session?.threads[item.id] : undefined}
+								<ContextMenu.Item
+									disabled={!thread || thread.unread === 0}
+									onSelect={() => {
+										if (!ctx.session || !item.id || !(item.id in ctx.session.threads)) return;
+										ctx.session.threads[item.id]!.unread = 0;
+									}}><IconEnvelopeOpen /> Mark as read</ContextMenu.Item
+								>
+							{/snippet}
+							{#snippet actions()}
+								<Popover.Root bind:open={threadCreateOpen}>
+									<Tooltip.Root disabled={!ctx.session || ctx.session.possessed !== null}>
+										<Tooltip.Trigger>
+											<Popover.Trigger
+												disabled={!ctx.session || !ctx.session?.possessed}
+												onclick={(e: any) => {
+													e.stopPropagation();
 												}}
-												><IconGhost /> Possess
-											</DropdownMenu.Item>
-											<!-- <DropdownMenu.Item -->
-											<!-- 	class="bg-destructive/50 hover:bg-destructive dark:hover:bg-destructive" -->
-											<!-- 	onSelect={async () => { -->
-											<!-- 		if (!ctx.session || !item.id) return; -->
-											<!-- 		try { -->
-											<!-- 			await ctx.server.killAgent(ctx.session.sessionId, item.id); -->
-											<!-- 			toast.success(`Agent '${item.id}' killed.`); -->
-											<!-- 		} catch (e) { -->
-											<!-- 			toast.error(`${e}`); -->
-											<!-- 		} -->
-											<!-- 	}}><IconSkull /> Kill</DropdownMenu.Item -->
-											<!-- > -->
-										</DropdownMenu.Content>
-									</DropdownMenu.Root>
-								{/snippet}
-							</NavBundle>
-						</Sidebar.Menu>
-					</div>
-				</Sidebar.GroupContent>
-			</Sidebar.Group>
-		</Sidebar.Content>
+												class={cn(buttonVariants({ size: 'icon', variant: 'ghost' }), 'size-6')}
+											>
+												<IconPlus />
+											</Popover.Trigger>
+										</Tooltip.Trigger>
+										<Tooltip.Content
+											><span>You must be possessing an agent to create a thread!</span
+											></Tooltip.Content
+										>
+									</Tooltip.Root>
+									<Popover.Content>
+										{@const agent =
+											ctx.session?.possessed && ctx.session?.agents[ctx.session?.possessed]}
+										{#if ctx.session && agent}
+											<CreateThreadForm
+												{agent}
+												session={ctx.session}
+												onCreate={() => {
+													threadCreateOpen = false;
+												}}
+											/>
+										{/if}
+									</Popover.Content>
+								</Popover.Root>
+							{/snippet}
+						</NavBundle>
+						<NavBundle
+							title="Agents"
+							icon={IconRobot}
+							items={conn
+								? Object.entries(conn.agents).map(([title, agent]) => ({
+										id: title,
+										title,
+										url: `${base}/agent/#${title}`,
+										state: agent.status
+									}))
+								: []}
+							emptyLabel="No agents."
+						>
+							{#snippet itemContextMenu({ item })}
+								<ContextMenu.Item
+									onSelect={() => {
+										if (!ctx.session) return;
+										ctx.session.possessed = item.id ?? null;
+									}}><IconGhost /> Possess</ContextMenu.Item
+								>
+								<!-- <ContextMenu.Item -->
+								<!-- 	class="bg-destructive/50 hover:bg-destructive dark:hover:bg-destructive" -->
+								<!-- 	onSelect={async () => { -->
+								<!-- 		if (!ctx.session || !item.id) return; -->
+								<!-- 		try { -->
+								<!-- 			await ctx.server.killAgent(ctx.session.sessionId, item.id); -->
+								<!-- 			toast.success(`Agent '${item.id}' killed.`); -->
+								<!-- 		} catch (e) { -->
+								<!-- 			toast.error(`${e}`); -->
+								<!-- 		} -->
+								<!-- 	}}><IconSkull /> Kill</ContextMenu.Item -->
+								<!-- > -->
+							{/snippet}
+							{#snippet itemActions({ item })}
+								<DropdownMenu.Root>
+									<DropdownMenu.Trigger>
+										{#snippet child({ props })}
+											<Button {...props} variant="ghost" size="icon"><IconDotsThree /></Button>
+										{/snippet}
+									</DropdownMenu.Trigger>
+									<DropdownMenu.Content class="w-56" align="start">
+										<DropdownMenu.Item
+											onSelect={() => {
+												if (!ctx.session) return;
+												ctx.session.possessed = item.id ?? null;
+											}}
+											><IconGhost /> Possess
+										</DropdownMenu.Item>
+										<!-- <DropdownMenu.Item -->
+										<!-- 	class="bg-destructive/50 hover:bg-destructive dark:hover:bg-destructive" -->
+										<!-- 	onSelect={async () => { -->
+										<!-- 		if (!ctx.session || !item.id) return; -->
+										<!-- 		try { -->
+										<!-- 			await ctx.server.killAgent(ctx.session.sessionId, item.id); -->
+										<!-- 			toast.success(`Agent '${item.id}' killed.`); -->
+										<!-- 		} catch (e) { -->
+										<!-- 			toast.error(`${e}`); -->
+										<!-- 		} -->
+										<!-- 	}}><IconSkull /> Kill</DropdownMenu.Item -->
+										<!-- > -->
+									</DropdownMenu.Content>
+								</DropdownMenu.Root>
+							{/snippet}
+						</NavBundle>
+					</Sidebar.Menu>
+				</div>
+			</Sidebar.GroupContent>
+		</Sidebar.Group>
 		<Sidebar.Rail />
-	</Tabs.Root>
+	</Sidebar.Content>
 </Sidebar.Root>
