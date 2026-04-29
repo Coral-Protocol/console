@@ -64,7 +64,7 @@
 	>
 	<Item.Root variant="outline" class="p-2">
 		<Item.Content>
-			<ScrollArea>
+			<ScrollArea class="max-h-60 overflow-scroll">
 				{#if Object.keys($formData.tools).length == 0}
 					<p class="text-muted-foreground flex h-9 w-full place-items-center justify-center">
 						No tools.
