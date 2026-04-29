@@ -16,14 +16,14 @@
 	} = $props();
 </script>
 
-<Command.Root>
-	<Command.Input placeholder="Search agents..." />
-	<Command.List>
-		<Command.Empty>No agents found.</Command.Empty>
-		{#each Object.values(server.catalogs) as catalog}
-			<Command.Group heading={catalog.identifier.type}>
-				{#each Object.values(catalog.agents) as agent}
-					<HoverCard.Root>
+<HoverCard.Root closeDelay={0}>
+	<Command.Root>
+		<Command.Input placeholder="Search agents..." />
+		<Command.List>
+			<Command.Empty>No agents found.</Command.Empty>
+			{#each Object.values(server.catalogs) as catalog}
+				<Command.Group heading={catalog.identifier.type}>
+					{#each Object.values(catalog.agents) as agent}
 						<HoverCard.Trigger class="m-0">
 							<Command.Item
 								class="w-full cursor-pointer border-b px-4 py-2"
@@ -35,14 +35,14 @@
 
 						<HoverCard.Content side="right" class="max-w-1/2 min-w-full whitespace-pre-wrap">
 							{#await server.lookupAgent( { name: agent.name, version: agent.versions[0]!, registrySourceId: catalog.identifier } )}
-								<span class="text-muted">loading...</span>
+								<span>Loading details...</span>
 							{:then details}
 								{details.registryAgent.info.description}
 							{/await}
 						</HoverCard.Content>
-					</HoverCard.Root>
-				{/each}
-			</Command.Group>
-		{/each}
-	</Command.List>
-</Command.Root>
+					{/each}
+				</Command.Group>
+			{/each}
+		</Command.List>
+	</Command.Root>
+</HoverCard.Root>
