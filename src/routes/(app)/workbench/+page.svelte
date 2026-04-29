@@ -35,6 +35,8 @@
 	import * as Popover from '@coral-os/component-library/ui/popover/index.js';
 	import { Button, buttonVariants } from '@coral-os/component-library/ui/button/index.js';
 	import * as Tooltip from '@coral-os/component-library/ui/tooltip/index.js';
+	import * as DropdownMenu from '@coral-os/component-library/ui/dropdown-menu/index.js';
+
 	import * as Card from '@coral-os/component-library/ui/card/index.js';
 
 	import IconWrenchRegular from 'phosphor-icons-svelte/IconWrenchRegular.svelte';
@@ -82,6 +84,7 @@
 	import { getSessionDataFromTemplateName } from './templates/TemplateLib';
 	import { tourTarget } from '$lib/components/tour/tourTarget';
 	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
+	import { cn } from '$lib/utils';
 
 	function sourceToRegistryId(source: AgentSource): RegistryAgentIdentifier['registrySourceId'] {
 		switch (source) {
@@ -119,7 +122,11 @@
 							agent.source +
 							' '
 					);
-					await sessCtx.addAgent(agent.name, agent.source, agent.version);
+					toast.promise(sessCtx.addAgent(agent.name, agent.source, agent.version), {
+						loading: 'Adding agent...',
+						success: 'Agent added successfully',
+						error: (err: any) => `Failed: ${err.message || err}`
+					});
 				}
 			} catch (err) {
 				console.error('Failed to parse agents:', err);
@@ -324,6 +331,8 @@
 
 	let { form: formData, errors, enhance } = $derived(form);
 
+	let loadingAgent = $state(false);
+
 	let sessCtx = $state({
 		// svelte-ignore state_referenced_locally
 		formData,
@@ -355,48 +364,46 @@
 		},
 
 		addAgent: async (name: string, source: any, version: string) => {
-			try {
-				const existingCount = $formData.agents.filter((a) => a.id.name === name).length;
-				const registrySourceId = sourceToRegistryId(source as AgentSource);
-				const detailed = await ctx.server
-					.lookupAgent({ name, version, registrySourceId })
-					.catch((e) => {
-						toast.error(`${e}`);
-						console.error(e);
-						return null;
-					});
-				if (detailed) {
-					try {
-						$formData.agents.push({
-							id: {
-								name,
-								version,
-								registrySourceId
-							},
-							name: name + (existingCount > 0 ? `-${existingCount}` : ''),
-							description: '',
-							providerType: 'local',
-							provider: {
-								runtime: Object.keys(detailed.registryAgent.runtimes)[0] as any,
-								remote_request: {
-									maxCost: { type: 'micro_coral', amount: 1000 },
-									serverSource: { type: 'servers', servers: [] }
-								}
-							},
-							customToolAccess: new Set(),
-							blocking: false,
-							options: {}
-						});
-						sessCtx.detailedAgent = null;
-						$formData.agents = $formData.agents;
-						sessCtx.selectedAgent = $formData.agents.length - 1;
-					} catch (error) {
-						console.error('Failed to add agent:', error);
-					}
-				}
-			} catch (error) {
-				console.error('Failed to lookup agent:', error);
+			loadingAgent = true;
+
+			const existingCount = $formData.agents.filter((a) => a.id.name === name).length;
+			const registrySourceId = sourceToRegistryId(source as AgentSource);
+
+			const detailed = await ctx.server.lookupAgent({
+				name,
+				version,
+				registrySourceId
+			});
+
+			if (!detailed) {
+				throw new Error('Agent not found');
 			}
+
+			$formData.agents.push({
+				id: {
+					name,
+					version,
+					registrySourceId
+				},
+				name: name + (existingCount > 0 ? `-${existingCount}` : ''),
+				description: '',
+				providerType: 'local',
+				provider: {
+					runtime: Object.keys(detailed.registryAgent.runtimes)[0] as any,
+					remote_request: {
+						maxCost: { type: 'micro_coral', amount: 1000 },
+						serverSource: { type: 'servers', servers: [] }
+					}
+				},
+				customToolAccess: new Set(),
+				blocking: false,
+				options: {}
+			});
+
+			sessCtx.detailedAgent = null;
+			$formData.agents = $formData.agents;
+			sessCtx.selectedAgent = $formData.agents.length - 1;
+			loadingAgent = false;
 		}
 	}) as SessionCreatorContext;
 
@@ -526,7 +533,7 @@
 			<Resizable.PaneGroup direction="vertical">
 				<Resizable.Pane minSize={25} defaultSize={50}>
 					<Card.Root class="h-full py-0">
-						<Card.Content class="h-full px-0">
+						<Card.Content class="flex h-full flex-col px-0">
 							<Menubar.Root class="bg-sidebar w-full border-0 border-b">
 								<Menubar.Menu>
 									<Menubar.Trigger class="gap-1">Session</Menubar.Trigger>
@@ -583,7 +590,13 @@
 								</Menubar.Menu>
 								<Menubar.Menu>
 									<div use:tourTarget={'add-agents'} class="ml-auto">
-										<Menubar.Trigger class="relative  gap-2">
+										<Menubar.Trigger
+											class={cn(
+												buttonVariants({ size: 'sm' }),
+												'relative h-full gap-2 transition-all',
+												$formData.agents.length == 0 ? 'bg-sidebar' : ''
+											)}
+										>
 											<IconPlusCircle class="size-5" />
 											Add agents
 										</Menubar.Trigger>
@@ -592,18 +605,28 @@
 										<AgentPicker
 											server={ctx.server}
 											onSelect={(agent, catalogId) => {
-												sessCtx.addAgent(agent.name, catalogId.type, agent.versions[0]!);
+												toast.promise(
+													sessCtx.addAgent(agent.name, catalogId.type, agent.versions[0]!),
+													{
+														loading: 'Adding agent...',
+														success: 'Agent added successfully',
+														error: (err: any) => `Failed: ${err.message || err}`
+													}
+												);
 											}}
 										/>
 									</Menubar.Content>
 								</Menubar.Menu>
 							</Menubar.Root>
-							<Tabs.Root bind:value={agentsListTabs} class="h-full min-h-0 flex-1 overflow-hidden">
+							<Tabs.Root
+								bind:value={agentsListTabs}
+								class="h-full min-h-0 flex-1 grow overflow-hidden"
+							>
 								<Tabs.Content
 									value="table"
-									class="flex h-full min-h-0 flex-1 flex-col overflow-hidden"
+									class="flex h-full min-h-0 flex-1 grow flex-col overflow-hidden"
 								>
-									<Table.Root class="w-full">
+									<Table.Root class="w-full grow ">
 										<Table.Header>
 											<Table.Row>
 												<Table.Head class="w-12"><Checkbox /></Table.Head>
@@ -673,7 +696,14 @@
 														<AgentPicker
 															server={ctx.server}
 															onSelect={(agent, catalogId) => {
-																sessCtx.addAgent(agent.name, catalogId.type, agent.versions[0]!);
+																toast.promise(
+																	sessCtx.addAgent(agent.name, catalogId.type, agent.versions[0]!),
+																	{
+																		loading: 'Adding agent...',
+																		success: 'Agent added successfully',
+																		error: (err: any) => `Failed: ${err.message || err}`
+																	}
+																);
 															}}
 														/>
 													</Popover.Content>
@@ -718,9 +748,9 @@
 		<Resizable.Handle class="bg-background !w-2" />
 
 		<Resizable.Pane defaultSize={50} minSize={25} class="bg-background flex min-h-0 flex-col gap-2">
-			<Card.Root class="h-full py-0">
-				<Card.Content class="px-0">
-					<Tabs.Root bind:value={currentTab} class="overflow-hidden">
+			<Card.Root class="min-h-0 grow py-0">
+				<Card.Content class="min-h-0 grow px-0">
+					<Tabs.Root bind:value={currentTab} class="h-full overflow-hidden">
 						<Tabs.List class="bg-sidebar flex w-full justify-start rounded-none border-b ">
 							<SidebarTab
 								value="agent"
@@ -740,14 +770,14 @@
 							>
 						</Tabs.List>
 						{#key sessCtx.selectedAgent}
-							<Tabs.Content value="agent" class="flex min-h-0 flex-col gap-2 overflow-y-auto ">
+							<Tabs.Content value="agent" class="flex h-full min-h-0 flex-col overflow-y-auto">
 								<AgentPane />
 							</Tabs.Content>
 						{/key}
-						<Tabs.Content value="tools" class="flex flex-col gap-4 ">
+						<Tabs.Content value="tools" class="flex h-full min-h-0 flex-col overflow-y-auto ">
 							<ToolsPane />
 						</Tabs.Content>
-						<Tabs.Content value="groups" class="flex flex-col">
+						<Tabs.Content value="groups" class="flex h-full min-h-0 flex-col overflow-y-auto">
 							<GroupsPane />
 						</Tabs.Content>
 					</Tabs.Root>
@@ -766,7 +796,7 @@
 										/>
 										<Label
 											for="close-last-session"
-											class="cursor-pointer text-sm leading-none font-medium"
+											class="cursor-pointer text-left text-sm leading-none font-medium"
 											>Terminate previous session</Label
 										>
 									</div>
@@ -782,32 +812,60 @@
 								</Tooltip.Content>
 							</Tooltip.Root>
 						</div>
-						{#if sendingForm || !$formData.agents.length}
-							<Tooltip.Root>
-								<Tooltip.Trigger class="flex gap-4">
-									<Button disabled={sendingForm || $formData.agents.length === 0} variant="outline">
-										Save template</Button
-									>
+
+						<Tooltip.Root>
+							<Tooltip.Trigger class="flex gap-2">
+								<Button disabled={sendingForm || $formData.agents.length === 0} variant="outline">
+									Save template</Button
+								>
+							</Tooltip.Trigger>
+							<Tooltip.Content>
+								<p>Save to templates for quick reuse</p>
+							</Tooltip.Content>
+						</Tooltip.Root>
+
+						<span class="flex gap-1">
+							<Tooltip.Root delayDuration={30}>
+								<Tooltip.Trigger class="flex">
 									<Form.Button disabled={sendingForm || $formData.agents.length === 0}>
 										{#if sendingForm}
 											<Spinner />
 										{/if}Create session</Form.Button
 									>
+									<!-- <DropdownMenu.Root>
+										<DropdownMenu.Trigger disabled={sendingForm || $formData.agents.length === 0}>
+											<Button variant="secondary">
+												<IconCaretDown class="size-4 rotate-180" />
+											</Button>
+										</DropdownMenu.Trigger>
+										<DropdownMenu.Content class="w-full">
+											<DropdownMenu.Sub>
+												<DropdownMenu.SubTrigger>Create in namespace...</DropdownMenu.SubTrigger>
+												<DropdownMenu.SubContent>
+													<DropdownMenu.Item onclick={() => (ctx.server.namespace = 'default')}>
+														default
+													</DropdownMenu.Item>
+													{#each namespaces as namespace}
+														<DropdownMenu.Item onclick={() => (ctx.server.namespace = namespace)}>
+															{namespace}
+														</DropdownMenu.Item>
+													{/each}
+													<DropdownMenu.Separator />
+													<DropdownMenu.Item>Create new namespace</DropdownMenu.Item>
+												</DropdownMenu.SubContent>
+											</DropdownMenu.Sub>
+										</DropdownMenu.Content>
+									</DropdownMenu.Root> -->
 								</Tooltip.Trigger>
 								<Tooltip.Content>
-									<p>You need to add at least one agent first!</p>
+									<p>
+										{$formData.agents.length === 0
+											? 'Cannot create a session without any agents'
+											: ' Create a session in the active namespace'}
+									</p>
 								</Tooltip.Content>
 							</Tooltip.Root>
-						{:else}
-							<Button disabled={sendingForm || $formData.agents.length === 0} variant="outline">
-								Save template</Button
-							>
-							<Form.Button disabled={sendingForm || $formData.agents.length === 0}>
-								{#if sendingForm}
-									<Spinner />
-								{/if}Create session</Form.Button
-							>
-						{/if}
+						</span>
 					</Tooltip.Provider>
 				</Card.Content>
 			</Card.Root>
