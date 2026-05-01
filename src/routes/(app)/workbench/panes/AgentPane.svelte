@@ -193,7 +193,9 @@
 							</Select.Trigger>
 							<Select.Content>
 								{#if Object.keys($formData.tools).length == 0}
-									<span class="text-muted-foreground h-9 px-2 text-sm italic">No tools</span>
+									<span class="text-muted-foreground h-9 px-2 text-sm italic"
+										>No tools found, add some in the tools pane</span
+									>
 								{/if}
 								{#each Object.values($formData.tools) as tool}
 									<Select.Item value={tool.id}>{tool.name}</Select.Item>
