@@ -91,6 +91,10 @@
 										</div>
 									{/if}
 								</div>
+							{:catch error}
+								<span class="text-destructive"
+									>Couldn't fetch details for this agent! Check the console for further information.</span
+								>
 							{/await}
 						</HoverCard.Content>
 					</HoverCard.Root>
