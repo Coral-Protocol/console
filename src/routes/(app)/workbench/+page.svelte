@@ -386,7 +386,7 @@
 					registrySourceId
 				},
 				name: name + (existingCount > 0 ? `-${existingCount}` : ''),
-				description: '',
+				description: detailed.registryAgent.info.description,
 				providerType: 'local',
 				provider: {
 					runtime: Object.keys(detailed.registryAgent.runtimes)[0] as any,
@@ -770,7 +770,10 @@
 							>
 						</Tabs.List>
 						{#key sessCtx.selectedAgent}
-							<Tabs.Content value="agent" class="flex h-full min-h-0 flex-col overflow-y-auto">
+							<Tabs.Content
+								value="agent"
+								class="flex h-full min-h-0 flex-col gap-2 overflow-y-auto"
+							>
 								<AgentPane />
 							</Tabs.Content>
 						{/key}

@@ -14,6 +14,8 @@
 	import { appContext } from '$lib/context';
 	import { agentIdOf, registryIdOf } from '$lib/CoralServer.svelte';
 	import { tick } from 'svelte';
+	import { Textarea } from '@coral-os/component-library/ui/textarea/index.js';
+
 	import { buttonVariants } from '@coral-os/component-library/components/ui/button/index.js';
 	import AgentPicker from '../AgentPicker.svelte';
 
@@ -80,7 +82,11 @@
 						<TooltipLabel tooltip={'Optional agent description'} class="m-0 max-w-1/4"
 							>Description
 						</TooltipLabel>
-						<Input {...props} bind:value={$formData.agents[ctx.selectedAgent!]!.description} />
+						<Textarea
+							{...props}
+							class="relative m-0 resize-y"
+							bind:value={$formData.agents[ctx.selectedAgent!]!.description}
+						/>
 					{/snippet}
 				</Form.Control>
 			</Form.ElementField>
