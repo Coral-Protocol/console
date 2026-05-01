@@ -18,6 +18,7 @@
 	import SunIcon from 'phosphor-icons-svelte/IconSunRegular.svelte';
 	import IconArrowsClockwise from 'phosphor-icons-svelte/IconArrowsClockwiseRegular.svelte';
 	import IconArrowDownRegular from 'phosphor-icons-svelte/IconArrowDownRegular.svelte';
+	import IconArrowLeft from 'phosphor-icons-svelte/IconArrowLeftRegular.svelte';
 	import IconCaretDownRegular from 'phosphor-icons-svelte/IconCaretDownRegular.svelte';
 	import IconRobot from 'phosphor-icons-svelte/IconRobotRegular.svelte';
 	import IconSearch from 'phosphor-icons-svelte/IconMagnifyingGlassRegular.svelte';
@@ -304,24 +305,14 @@
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
 					<Sidebar.MenuItem class="flex">
-						<!-- <DropdownMenu.Root>
-									<DropdownMenu.Trigger class="h-full">
-										<Sidebar.MenuButton>
-											{ctx.server.namespace ? ctx.server.namespace : 'Select Namespace'}
-											<CaretUpDown class="ml-auto" />
-										</Sidebar.MenuButton>
-									</DropdownMenu.Trigger>
-									<DropdownMenu.Content class="w-(--bits-dropdown-menu-anchor-width)">
-										<DropdownMenu.Item onclick={() => (ctx.server.namespace = 'default')}>
-											<span>default</span>
-										</DropdownMenu.Item>
-										{#each namespaces as namespace}
-											<DropdownMenu.Item onclick={() => (ctx.server.namespace = namespace)}>
-												<span>{namespace}</span>
-											</DropdownMenu.Item>
-										{/each}
-									</DropdownMenu.Content>
-								</DropdownMenu.Root> -->
+						{#if (config.PUBLIC_DEPLOYMENT = 'cloud')}
+							<Button
+								variant="outline"
+								onclick={() => {
+									window.location = '/' as any;
+								}}><IconArrowLeft /> Back to Cloud</Button
+							>
+						{/if}
 						<NamespaceSwitcher />
 					</Sidebar.MenuItem>
 				</Sidebar.Menu>
