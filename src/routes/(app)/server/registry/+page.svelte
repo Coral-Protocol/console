@@ -58,17 +58,17 @@
 			</InputGroup.Addon>
 		</InputGroup.Root>
 	</header>
-	<ol class="flex flex-col gap-4 overflow-y-scroll">
+	<ol class="flex flex-col overflow-y-scroll">
 		{#each filtered as catalog}
 			<li>
 				{#if catalog.agents.length !== 0}
-					<h1 class="w-full py-4 text-left text-2xl">
+					<h1 class="w-full px-12 py-4 text-left text-2xl">
 						{catalog.identifier.type.charAt(0).toLocaleUpperCase() +
 							catalog.identifier.type.slice(1)}
 						Agents
 					</h1>
 				{/if}
-				<ol class="grid grid-cols-[repeat(auto-fit,minmax(320px,0fr))] gap-4">
+				<ol class="grid grid-cols-[repeat(auto-fit,minmax(320px,0fr))] justify-center gap-4">
 					{#each catalog.agents as agent}
 						{#await ctx.server.lookupAgent( { name: agent.name, version: agent.versions[0]!, registrySourceId: catalog.identifier } )}
 							<div class="bg-foreground/5 h-[250px] w-xs border"></div>
