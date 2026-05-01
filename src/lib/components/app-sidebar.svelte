@@ -289,30 +289,33 @@
 
 <Sidebar.Root class="">
 	<Sidebar.Header class="mb-2 p-0">
-		<a href="{base}/" class="flex p-2">
-			<div>
-				<Logo class="text-foreground size-10" />
-			</div>
-			<div class="flex flex-col gap-0.5 text-lg leading-none">
-				<span class="font-[Oxanium] font-semibold tracking-widest"
-					>Coral<span class="text-brand-primary font-bold tracking-normal">OS</span>
-				</span>
-				<span class="text-brand-primary font-sans text-sm">Console</span>
-			</div>
-		</a>
+		<div class="flex items-center justify-between">
+			<a href="{base}/" class="flex p-2">
+				<div>
+					<Logo class="text-foreground size-10" />
+				</div>
+				<div class="flex flex-col gap-0.5 text-lg leading-none">
+					<span class="font-[Oxanium] font-semibold tracking-widest"
+						>Coral<span class="text-brand-primary font-bold tracking-normal">OS</span>
+					</span>
+					<span class="text-brand-primary font-sans text-sm">Console</span>
+				</div>
+			</a>
+			{#if config.PUBLIC_DEPLOYMENT === 'cloud'}
+				<Button
+					variant="ghost"
+					onclick={() => {
+						window.location.href = '/';
+					}}><IconArrowLeft /> Return to Cloud</Button
+				>
+			{/if}
+		</div>
+
 		<Sidebar.Group>
 			<Sidebar.GroupLabel class="text-muted-foreground">Namespace</Sidebar.GroupLabel>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
 					<Sidebar.MenuItem class="flex">
-						{#if config.PUBLIC_DEPLOYMENT === 'cloud'}
-							<Button
-								variant="outline"
-								onclick={() => {
-									window.location = '/' as any;
-								}}><IconArrowLeft /> Back to Cloud</Button
-							>
-						{/if}
 						<NamespaceSwitcher />
 					</Sidebar.MenuItem>
 				</Sidebar.Menu>
