@@ -183,13 +183,6 @@ export class CoralServer {
 			this.lsmSock.onmessage = onmessage;
 			this.lsmSock.onerror = onerror;
 			this.lsmSock.onclose = onclose;
-
-			const sock = this.lsmSock;
-			return () => {
-				// Clean up old socket when namespace changes
-				sock.onclose = null; // prevent stale onclose from setting alive=false
-				sock.close();
-			};
 		});
 	}
 
