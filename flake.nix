@@ -28,6 +28,7 @@
       bundle = {
         basePath,
         apiPath ? basePath,
+        deployment ? "local",
       }:
         pkgs.mkYarnPackage {
           inherit (package) version;
@@ -38,6 +39,7 @@
 
           BASE_PATH = basePath;
           PUBLIC_API_PATH = apiPath;
+          PUBLIC_DEPLOYMENT = deployment;
 
           buildPhase = ''
             yarn --offline --frozen-lockfile build
@@ -64,6 +66,7 @@
       cloud = bundle {
         basePath = "/console";
         apiPath = "https://api.coralcloud.ai";
+        deployment = "cloud";
       };
     });
     devShells = eachSystem ({pkgs, ...}: {
