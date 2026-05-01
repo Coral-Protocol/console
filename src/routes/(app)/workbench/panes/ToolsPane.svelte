@@ -47,51 +47,51 @@
 	let selectedTool: string | null = $state(null);
 </script>
 
-<section class="flex flex-col gap-4 p-4">
-	<h1 class="font-semibold">Session settings</h1>
+<section class="flex flex-col gap-4 px-4">
+	<h1 class="font-semibold">Custom Tools</h1>
+	<Button
+		onclick={() => {
+			const id = crypto.randomUUID() as string;
+			($formData.tools[id] = {
+				id,
+				name: `${randomAdjective()}-${randomAnimal()}`,
+				transport: { type: 'http', url: '' },
+				inputSchema: {},
+				outputSchema: {}
+			}),
+				(selectedTool = id);
+		}}>+</Button
+	>
+	<Item.Root variant="outline" class="p-2">
+		<Item.Content>
+			<ScrollArea class="max-h-60 overflow-scroll">
+				{#if Object.keys($formData.tools).length == 0}
+					<p class="text-muted-foreground flex h-9 w-full place-items-center justify-center">
+						No tools.
+					</p>
+				{/if}
+				{#each Object.values($formData.tools) as tool (tool.id)}
+					<Toggle
+						class="flex w-full justify-start pr-0"
+						bind:pressed={() => selectedTool === tool.id, () => (selectedTool = tool.id)}
+					>
+						<p class="grow text-left">{tool.name}</p>
+						<TwostepButton
+							class="size-9"
+							variant="ghostDestructive"
+							onclick={() => {
+								delete $formData.tools[tool.id];
+								$formData.tools = $formData.tools;
+								selectedTool = Object.keys($formData.tools)[0] ?? null;
+							}}><IconTrash /></TwostepButton
+						>
+					</Toggle>
+				{/each}
+			</ScrollArea>
+		</Item.Content>
+	</Item.Root>
 
-	<Form.ElementField {form} name="sessionRuntimeSettings.ttl" class="flex items-center gap-2 ">
-		<Form.Control>
-			{#snippet children({ props })}
-				<TooltipLabel
-					title="Time to live (TTL)"
-					tooltip="Measured in milliseconds, the time to live is the maximum duration the session can last"
-					extra={{
-						required: true,
-						type: 'number'
-					}}
-					class="max-w-1/4 min-w-1/4"
-				>
-					Time to live
-				</TooltipLabel>
-				<Input
-					{...props}
-					bind:value={$formData.sessionRuntimeSettings.ttl}
-					placeholder="time in milliseconds"
-					maxlength={15778476000}
-					type="number"
-					class="grow"
-				/>
-			{/snippet}
-		</Form.Control>
-	</Form.ElementField>
-	<span class="text-muted-foreground flex flex-col justify-between">
-		<TooltipLabel tooltip="Based off Session time to live settings" class=" max-w-fit">
-			Maximum session duration: {formatMsToHHMMSS($formData.sessionRuntimeSettings.ttl ?? 0) ??
-				'HH:MM:SS'}
-		</TooltipLabel>
-
-		<!--		Todo: Show only when some agents actually have a cost, and show only based on their actual time-based cost-->
-		<!--		<TooltipLabel-->
-		<!--			tooltip="Maximum cost of the session, calculated by number of agents, per minute."-->
-		<!--			class="max-w-fit"-->
-		<!--		>-->
-		<!--			Maximum cost of session: {usdFormatter.format((maxCostEstimate ?? 0) / 10000)}-->
-		<!--		</TooltipLabel>-->
-	</span>
-	{#if $errors?.sessionRuntimeSettings?.ttl && JSON.stringify($errors.sessionRuntimeSettings?.ttl) !== '{}' && JSON.stringify($errors.sessionRuntimeSettings?.ttl) !== '{}'}
-		<span class="text-xs">
-			{$errors?.sessionRuntimeSettings?.ttl}
-		</span>
+	{#if selectedTool !== null}
+		<ToolInput superform={form} id={selectedTool} />
 	{/if}
 </section>

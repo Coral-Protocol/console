@@ -200,10 +200,10 @@
     style-mod "^4.1.0"
     w3c-keyname "^2.2.4"
 
-"@coral-os/component-library@^1.4.0":
-  version "1.4.0"
-  resolved "https://registry.yarnpkg.com/@coral-os/component-library/-/component-library-1.4.0.tgz#9a91db291d3b9208a3419add84ab4fffb4f936ac"
-  integrity sha512-IaHOZ+cJjtGb7n0pNyZhQcYtLzzWNx0Tl2B1/iW0lc9hI1SIZui/uCfhlEtQOOUR1fL2Mq25B4ew7yDcpLSLbA==
+"@coral-os/component-library@^1.7.2":
+  version "1.7.2"
+  resolved "https://registry.yarnpkg.com/@coral-os/component-library/-/component-library-1.7.2.tgz#1746ebc427b920959a4d11797f926f1dce3e4dd8"
+  integrity sha512-lfb6ISu3+pdyYvR7NQXsMZRbcWRsdj5KnFi9wT5ux3zrjRY3nA/XLHcbXFBiiysSvy0rQfqwwaTfx7R6Izrjsg==
 
 "@emnapi/core@^1.4.3":
   version "1.4.5"
@@ -1654,6 +1654,13 @@
     "@typescript-eslint/types" "8.32.1"
     eslint-visitor-keys "^4.2.0"
 
+"@uiw/codemirror-theme-atomone@^4.25.9":
+  version "4.25.9"
+  resolved "https://registry.yarnpkg.com/@uiw/codemirror-theme-atomone/-/codemirror-theme-atomone-4.25.9.tgz#062c815596d799e5e120d9e32fa17c714b1ce6a0"
+  integrity sha512-EXG/+p+Y9j/StU2yAtz/+JZj/8WaSGqwjsad79CSBgpHrSU0ERzv4urYWXgEmLTKKkFimwTigy7qOJlLAwkN2A==
+  dependencies:
+    "@uiw/codemirror-themes" "4.25.9"
+
 "@uiw/codemirror-theme-dracula@^4.25.4":
   version "4.25.4"
   resolved "https://registry.yarnpkg.com/@uiw/codemirror-theme-dracula/-/codemirror-theme-dracula-4.25.4.tgz#e96b6fab6ccb727dbab743966ed21f25da9b9fe9"
@@ -1661,10 +1668,26 @@
   dependencies:
     "@uiw/codemirror-themes" "4.25.4"
 
+"@uiw/codemirror-theme-quietlight@^4.25.9":
+  version "4.25.9"
+  resolved "https://registry.yarnpkg.com/@uiw/codemirror-theme-quietlight/-/codemirror-theme-quietlight-4.25.9.tgz#7a8468fba9c3590fb45bce4c9dfaa8c353db1bb0"
+  integrity sha512-BWFcFb3WHTCVROkjExh/TMMTJ5SNcDafaVEIwneKypiHoTJoIY6RlSRBj6GA3O5IgKdrGmhje87s0Gx2OLIndg==
+  dependencies:
+    "@uiw/codemirror-themes" "4.25.9"
+
 "@uiw/codemirror-themes@4.25.4":
   version "4.25.4"
   resolved "https://registry.yarnpkg.com/@uiw/codemirror-themes/-/codemirror-themes-4.25.4.tgz#caa0df8b19368dfee6494f08c4983d1e36199500"
   integrity sha512-2SLktItgcZC4p0+PfFusEbAHwbuAWe3bOOntCevVgHtrWGtGZX3IPv2k8IKZMgOXtAHyGKpJvT9/nspPn/uCQg==
+  dependencies:
+    "@codemirror/language" "^6.0.0"
+    "@codemirror/state" "^6.0.0"
+    "@codemirror/view" "^6.0.0"
+
+"@uiw/codemirror-themes@4.25.9":
+  version "4.25.9"
+  resolved "https://registry.yarnpkg.com/@uiw/codemirror-themes/-/codemirror-themes-4.25.9.tgz#08d70061d4b8ec721023484cd80d4e0302184443"
+  integrity sha512-DAHKb/L9ELwjY4nCf/MP/mIllHOn4GQe7RR4x8AMJuNeh9nGRRoo1uPxrxMmUL/bKqe6kDmDbIZ2AlhlqyIJuw==
   dependencies:
     "@codemirror/language" "^6.0.0"
     "@codemirror/state" "^6.0.0"

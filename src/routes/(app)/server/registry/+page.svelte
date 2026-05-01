@@ -18,9 +18,12 @@
 	import { Skeleton } from '@coral-os/component-library/ui/skeleton/index.js';
 	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
 
+	import Header from '$lib/components/header.svelte';
+
 	let ctx = appContext.get();
 
 	let search = $state('');
+	let loading = $state(true);
 	let searchLower = $derived(search.trim().toLocaleLowerCase());
 
 	let filtered = $derived(
@@ -35,14 +38,12 @@
 		})
 	);
 	let filteredCount = $derived(filtered.reduce((acc, cur) => acc + cur.agents.length, 0));
+	loading = false;
 </script>
 
-<header class="bg-background sticky top-0 flex h-16 shrink-0 items-center gap-2 border-b px-4">
-	<Sidebar.Trigger class="-ml-1" />
-	<Separator orientation="vertical" class="mr-2 h-4" />
-	<Breadcrumbs />
-</header>
-<main class="flex min-h-0 grow flex-col overflow-hidden p-4">
+<Header />
+
+<main class="main flex min-h-0 grow flex-col overflow-hidden p-2">
 	<header class="mb-2 md:w-[400px]">
 		<InputGroup.Root>
 			<InputGroup.Input placeholder="Search..." bind:value={search} />
@@ -57,17 +58,17 @@
 			</InputGroup.Addon>
 		</InputGroup.Root>
 	</header>
-	<ol class="flex flex-col gap-4 overflow-y-scroll">
+	<ol class="flex flex-col overflow-y-scroll">
 		{#each filtered as catalog}
 			<li>
 				{#if catalog.agents.length !== 0}
-					<h1 class="w-full py-4 text-left text-2xl">
+					<h1 class="w-full px-12 py-4 text-left text-2xl">
 						{catalog.identifier.type.charAt(0).toLocaleUpperCase() +
 							catalog.identifier.type.slice(1)}
 						Agents
 					</h1>
 				{/if}
-				<ol class="grid grid-cols-[repeat(auto-fit,minmax(320px,0fr))] gap-4">
+				<ol class="grid grid-cols-[repeat(auto-fit,minmax(320px,0fr))] justify-center gap-4">
 					{#each catalog.agents as agent}
 						{#await ctx.server.lookupAgent( { name: agent.name, version: agent.versions[0]!, registrySourceId: catalog.identifier } )}
 							<div class="bg-foreground/5 h-[250px] w-xs border"></div>
@@ -131,5 +132,13 @@
 				</ol>
 			</li>
 		{/each}
+		{#if filteredCount === 0 && !loading}
+			<Card.Root class="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 ">
+				<Card.Content class=" flex-col items-center gap-4  ">
+					<IconCrane class="text-muted-foreground size-16" />
+					<p class="text-muted-foreground text-sm">No agents found</p>
+				</Card.Content>
+			</Card.Root>
+		{/if}
 	</ol>
 </main>

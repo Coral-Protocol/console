@@ -15,6 +15,7 @@
 	import { Separator } from '@coral-os/component-library/ui/separator/index.js';
 	import { formatDistanceToNow } from 'date-fns';
 	import { cn } from '$lib/utils.js';
+	import Header from '$lib/components/header.svelte';
 
 	import IconPlus from 'phosphor-icons-svelte/IconPlusRegular.svelte';
 
@@ -119,11 +120,7 @@
 	};
 </script>
 
-<header class="bg-background sticky top-0 flex h-16 shrink-0 items-center gap-2 border-b px-4">
-	<Sidebar.Trigger class="-ml-1" />
-	<Separator orientation="vertical" class="mr-2 h-4" />
-	<Breadcrumbs />
-</header>
+<Header />
 
 <TemplateViewer
 	{template}

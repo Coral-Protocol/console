@@ -4,6 +4,7 @@
 	import * as Tooltip from '@coral-os/component-library/ui/tooltip/index.js';
 	import * as ContextMenu from '@coral-os/component-library/ui/context-menu/index.js';
 	import * as DropdownMenu from '@coral-os/component-library/ui/dropdown-menu/index.js';
+	import { Separator } from '@coral-os/component-library/ui/separator/index.js';
 
 	import { toast } from 'svelte-sonner';
 	import { Button, buttonVariants } from '@coral-os/component-library/ui/button/index.js';
@@ -16,6 +17,8 @@
 	import MoonIcon from 'phosphor-icons-svelte/IconMoonRegular.svelte';
 	import SunIcon from 'phosphor-icons-svelte/IconSunRegular.svelte';
 	import IconArrowsClockwise from 'phosphor-icons-svelte/IconArrowsClockwiseRegular.svelte';
+	import IconArrowDownRegular from 'phosphor-icons-svelte/IconArrowDownRegular.svelte';
+	import IconCaretDownRegular from 'phosphor-icons-svelte/IconCaretDownRegular.svelte';
 	import IconRobot from 'phosphor-icons-svelte/IconRobotRegular.svelte';
 	import IconSearch from 'phosphor-icons-svelte/IconMagnifyingGlassRegular.svelte';
 	import IconQuestion from 'phosphor-icons-svelte/IconQuestionRegular.svelte';
@@ -24,11 +27,12 @@
 	import IconCircuity from 'phosphor-icons-svelte/IconCircuitryRegular.svelte';
 	import IconFolder from 'phosphor-icons-svelte/IconFolderRegular.svelte';
 	import IconPlus from 'phosphor-icons-svelte/IconPlusRegular.svelte';
+	import IconHome from 'phosphor-icons-svelte/IconHouseRegular.svelte';
 	import IconXRegular from 'phosphor-icons-svelte/IconXRegular.svelte';
 	import IconGhost from 'phosphor-icons-svelte/IconGhostRegular.svelte';
-	import IconSkull from 'phosphor-icons-svelte/IconSkullRegular.svelte';
 	import IconEnvelopeOpen from 'phosphor-icons-svelte/IconEnvelopeOpenRegular.svelte';
 	import IconDotsThree from 'phosphor-icons-svelte/IconDotsThreeRegular.svelte';
+	import IconCheckRegular from 'phosphor-icons-svelte/IconCheckRegular.svelte';
 
 	import * as Popover from '@coral-os/component-library/ui/popover/index.js';
 
@@ -36,7 +40,7 @@
 	import { socketCtx } from '$lib/socket.svelte';
 	import { toggleMode } from 'mode-watcher';
 
-	import ServerSwitcher from './namespace-switcher.svelte';
+	import NamespaceSwitcher from './namespace-switcher.svelte';
 	import NavBundle from './nav-bundle.svelte';
 	import { SidebarLink, Tour } from '@coral-os/component-library';
 
@@ -51,6 +55,9 @@
 	import { Badge } from '@coral-os/component-library/components/ui/badge/index.js';
 	import CreateThreadForm from './CreateThreadForm.svelte';
 	import { tourTarget } from './tour/tourTarget';
+
+	import Logo from '$lib/icons/logo.svelte';
+	import type { WithElementRef } from 'bits-ui';
 
 	let ctx = appContext.get();
 	let tools = socketCtx.get();
@@ -109,14 +116,14 @@
 				console.log('alive');
 				toast.success('Connected to server.');
 				toast.dismiss('server-disconnected');
-				refreshAgents();
+				refreshAgents(false);
 			}
 		}
 	);
 
 	let loginOpen = $state(false);
 
-	const refreshAgents = async () => {
+	const refreshAgents = async (notify?: boolean) => {
 		try {
 			connecting = true;
 			error = null;
@@ -124,7 +131,9 @@
 			await ctx.server.fetchAll();
 			ctx.server.alive = true;
 			connecting = false;
-			toast.success('Connection refreshed');
+			if (notify) {
+				toast.success('Connection refreshed');
+			}
 		} catch (e) {
 			connecting = false;
 			error = `${e}`;
@@ -132,8 +141,6 @@
 			throw e;
 		}
 	};
-
-	let feedbackVisible = $state(false);
 
 	$effect(() => {
 		const hasNewRequest = Object.values(tools.userInput.requests).some(
@@ -215,6 +222,21 @@
 	let tourOpen = $state(false);
 
 	let threadCreateOpen = $state(false);
+
+	let namespaces = $derived(ctx.server.namespaces.filter((ns) => ns !== 'default'));
+
+	watch([() => ctx.server.namespaces], () => {
+		if (!(ctx.server.namespace in ctx.server.sessions)) {
+			ctx.server.namespace = 'default';
+		}
+	});
+
+	let dialogOpen = $state(false);
+
+	let newNamespace = $state('Untitled Namespace');
+	let duplicate = $derived(newNamespace === 'default' || newNamespace in ctx.server.namespaces);
+
+	let { ref = $bindable(null) }: WithElementRef<{}, HTMLButtonElement> = $props();
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
@@ -226,10 +248,13 @@
 <DebugTools bind:open={debugToolsOpen} />
 <Welcome bind:open={welcomeOpen} bind:tourToggle={tourOpen} />
 
-<div class="fixed top-3 right-3 z-50 flex items-center gap-2" use:tourTarget={'quick-switch'}>
+<div
+	class="fixed top-3.5 right-3 z-50 flex items-center justify-end gap-1"
+	use:tourTarget={'quick-switch'}
+>
 	<Button
-		class="flex max-w-64 cursor-text items-center justify-between gap-6 "
-		variant="outline"
+		class="flex w-full max-w-64 cursor-text items-center justify-between gap-6 "
+		variant="ghost"
 		onclick={() => (openQuickswitch = true)}
 	>
 		<div class="text-muted-foreground flex items-center gap-2">
@@ -242,82 +267,138 @@
 		</Kbd.Group>
 	</Button>
 
-	<Button size="icon" variant="outline" onclick={() => (welcomeOpen = true)}>
+	<Separator orientation="vertical" class="!h-6" />
+
+	<Button size="icon" variant="ghost" onclick={() => (welcomeOpen = true)}>
 		<IconQuestion class="size-4" />
+	</Button>
+
+	<Separator orientation="vertical" class="!h-6" />
+
+	<Button onclick={toggleMode} variant="ghost" size="icon">
+		<SunIcon
+			class="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90"
+		/>
+		<MoonIcon
+			class="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0"
+		/>
+		<span class="sr-only">Toggle theme</span>
 	</Button>
 </div>
 
-<Sidebar.Root>
-	<Sidebar.Header>
-		<ServerSwitcher />
-		<Sidebar.GroupLabel class="pr-0">
-			<span
-				class="text-muted-foreground w-full grow font-sans font-medium tracking-wide select-none"
-				>Server</span
-			>
-			<Tooltip.Root delayDuration={0}>
-				<Tooltip.Trigger disabled={error === null}>
-					<span
-						class={cn(
-							'text-muted-foreground font-normal',
-							(error || !ctx.server.alive) && 'text-destructive'
-						)}
-					>
-						{#if error || !ctx.server.alive}
-							disconnected
-						{:else}
-							connected
-						{/if}
-					</span>
-				</Tooltip.Trigger>
-				<Tooltip.Content><p>{error}</p></Tooltip.Content>
-			</Tooltip.Root>
-			<Button
-				size="icon"
-				variant="ghost"
-				class="mx-1 size-7"
-				disabled={connecting}
-				onclick={() => refreshAgents()}
-			>
-				<IconArrowsClockwise class={cn('size-4', connecting && 'animate-spin')} />
-			</Button>
-		</Sidebar.GroupLabel>
-		<Sidebar.GroupContent>
-			<Sidebar.Menu>
-				<!-- <SidebarLink url="{base}/" icon={IconHome} title="Home" /> -->
-				<div use:tourTarget={'registry'}>
-					<SidebarLink url="{base}/server/registry" icon={IconPackage} title="Agent Registry" />
-				</div>
-				<div use:tourTarget={'logs'}>
-					<SidebarLink url="{base}/server/logs" icon={IconNotepad} title="Logs" disabled />
-				</div>
-
-				<Sidebar.MenuItem>
-					<div use:tourTarget={'workbench'}>
-						<SidebarLink url="{base}/workbench" icon={IconCircuity} title="Workbench" />
-					</div>
-					<Sidebar.MenuSub>
-						<Sidebar.MenuSubItem>
-							<div use:tourTarget={'templates'}>
-								<SidebarLink
-									url="{base}/workbench/templates/"
-									icon={IconFolder}
-									title="Templates"
-								/>
-							</div>
-						</Sidebar.MenuSubItem>
-					</Sidebar.MenuSub>
-				</Sidebar.MenuItem>
-			</Sidebar.Menu>
-		</Sidebar.GroupContent>
+<Sidebar.Root class="">
+	<Sidebar.Header class="mb-2 p-0">
+		<a href="{base}/" class="flex p-2">
+			<div>
+				<Logo class="text-foreground size-10" />
+			</div>
+			<div class="flex flex-col gap-0.5 text-lg leading-none">
+				<span class="font-[Oxanium] font-semibold tracking-widest"
+					>Coral<span class="text-brand-primary font-bold tracking-normal">OS</span>
+				</span>
+				<span class="text-brand-primary font-sans text-sm">Console</span>
+			</div>
+		</a>
+		<Sidebar.Group>
+			<Sidebar.GroupLabel class="text-muted-foreground">Namespace</Sidebar.GroupLabel>
+			<Sidebar.GroupContent>
+				<Sidebar.Menu>
+					<Sidebar.MenuItem class="flex">
+						<!-- <DropdownMenu.Root>
+									<DropdownMenu.Trigger class="h-full">
+										<Sidebar.MenuButton>
+											{ctx.server.namespace ? ctx.server.namespace : 'Select Namespace'}
+											<CaretUpDown class="ml-auto" />
+										</Sidebar.MenuButton>
+									</DropdownMenu.Trigger>
+									<DropdownMenu.Content class="w-(--bits-dropdown-menu-anchor-width)">
+										<DropdownMenu.Item onclick={() => (ctx.server.namespace = 'default')}>
+											<span>default</span>
+										</DropdownMenu.Item>
+										{#each namespaces as namespace}
+											<DropdownMenu.Item onclick={() => (ctx.server.namespace = namespace)}>
+												<span>{namespace}</span>
+											</DropdownMenu.Item>
+										{/each}
+									</DropdownMenu.Content>
+								</DropdownMenu.Root> -->
+						<NamespaceSwitcher />
+					</Sidebar.MenuItem>
+				</Sidebar.Menu>
+			</Sidebar.GroupContent>
+		</Sidebar.Group>
 	</Sidebar.Header>
 	<Sidebar.Content class="gap-0 overflow-hidden">
 		<Sidebar.Group>
-			<Sidebar.Separator />
+			<Sidebar.GroupLabel class="pr-0">
+				<span
+					class="text-muted-foreground w-full grow font-sans font-medium tracking-wide select-none"
+					>Server</span
+				>
+				<Tooltip.Root delayDuration={0}>
+					<Tooltip.Trigger disabled={error === null}>
+						<span
+							class={cn(
+								'text-muted-foreground font-normal',
+								(error || !ctx.server.alive) && 'text-destructive'
+							)}
+						>
+							{#if error || !ctx.server.alive}
+								disconnected
+							{:else}
+								connected
+							{/if}
+						</span>
+					</Tooltip.Trigger>
+					<Tooltip.Content><p>{error}</p></Tooltip.Content>
+				</Tooltip.Root>
+				<Button
+					size="icon"
+					variant="ghost"
+					class="mx-1 size-7"
+					disabled={connecting}
+					onclick={() => refreshAgents()}
+				>
+					<IconArrowsClockwise class={cn('size-4', connecting && 'animate-spin')} />
+				</Button>
+			</Sidebar.GroupLabel>
+
+			<Sidebar.GroupContent>
+				<Sidebar.Menu>
+					<!-- <SidebarLink url="{base}/" icon={IconHome} title="Home" /> -->
+					<div use:tourTarget={'registry'}>
+						<SidebarLink url="{base}/server/registry" icon={IconPackage} title="Agent Registry" />
+					</div>
+					<div use:tourTarget={'logs'}>
+						<SidebarLink url="{base}/server/logs" icon={IconNotepad} title="Logs" disabled />
+					</div>
+
+					<Sidebar.MenuItem>
+						<div use:tourTarget={'workbench'}>
+							<SidebarLink url="{base}/workbench" icon={IconCircuity} title="Workbench" />
+						</div>
+						<Sidebar.MenuSub>
+							<Sidebar.MenuSubItem>
+								<div use:tourTarget={'templates'}>
+									<SidebarLink
+										url="{base}/workbench/templates/"
+										icon={IconFolder}
+										title="Templates"
+									/>
+								</div>
+							</Sidebar.MenuSubItem>
+						</Sidebar.MenuSub>
+					</Sidebar.MenuItem>
+				</Sidebar.Menu>
+			</Sidebar.GroupContent>
+		</Sidebar.Group>
+
+		<Sidebar.Group>
+			<Sidebar.GroupLabel class="text-muted-foreground">Session</Sidebar.GroupLabel>
+
 			<Sidebar.GroupContent>
 				<div use:tourTarget={'session-section'}>
-					<Sidebar.Menu>
-						<Sidebar.GroupLabel class="text-muted-foreground">Session</Sidebar.GroupLabel>
+					<Sidebar.Menu class="relative">
 						<SessionSwitcher />
 						{#if ctx.session?.possessed}
 							{@const agent = ctx.session.possessed}
@@ -463,21 +544,6 @@
 				</div>
 			</Sidebar.GroupContent>
 		</Sidebar.Group>
+		<Sidebar.Rail />
 	</Sidebar.Content>
-	<Sidebar.Footer>
-		<Sidebar.Menu>
-			<Sidebar.MenuItem class="flex justify-end gap-4">
-				<Button onclick={toggleMode} variant="outline" size="icon">
-					<SunIcon
-						class="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90"
-					/>
-					<MoonIcon
-						class="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0"
-					/>
-					<span class="sr-only">Toggle theme</span>
-				</Button>
-			</Sidebar.MenuItem>
-		</Sidebar.Menu>
-	</Sidebar.Footer>
-	<Sidebar.Rail />
 </Sidebar.Root>
