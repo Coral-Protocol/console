@@ -99,7 +99,10 @@ export class CoralServer {
 	public sessions = $derived(this.allSessions[this.namespace]?.sessions ?? {});
 
 	public lsmSock = $derived(
-		createWebsocket(`/ws/v1/events/lsm?namespaceFilter=${encodeURIComponent(this.namespace)}`)
+		createWebsocket(
+			`/ws/v1/events/lsm?namespaceFilter=${encodeURIComponent(this.namespace)}`,
+			'lsm'
+		)
 	);
 
 	constructor() {
@@ -187,6 +190,7 @@ export class CoralServer {
 	}
 
 	public addNamespace(namespace: string) {
+		this.api.POST('/api/v1/local/namespace');
 		this.allSessions[namespace] = {
 			name: namespace,
 			annotations: {},

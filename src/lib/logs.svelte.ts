@@ -23,7 +23,8 @@ export class Logs {
 	) {
 		this.session = session;
 		const sock = createWebsocket(
-			`/ws/v1/logs?sessionFilter=${this.session}&agentFilter=${agentId}`
+			`/ws/v1/logs?sessionFilter=${this.session}&agentFilter=${agentId}`,
+			'logs'
 		);
 		if (!sock) throw new Error('cannot create Logs in SSR');
 		this.socket = sock;

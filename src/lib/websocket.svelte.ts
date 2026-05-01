@@ -1,7 +1,9 @@
 import { browser } from '$app/environment';
 import { config } from '$lib/config';
 
-export const createWebsocket = (path: `/ws/${string}`) => {
+let cache: Record<string, WebSocket> = {};
+
+export const createWebsocket = (path: `/ws/${string}`, cacheKey: string) => {
 	if (!browser) return null;
 	let url = config.PUBLIC_API_PATH;
 	if (url[0] === '/') {
@@ -11,5 +13,13 @@ export const createWebsocket = (path: `/ws/${string}`) => {
 	} else {
 		console.error('Bad PUBLIC_API_PATH!', { path: config.PUBLIC_API_PATH });
 	}
-	return new WebSocket(url + path);
+	const ws = new WebSocket(url + path);
+
+	const existing = cache[cacheKey];
+	if (existing) {
+		existing.close();
+	}
+	cache[cacheKey] = ws;
+
+	return ws;
 };
