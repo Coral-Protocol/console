@@ -305,7 +305,7 @@
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
 					<Sidebar.MenuItem class="flex">
-						{#if (config.PUBLIC_DEPLOYMENT = 'cloud')}
+						{#if config.PUBLIC_DEPLOYMENT === 'cloud'}
 							<Button
 								variant="outline"
 								onclick={() => {
