@@ -43,15 +43,17 @@
 
 	let missingAgents = $derived.by(() => {
 		const agents = payload.agentGraphRequest?.agents || [];
-		return agents.filter((agent: { id: { name: string; version: string; registrySourceId: any } }) => {
-			const regId = registryIdOf(agent.id.registrySourceId);
-			const catalog = server.catalogs[regId];
-			if (!catalog) return true;
-			const catalogAgent = catalog.agents[agent.id.name];
-			if (!catalogAgent) return true;
-			if (!catalogAgent.versions.includes(agent.id.version)) return true;
-			return false;
-		});
+		return agents.filter(
+			(agent: { id: { name: string; version: string; registrySourceId: any } }) => {
+				const regId = registryIdOf(agent.id.registrySourceId);
+				const catalog = server.catalogs[regId];
+				if (!catalog) return true;
+				const catalogAgent = catalog.agents[agent.id.name];
+				if (!catalogAgent) return true;
+				if (!catalogAgent.versions.includes(agent.id.version)) return true;
+				return false;
+			}
+		);
 	});
 
 	let allAgentsAvailable = $derived(missingAgents.length === 0);
@@ -70,7 +72,6 @@
 			toast.error('Failed to remove template.');
 		}
 	};
-
 
 	const markTrusted = (templateName: string) => {
 		try {
@@ -184,7 +185,7 @@
 							: ''}.
 					</li>
 					{#if !allAgentsAvailable}
-						<li class="text-accent font-semibold">
+						<li class=" font-semibold">
 							Contains unavailable agents: {missingAgents.map((a: any) => a.id.name).join(', ')}
 						</li>
 					{/if}
@@ -231,7 +232,7 @@
 						</Tabs.Content>
 						<Tabs.Content value="data" class="overflow-y-scroll">
 							<Highlight
-								class="[&>code]:bg-sidebar max-h-fit text-xs leading-relaxed text-wrap"
+								class="[&>code]:bg-sidebar bg-sidebar max-h-fit text-xs leading-relaxed text-wrap"
 								language={json}
 								code={JSON.stringify(payload, null, 2)}
 							></Highlight>
@@ -265,7 +266,7 @@
 						onclick={() => markTrusted(template)}>Mark as trusted</TwostepButton
 					>
 				{:else}
-					<Tooltip.Root delayDuration={0}>
+					<Tooltip.Root>
 						<Tooltip.Trigger class="ml-auto">
 							<Button
 								disabled={loading || !allAgentsAvailable}
@@ -273,13 +274,14 @@
 							>
 						</Tooltip.Trigger>
 						{#if !allAgentsAvailable}
-							<Tooltip.Content>
+							<Tooltip.Content class="flex flex-col gap-2">
 								<p>Some agents in this template are not available:</p>
 								<ul class="list-disc pl-4">
-									{#each missingAgents as agent (agent.id.name + agent.id.version)}
+									{#each missingAgents as agent}
 										<li>{agent.id.name} ({agent.id.version})</li>
 									{/each}
 								</ul>
+								<p class="text-destructive">Loading this template will not work</p>
 							</Tooltip.Content>
 						{/if}
 					</Tooltip.Root>
