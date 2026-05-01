@@ -18,6 +18,7 @@
 	import SunIcon from 'phosphor-icons-svelte/IconSunRegular.svelte';
 	import IconArrowsClockwise from 'phosphor-icons-svelte/IconArrowsClockwiseRegular.svelte';
 	import IconArrowDownRegular from 'phosphor-icons-svelte/IconArrowDownRegular.svelte';
+	import IconArrowLeft from 'phosphor-icons-svelte/IconArrowLeftRegular.svelte';
 	import IconCaretDownRegular from 'phosphor-icons-svelte/IconCaretDownRegular.svelte';
 	import IconRobot from 'phosphor-icons-svelte/IconRobotRegular.svelte';
 	import IconSearch from 'phosphor-icons-svelte/IconMagnifyingGlassRegular.svelte';
@@ -288,40 +289,33 @@
 
 <Sidebar.Root class="">
 	<Sidebar.Header class="mb-2 p-0">
-		<a href="{base}/" class="flex p-2">
-			<div>
-				<Logo class="text-foreground size-10" />
-			</div>
-			<div class="flex flex-col gap-0.5 text-lg leading-none">
-				<span class="font-[Oxanium] font-semibold tracking-widest"
-					>Coral<span class="text-brand-primary font-bold tracking-normal">OS</span>
-				</span>
-				<span class="text-brand-primary font-sans text-sm">Console</span>
-			</div>
-		</a>
+		<div class="flex items-center justify-between">
+			<a href="{base}/" class="flex p-2">
+				<div>
+					<Logo class="text-foreground size-10" />
+				</div>
+				<div class="flex flex-col gap-0.5 text-lg leading-none">
+					<span class="font-[Oxanium] font-semibold tracking-widest"
+						>Coral<span class="text-brand-primary font-bold tracking-normal">OS</span>
+					</span>
+					<span class="text-brand-primary font-sans text-sm">Console</span>
+				</div>
+			</a>
+			{#if config.PUBLIC_DEPLOYMENT === 'cloud'}
+				<Button
+					variant="ghost"
+					onclick={() => {
+						window.location.href = '/';
+					}}><IconArrowLeft /> Return to Cloud</Button
+				>
+			{/if}
+		</div>
+
 		<Sidebar.Group>
 			<Sidebar.GroupLabel class="text-muted-foreground">Namespace</Sidebar.GroupLabel>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
 					<Sidebar.MenuItem class="flex">
-						<!-- <DropdownMenu.Root>
-									<DropdownMenu.Trigger class="h-full">
-										<Sidebar.MenuButton>
-											{ctx.server.namespace ? ctx.server.namespace : 'Select Namespace'}
-											<CaretUpDown class="ml-auto" />
-										</Sidebar.MenuButton>
-									</DropdownMenu.Trigger>
-									<DropdownMenu.Content class="w-(--bits-dropdown-menu-anchor-width)">
-										<DropdownMenu.Item onclick={() => (ctx.server.namespace = 'default')}>
-											<span>default</span>
-										</DropdownMenu.Item>
-										{#each namespaces as namespace}
-											<DropdownMenu.Item onclick={() => (ctx.server.namespace = namespace)}>
-												<span>{namespace}</span>
-											</DropdownMenu.Item>
-										{/each}
-									</DropdownMenu.Content>
-								</DropdownMenu.Root> -->
 						<NamespaceSwitcher />
 					</Sidebar.MenuItem>
 				</Sidebar.Menu>
