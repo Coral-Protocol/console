@@ -15,7 +15,7 @@
 				{#if i == parts.length - 1}
 					<Breadcrumb.Page>{part.label}</Breadcrumb.Page>
 				{:else}
-					<Breadcrumb.Link href={part.href && '{base}{part.href}'}>{part.label}</Breadcrumb.Link>
+					<Breadcrumb.Link href={part.href && `${base}${part.href}`}>{part.label}</Breadcrumb.Link>
 				{/if}
 			</Breadcrumb.Item>
 			{#if i != parts.length - 1}
