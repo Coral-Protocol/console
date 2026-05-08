@@ -37,7 +37,8 @@ export class CoralServer {
 		const token = building ? '' : page.url.searchParams.get('token');
 		return createClient<paths>({
 			baseUrl: `${(config.PUBLIC_API_PATH || base) ?? '/'}`,
-			headers: { Authorization: token ? `Bearer ${token}` : undefined }
+			headers: { Authorization: token ? `Bearer ${token}` : undefined },
+			credentials: 'include'
 		});
 	});
 
