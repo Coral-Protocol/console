@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.13](https://github.com/Coral-Protocol/console/compare/v0.3.12...v0.3.13) (2026-05-08)
+
+
+### Bug Fixes
+
+* credientals in api requests ([b9199f8](https://github.com/Coral-Protocol/console/commit/b9199f89c7e5bda04d073c59778eab201363d115))
+* Revise README for Console and development setup ([9185aae](https://github.com/Coral-Protocol/console/commit/9185aae2ac410069e5102da1e124618d8e06b148))
+
 ## [0.3.12](https://github.com/Coral-Protocol/console/compare/v0.3.11...v0.3.12) (2026-05-08)
 
 
