@@ -62,6 +62,7 @@
       dev = bundle {
         basePath = "/console";
         apiPath = "/server";
+        deployment = "cloud";
       };
       cloud = bundle {
         basePath = "/console";
