@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.3.12](https://github.com/Coral-Protocol/console/compare/v0.3.11...v0.3.12) (2026-05-08)
+
+
+### Features
+
+* new tag for deployment type to show/hide back to cloud button ([#156](https://github.com/Coral-Protocol/console/issues/156)) ([dc94e48](https://github.com/Coral-Protocol/console/commit/dc94e4887668768074d2ea1001f3beda6196b280))
+* nicer breadcrumb system ([#151](https://github.com/Coral-Protocol/console/issues/151)) ([a626a27](https://github.com/Coral-Protocol/console/commit/a626a27159bd1d8f17c6e243f5c31f40af1825ba))
+* updated ui ([#155](https://github.com/Coral-Protocol/console/issues/155)) ([92172e8](https://github.com/Coral-Protocol/console/commit/92172e89005bce8c5ee01d8178a50c1d92ea0ef0))
+
+
+### Bug Fixes
+
+* better websocket cleanup ([#154](https://github.com/Coral-Protocol/console/issues/154)) ([7c14b43](https://github.com/Coral-Protocol/console/commit/7c14b439cf0bf01c5ada337ee4f944d97896bdba))
+* breadcrumb script ([aa74fef](https://github.com/Coral-Protocol/console/commit/aa74fefdbbe522bed8a1f076eb1e5c1ac87cfd19))
+* nix cloud build ([c675114](https://github.com/Coral-Protocol/console/commit/c6751148f973a3fcc4cccda331a1cb6215e9a15a))
+* use latest server api ([f6cb9ab](https://github.com/Coral-Protocol/console/commit/f6cb9ab48c97db09e82713a9175dd02a5b87bb5d))
+
 ## [0.3.11](https://github.com/Coral-Protocol/console/compare/v0.3.10...v0.3.11) (2026-04-14)
 
 
