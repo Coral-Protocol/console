@@ -68,6 +68,9 @@ jobs:
         run: |
           set -eu
 
+          # build every package so cloud can benefit from our caching
+          nix-fast-build --eval-workers 1 --skip-cached --no-nom --attic-cache=$ATTIC_CACHE --flake .#packages.x86_64-linux
+
           BUNDLE_DIR=$(nix build --no-link --print-out-paths .#)
           mkdir output/
           cp -r $BUNDLE_DIR/* output/
