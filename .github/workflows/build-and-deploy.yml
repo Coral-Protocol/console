@@ -2,9 +2,15 @@
 name: "Build and deploy bundle"
 on:  # yamllint disable-line rule:truthy
   push:
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_type }}-${{ github.ref_name }}
   cancel-in-progress: true
+
+env:
+  ATTIC_SERVER: "https://attic.coralos.ai/"
+  ATTIC_CACHE: "coral"
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -27,6 +33,19 @@ jobs:
             keep-derivations = true
             keep-outputs = true
             experimental-features = nix-command flakes
+
+      - name: Install Attic and nix-fast-build
+        shell: bash
+        run: |
+          nix profile install nixpkgs#attic-client nixpkgs#nix-fast-build
+
+      - name: Configure Attic
+        shell: bash
+        run: |
+          attic login --set-default central "$ATTIC_SERVER" "$ATTIC_TOKEN"
+          attic use "$ATTIC_CACHE"
+        env:
+          ATTIC_TOKEN: ${{ secrets.ATTIC_TOKEN }}
 
       - name: Restore and save Nix store and npm cache
         uses: nix-community/cache-nix-action@v6
