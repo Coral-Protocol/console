@@ -558,6 +558,234 @@
         } ]
       }
     },
+    "/api/v1/local/session/{namespace}/{sessionId}/agent/{agentId}/sleeping" : {
+      "get" : {
+        "tags" : [ "local" ],
+        "summary" : "Get agent sleeping state",
+        "description" : "Returns whether a given agent instance in a session is sleeping",
+        "operationId" : "getAgentSleeping",
+        "parameters" : [ {
+          "name" : "namespace",
+          "in" : "path",
+          "description" : "The namespace name",
+          "required" : true,
+          "deprecated" : false,
+          "explode" : false,
+          "schema" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        }, {
+          "name" : "sessionId",
+          "in" : "path",
+          "description" : "The session ID",
+          "required" : true,
+          "deprecated" : false,
+          "explode" : false,
+          "schema" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        }, {
+          "name" : "agentId",
+          "in" : "path",
+          "description" : "The agent ID within the session",
+          "required" : true,
+          "deprecated" : false,
+          "explode" : false,
+          "schema" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success",
+            "headers" : { },
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SleepState"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Session or agent not found",
+            "headers" : { },
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RouteException"
+                }
+              }
+            }
+          }
+        },
+        "deprecated" : false,
+        "security" : [ {
+          "token" : [ ]
+        } ]
+      },
+      "put" : {
+        "tags" : [ "local" ],
+        "summary" : "Set agent sleeping state",
+        "description" : "Sets whether a given agent instance in a session is sleeping",
+        "operationId" : "setAgentSleeping",
+        "parameters" : [ {
+          "name" : "namespace",
+          "in" : "path",
+          "description" : "The namespace name",
+          "required" : true,
+          "deprecated" : false,
+          "explode" : false,
+          "schema" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        }, {
+          "name" : "sessionId",
+          "in" : "path",
+          "description" : "The session ID",
+          "required" : true,
+          "deprecated" : false,
+          "explode" : false,
+          "schema" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        }, {
+          "name" : "agentId",
+          "in" : "path",
+          "description" : "The agent ID within the session",
+          "required" : true,
+          "deprecated" : false,
+          "explode" : false,
+          "schema" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "Desired sleeping state",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SleepState"
+              }
+            }
+          },
+          "required" : false
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Success",
+            "headers" : { },
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SleepState"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Session or agent not found",
+            "headers" : { },
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RouteException"
+                }
+              }
+            }
+          }
+        },
+        "deprecated" : false,
+        "security" : [ {
+          "token" : [ ]
+        } ]
+      },
+      "post" : {
+        "tags" : [ "local" ],
+        "summary" : "Set agent sleeping state (POST)",
+        "description" : "Same behavior as PUT: sets whether a given agent instance in a session is sleeping",
+        "operationId" : "setAgentSleepingPost",
+        "parameters" : [ {
+          "name" : "namespace",
+          "in" : "path",
+          "description" : "The namespace name",
+          "required" : true,
+          "deprecated" : false,
+          "explode" : false,
+          "schema" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        }, {
+          "name" : "sessionId",
+          "in" : "path",
+          "description" : "The session ID",
+          "required" : true,
+          "deprecated" : false,
+          "explode" : false,
+          "schema" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        }, {
+          "name" : "agentId",
+          "in" : "path",
+          "description" : "The agent ID within the session",
+          "required" : true,
+          "deprecated" : false,
+          "explode" : false,
+          "schema" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "Desired sleeping state",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SleepState"
+              }
+            }
+          },
+          "required" : false
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Success",
+            "headers" : { },
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SleepState"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Session or agent not found",
+            "headers" : { },
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RouteException"
+                }
+              }
+            }
+          }
+        },
+        "deprecated" : false,
+        "security" : [ {
+          "token" : [ ]
+        } ]
+      }
+    },
     "/api/v1/registry" : {
       "get" : {
         "tags" : [ "registry" ],
@@ -932,6 +1160,17 @@
                 }
               }
             }
+          },
+          "403" : {
+            "description" : "Agent not allowed to close thread",
+            "headers" : { },
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RouteException"
+                }
+              }
+            }
           }
         },
         "deprecated" : false,
@@ -1016,6 +1255,17 @@
           },
           "400" : {
             "description" : "Bad message",
+            "headers" : { },
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RouteException"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Agent not allowed to post messages to thread",
             "headers" : { },
             "content" : {
               "application/json" : {
@@ -1924,6 +2174,156 @@
           "properties" : {
             "type" : {
               "type" : "string",
+              "enum" : [ "detailed_llm_proxy_request" ],
+              "title" : "String"
+            },
+            "timestamp" : {
+              "type" : "string",
+              "title" : "UTC timestamp ISO-8601"
+            },
+            "requestId" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "agentName" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "providerRequestName" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "configurationName" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "modelName" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "upstreamUrl" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "method" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "streaming" : {
+              "type" : "boolean",
+              "title" : "Boolean"
+            },
+            "headers" : {
+              "type" : "object",
+              "additionalProperties" : {
+                "type" : "string",
+                "title" : "String"
+              },
+              "title" : "LinkedHashMap<String,String>"
+            },
+            "body" : {
+              "anyOf" : [ {
+                "type" : "object",
+                "properties" : {
+                  "format" : {
+                    "type" : "string",
+                    "enum" : [ "openai" ],
+                    "title" : "String"
+                  },
+                  "request" : {
+                    "$ref" : "#/components/schemas/OpenAIChatCompletionRequest"
+                  }
+                },
+                "required" : [ "format", "request" ],
+                "title" : "openai"
+              }, {
+                "type" : "object",
+                "properties" : {
+                  "format" : {
+                    "type" : "string",
+                    "enum" : [ "openrouter" ],
+                    "title" : "String"
+                  },
+                  "request" : {
+                    "$ref" : "#/components/schemas/OpenRouterChatCompletionRequest"
+                  }
+                },
+                "required" : [ "format", "request" ],
+                "title" : "openrouter"
+              }, {
+                "type" : "object",
+                "properties" : {
+                  "format" : {
+                    "type" : "string",
+                    "enum" : [ "raw" ],
+                    "title" : "String"
+                  },
+                  "body" : {
+                    "$ref" : "#/components/schemas/JsonElement"
+                  }
+                },
+                "required" : [ "body", "format" ],
+                "title" : "raw"
+              } ],
+              "discriminator" : {
+                "propertyName" : "format"
+              },
+              "title" : "DetailedLlmProxyRequestBody"
+            }
+          },
+          "required" : [ "agentName", "body", "configurationName", "headers", "method", "modelName", "providerRequestName", "requestId", "streaming", "timestamp", "type", "upstreamUrl" ],
+          "title" : "detailed_llm_proxy_request"
+        }, {
+          "type" : "object",
+          "properties" : {
+            "type" : {
+              "type" : "string",
+              "enum" : [ "detailed_llm_proxy_response" ],
+              "title" : "String"
+            },
+            "timestamp" : {
+              "type" : "string",
+              "title" : "UTC timestamp ISO-8601"
+            },
+            "requestId" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "agentName" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "providerRequestName" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "statusCode" : {
+              "type" : "integer",
+              "format" : "int32",
+              "title" : "Int"
+            },
+            "headers" : {
+              "type" : "object",
+              "additionalProperties" : {
+                "type" : "string",
+                "title" : "String"
+              },
+              "title" : "LinkedHashMap<String,String>"
+            },
+            "body" : {
+              "$ref" : "#/components/schemas/DetailedLlmProxyResponseBody"
+            },
+            "usage" : {
+              "$ref" : "#/components/schemas/LlmUsage"
+            }
+          },
+          "required" : [ "agentName", "body", "headers", "providerRequestName", "requestId", "statusCode", "timestamp", "type" ],
+          "title" : "detailed_llm_proxy_response"
+        }, {
+          "type" : "object",
+          "properties" : {
+            "type" : {
+              "type" : "string",
               "enum" : [ "docker_container_created" ],
               "title" : "String"
             },
@@ -1957,6 +2357,41 @@
           },
           "required" : [ "containerId", "timestamp", "type" ],
           "title" : "docker_container_removed"
+        }, {
+          "type" : "object",
+          "properties" : {
+            "type" : {
+              "type" : "string",
+              "enum" : [ "llm_proxy_call" ],
+              "title" : "String"
+            },
+            "timestamp" : {
+              "type" : "string",
+              "title" : "UTC timestamp ISO-8601"
+            },
+            "agentName" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "modelName" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "providerRequestName" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "statusCode" : {
+              "type" : "integer",
+              "format" : "int32",
+              "title" : "Int"
+            },
+            "usage" : {
+              "$ref" : "#/components/schemas/LlmUsage"
+            }
+          },
+          "required" : [ "agentName", "modelName", "providerRequestName", "statusCode", "timestamp", "type", "usage" ],
+          "title" : "llm_proxy_call"
         }, {
           "type" : "object",
           "properties" : {
@@ -2142,6 +2577,1013 @@
         "required" : [ "id", "mentionNames", "senderName", "text", "threadId", "timestamp" ],
         "title" : "SessionThreadMessage"
       },
+      "OpenAIChatCompletionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "messages" : {
+            "type" : "array",
+            "items" : {
+              "anyOf" : [ {
+                "type" : "object",
+                "properties" : {
+                  "role" : {
+                    "type" : "string",
+                    "enum" : [ "assistant" ],
+                    "title" : "String"
+                  },
+                  "content" : {
+                    "$ref" : "#/components/schemas/Content"
+                  },
+                  "reasoningContent" : {
+                    "type" : "string",
+                    "title" : "String"
+                  },
+                  "audio" : {
+                    "$ref" : "#/components/schemas/OpenAIAudio"
+                  },
+                  "name" : {
+                    "type" : "string",
+                    "title" : "String"
+                  },
+                  "refusal" : {
+                    "type" : "string",
+                    "title" : "String"
+                  },
+                  "toolCalls" : {
+                    "type" : "array",
+                    "items" : {
+                      "$ref" : "#/components/schemas/OpenAIToolCall"
+                    },
+                    "title" : "ArrayList<OpenAIToolCall>"
+                  },
+                  "annotations" : {
+                    "type" : "array",
+                    "items" : {
+                      "$ref" : "#/components/schemas/OpenAIWebUrlCitation"
+                    },
+                    "title" : "ArrayList<OpenAIWebUrlCitation>"
+                  }
+                },
+                "required" : [ "role" ],
+                "title" : "assistant"
+              }, {
+                "type" : "object",
+                "properties" : {
+                  "role" : {
+                    "type" : "string",
+                    "enum" : [ "developer" ],
+                    "title" : "String"
+                  },
+                  "content" : {
+                    "$ref" : "#/components/schemas/Content"
+                  },
+                  "name" : {
+                    "type" : "string",
+                    "title" : "String"
+                  }
+                },
+                "required" : [ "content", "role" ],
+                "title" : "developer"
+              }, {
+                "type" : "object",
+                "properties" : {
+                  "role" : {
+                    "type" : "string",
+                    "enum" : [ "system" ],
+                    "title" : "String"
+                  },
+                  "content" : {
+                    "$ref" : "#/components/schemas/Content"
+                  },
+                  "name" : {
+                    "type" : "string",
+                    "title" : "String"
+                  }
+                },
+                "required" : [ "content", "role" ],
+                "title" : "system"
+              }, {
+                "type" : "object",
+                "properties" : {
+                  "role" : {
+                    "type" : "string",
+                    "enum" : [ "tool" ],
+                    "title" : "String"
+                  },
+                  "content" : {
+                    "$ref" : "#/components/schemas/Content"
+                  },
+                  "toolCallId" : {
+                    "type" : "string",
+                    "title" : "String"
+                  }
+                },
+                "required" : [ "content", "role", "toolCallId" ],
+                "title" : "tool"
+              }, {
+                "type" : "object",
+                "properties" : {
+                  "role" : {
+                    "type" : "string",
+                    "enum" : [ "user" ],
+                    "title" : "String"
+                  },
+                  "content" : {
+                    "$ref" : "#/components/schemas/Content"
+                  },
+                  "name" : {
+                    "type" : "string",
+                    "title" : "String"
+                  }
+                },
+                "required" : [ "content", "role" ],
+                "title" : "user"
+              } ],
+              "discriminator" : {
+                "propertyName" : "role"
+              },
+              "title" : "OpenAIMessage"
+            },
+            "title" : "ArrayList<OpenAIMessage>"
+          },
+          "model" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "audio" : {
+            "$ref" : "#/components/schemas/OpenAIAudioConfig"
+          },
+          "frequencyPenalty" : {
+            "type" : "number",
+            "format" : "double",
+            "title" : "Double"
+          },
+          "logitBias" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "integer",
+              "format" : "int32",
+              "title" : "Int"
+            },
+            "title" : "LinkedHashMap<String,Int>"
+          },
+          "logprobs" : {
+            "type" : "boolean",
+            "title" : "Boolean"
+          },
+          "maxCompletionTokens" : {
+            "type" : "integer",
+            "format" : "int32",
+            "title" : "Int"
+          },
+          "maxTokens" : {
+            "type" : "integer",
+            "format" : "int32",
+            "title" : "Int"
+          },
+          "metadata" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "title" : "LinkedHashMap<String,String>"
+          },
+          "modalities" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/OpenAIModalities"
+            },
+            "title" : "ArrayList<OpenAIModalities>"
+          },
+          "n" : {
+            "type" : "integer",
+            "format" : "int32",
+            "title" : "Int"
+          },
+          "parallelToolCalls" : {
+            "type" : "boolean",
+            "title" : "Boolean"
+          },
+          "prediction" : {
+            "$ref" : "#/components/schemas/OpenAIStaticContent"
+          },
+          "presencePenalty" : {
+            "type" : "number",
+            "format" : "double",
+            "title" : "Double"
+          },
+          "promptCacheKey" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "reasoningEffort" : {
+            "$ref" : "#/components/schemas/ReasoningEffort"
+          },
+          "responseFormat" : {
+            "anyOf" : [ {
+              "type" : "object",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "json_object" ],
+                  "title" : "String"
+                }
+              },
+              "required" : [ "type" ],
+              "title" : "json_object"
+            }, {
+              "type" : "object",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "json_schema" ],
+                  "title" : "String"
+                },
+                "jsonSchema" : {
+                  "$ref" : "#/components/schemas/JsonSchemaObject"
+                }
+              },
+              "required" : [ "jsonSchema", "type" ],
+              "title" : "json_schema"
+            }, {
+              "type" : "object",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "text" ],
+                  "title" : "String"
+                }
+              },
+              "required" : [ "type" ],
+              "title" : "text"
+            } ],
+            "discriminator" : {
+              "propertyName" : "type"
+            },
+            "title" : "OpenAIResponseFormat"
+          },
+          "safetyIdentifier" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "seed" : {
+            "type" : "integer",
+            "format" : "int32",
+            "title" : "Int"
+          },
+          "serviceTier" : {
+            "$ref" : "#/components/schemas/ServiceTier"
+          },
+          "stop" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "title" : "ArrayList<String>"
+          },
+          "store" : {
+            "type" : "boolean",
+            "title" : "Boolean"
+          },
+          "stream" : {
+            "type" : "boolean",
+            "title" : "Boolean"
+          },
+          "streamOptions" : {
+            "$ref" : "#/components/schemas/OpenAIStreamOptions"
+          },
+          "temperature" : {
+            "type" : "number",
+            "format" : "double",
+            "title" : "Double"
+          },
+          "toolChoice" : {
+            "$ref" : "#/components/schemas/OpenAIToolChoice"
+          },
+          "tools" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/OpenAITool"
+            },
+            "title" : "ArrayList<OpenAITool>"
+          },
+          "topLogprobs" : {
+            "type" : "integer",
+            "format" : "int32",
+            "title" : "Int"
+          },
+          "topP" : {
+            "type" : "number",
+            "format" : "double",
+            "title" : "Double"
+          },
+          "user" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "webSearchOptions" : {
+            "$ref" : "#/components/schemas/OpenAIWebSearchOptions"
+          },
+          "additionalProperties" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/JsonElement"
+            },
+            "title" : "LinkedHashMap<String,JsonElement>"
+          }
+        },
+        "required" : [ "messages", "model" ],
+        "title" : "OpenAIChatCompletionRequest"
+      },
+      "Content" : {
+        "type" : "object",
+        "properties" : { },
+        "title" : "Content"
+      },
+      "OpenAIAudio" : {
+        "type" : "object",
+        "properties" : {
+          "data" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "expiresAt" : {
+            "type" : "integer",
+            "format" : "int64",
+            "title" : "Long"
+          },
+          "id" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "transcript" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        },
+        "required" : [ "id" ],
+        "title" : "OpenAIAudio"
+      },
+      "OpenAIToolCall" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "function" : {
+            "$ref" : "#/components/schemas/OpenAIFunction"
+          },
+          "type" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        },
+        "required" : [ "function", "id", "type" ],
+        "title" : "OpenAIToolCall"
+      },
+      "OpenAIFunction" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "arguments" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        },
+        "required" : [ "arguments", "name" ],
+        "title" : "OpenAIFunction"
+      },
+      "OpenAIWebUrlCitation" : {
+        "type" : "object",
+        "properties" : {
+          "urlCitation" : {
+            "$ref" : "#/components/schemas/Citation"
+          },
+          "type" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        },
+        "required" : [ "type", "urlCitation" ],
+        "title" : "OpenAIWebUrlCitation"
+      },
+      "Citation" : {
+        "type" : "object",
+        "properties" : {
+          "endIndex" : {
+            "type" : "integer",
+            "format" : "int32",
+            "title" : "Int"
+          },
+          "startIndex" : {
+            "type" : "integer",
+            "format" : "int32",
+            "title" : "Int"
+          },
+          "title" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "url" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        },
+        "required" : [ "endIndex", "startIndex", "title", "url" ],
+        "title" : "Citation"
+      },
+      "OpenAIAudioConfig" : {
+        "type" : "object",
+        "properties" : {
+          "format" : {
+            "$ref" : "#/components/schemas/OpenAIAudioFormat"
+          },
+          "voice" : {
+            "$ref" : "#/components/schemas/OpenAIAudioVoice"
+          }
+        },
+        "required" : [ "format", "voice" ],
+        "title" : "OpenAIAudioConfig"
+      },
+      "OpenAIAudioFormat" : {
+        "type" : "string",
+        "enum" : [ "wav", "mp3", "flac", "opus", "pcm16" ],
+        "title" : "OpenAIAudioFormat"
+      },
+      "OpenAIAudioVoice" : {
+        "type" : "string",
+        "enum" : [ "alloy", "ash", "ballad", "coral", "echo", "fable", "nova", "onyx", "sage", "shimmer" ],
+        "title" : "OpenAIAudioVoice"
+      },
+      "OpenAIModalities" : {
+        "type" : "string",
+        "enum" : [ "text", "audio" ],
+        "title" : "OpenAIModalities"
+      },
+      "OpenAIStaticContent" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "$ref" : "#/components/schemas/Content"
+          },
+          "type" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        },
+        "required" : [ "content", "type" ],
+        "title" : "OpenAIStaticContent"
+      },
+      "ReasoningEffort" : {
+        "type" : "string",
+        "enum" : [ "none", "minimal", "low", "medium", "high" ],
+        "title" : "ReasoningEffort"
+      },
+      "JsonSchemaObject" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "description" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "schema" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/JsonElement"
+            },
+            "title" : "JsonObject<String,JsonElement>"
+          },
+          "strict" : {
+            "type" : "boolean",
+            "title" : "Boolean"
+          }
+        },
+        "required" : [ "name" ],
+        "title" : "JsonSchemaObject"
+      },
+      "JsonElement" : {
+        "type" : "object",
+        "properties" : { },
+        "title" : "JsonElement"
+      },
+      "ServiceTier" : {
+        "type" : "string",
+        "enum" : [ "auto", "default", "flex", "priority" ],
+        "title" : "ServiceTier"
+      },
+      "OpenAIStreamOptions" : {
+        "type" : "object",
+        "properties" : {
+          "includeUsage" : {
+            "type" : "boolean",
+            "title" : "Boolean"
+          }
+        },
+        "title" : "OpenAIStreamOptions"
+      },
+      "OpenAIToolChoice" : {
+        "type" : "object",
+        "properties" : { },
+        "title" : "OpenAIToolChoice"
+      },
+      "OpenAITool" : {
+        "type" : "object",
+        "properties" : {
+          "function" : {
+            "$ref" : "#/components/schemas/OpenAIToolFunction"
+          },
+          "type" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        },
+        "required" : [ "function", "type" ],
+        "title" : "OpenAITool"
+      },
+      "OpenAIToolFunction" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "description" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "parameters" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/JsonElement"
+            },
+            "title" : "JsonObject<String,JsonElement>"
+          },
+          "strict" : {
+            "type" : "boolean",
+            "title" : "Boolean"
+          }
+        },
+        "required" : [ "name" ],
+        "title" : "OpenAIToolFunction"
+      },
+      "OpenAIWebSearchOptions" : {
+        "type" : "object",
+        "properties" : {
+          "searchContextSize" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "userLocation" : {
+            "$ref" : "#/components/schemas/OpenAIUserLocation"
+          }
+        },
+        "title" : "OpenAIWebSearchOptions"
+      },
+      "OpenAIUserLocation" : {
+        "type" : "object",
+        "properties" : {
+          "approximate" : {
+            "$ref" : "#/components/schemas/ApproximateLocation"
+          },
+          "type" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        },
+        "required" : [ "approximate", "type" ],
+        "title" : "OpenAIUserLocation"
+      },
+      "ApproximateLocation" : {
+        "type" : "object",
+        "properties" : {
+          "city" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "country" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "region" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "timezone" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        },
+        "title" : "ApproximateLocation"
+      },
+      "OpenRouterChatCompletionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "messages" : {
+            "type" : "array",
+            "items" : {
+              "anyOf" : [ {
+                "type" : "object",
+                "properties" : {
+                  "role" : {
+                    "type" : "string",
+                    "enum" : [ "assistant" ],
+                    "title" : "String"
+                  },
+                  "content" : {
+                    "$ref" : "#/components/schemas/Content"
+                  },
+                  "reasoningContent" : {
+                    "type" : "string",
+                    "title" : "String"
+                  },
+                  "audio" : {
+                    "$ref" : "#/components/schemas/OpenAIAudio"
+                  },
+                  "name" : {
+                    "type" : "string",
+                    "title" : "String"
+                  },
+                  "refusal" : {
+                    "type" : "string",
+                    "title" : "String"
+                  },
+                  "toolCalls" : {
+                    "type" : "array",
+                    "items" : {
+                      "$ref" : "#/components/schemas/OpenAIToolCall"
+                    },
+                    "title" : "ArrayList<OpenAIToolCall>"
+                  },
+                  "annotations" : {
+                    "type" : "array",
+                    "items" : {
+                      "$ref" : "#/components/schemas/OpenAIWebUrlCitation"
+                    },
+                    "title" : "ArrayList<OpenAIWebUrlCitation>"
+                  }
+                },
+                "required" : [ "role" ],
+                "title" : "assistant"
+              }, {
+                "type" : "object",
+                "properties" : {
+                  "role" : {
+                    "type" : "string",
+                    "enum" : [ "developer" ],
+                    "title" : "String"
+                  },
+                  "content" : {
+                    "$ref" : "#/components/schemas/Content"
+                  },
+                  "name" : {
+                    "type" : "string",
+                    "title" : "String"
+                  }
+                },
+                "required" : [ "content", "role" ],
+                "title" : "developer"
+              }, {
+                "type" : "object",
+                "properties" : {
+                  "role" : {
+                    "type" : "string",
+                    "enum" : [ "system" ],
+                    "title" : "String"
+                  },
+                  "content" : {
+                    "$ref" : "#/components/schemas/Content"
+                  },
+                  "name" : {
+                    "type" : "string",
+                    "title" : "String"
+                  }
+                },
+                "required" : [ "content", "role" ],
+                "title" : "system"
+              }, {
+                "type" : "object",
+                "properties" : {
+                  "role" : {
+                    "type" : "string",
+                    "enum" : [ "tool" ],
+                    "title" : "String"
+                  },
+                  "content" : {
+                    "$ref" : "#/components/schemas/Content"
+                  },
+                  "toolCallId" : {
+                    "type" : "string",
+                    "title" : "String"
+                  }
+                },
+                "required" : [ "content", "role", "toolCallId" ],
+                "title" : "tool"
+              }, {
+                "type" : "object",
+                "properties" : {
+                  "role" : {
+                    "type" : "string",
+                    "enum" : [ "user" ],
+                    "title" : "String"
+                  },
+                  "content" : {
+                    "$ref" : "#/components/schemas/Content"
+                  },
+                  "name" : {
+                    "type" : "string",
+                    "title" : "String"
+                  }
+                },
+                "required" : [ "content", "role" ],
+                "title" : "user"
+              } ],
+              "discriminator" : {
+                "propertyName" : "role"
+              },
+              "title" : "OpenAIMessage"
+            },
+            "title" : "ArrayList<OpenAIMessage>"
+          },
+          "prompt" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "model" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "stream" : {
+            "type" : "boolean",
+            "title" : "Boolean"
+          },
+          "temperature" : {
+            "type" : "number",
+            "format" : "double",
+            "title" : "Double"
+          },
+          "tools" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/OpenAITool"
+            },
+            "title" : "ArrayList<OpenAITool>"
+          },
+          "toolChoice" : {
+            "$ref" : "#/components/schemas/OpenAIToolChoice"
+          },
+          "topP" : {
+            "type" : "number",
+            "format" : "double",
+            "title" : "Double"
+          },
+          "topLogprobs" : {
+            "type" : "integer",
+            "format" : "int32",
+            "title" : "Int"
+          },
+          "maxTokens" : {
+            "type" : "integer",
+            "format" : "int32",
+            "title" : "Int"
+          },
+          "frequencyPenalty" : {
+            "type" : "number",
+            "format" : "double",
+            "title" : "Double"
+          },
+          "presencePenalty" : {
+            "type" : "number",
+            "format" : "double",
+            "title" : "Double"
+          },
+          "responseFormat" : {
+            "anyOf" : [ {
+              "type" : "object",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "json_object" ],
+                  "title" : "String"
+                }
+              },
+              "required" : [ "type" ],
+              "title" : "json_object"
+            }, {
+              "type" : "object",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "json_schema" ],
+                  "title" : "String"
+                },
+                "jsonSchema" : {
+                  "$ref" : "#/components/schemas/JsonSchemaObject"
+                }
+              },
+              "required" : [ "jsonSchema", "type" ],
+              "title" : "json_schema"
+            }, {
+              "type" : "object",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "text" ],
+                  "title" : "String"
+                }
+              },
+              "required" : [ "type" ],
+              "title" : "text"
+            } ],
+            "discriminator" : {
+              "propertyName" : "type"
+            },
+            "title" : "OpenAIResponseFormat"
+          },
+          "stop" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "title" : "ArrayList<String>"
+          },
+          "logprobs" : {
+            "type" : "boolean",
+            "title" : "Boolean"
+          },
+          "seed" : {
+            "type" : "integer",
+            "format" : "int32",
+            "title" : "Int"
+          },
+          "topK" : {
+            "type" : "integer",
+            "format" : "int32",
+            "title" : "Int"
+          },
+          "repetitionPenalty" : {
+            "type" : "number",
+            "format" : "double",
+            "title" : "Double"
+          },
+          "logitBias" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "number",
+              "format" : "double",
+              "title" : "Double"
+            },
+            "title" : "LinkedHashMap<Int,Double>"
+          },
+          "minP" : {
+            "type" : "number",
+            "format" : "double",
+            "title" : "Double"
+          },
+          "topA" : {
+            "type" : "number",
+            "format" : "double",
+            "title" : "Double"
+          },
+          "prediction" : {
+            "$ref" : "#/components/schemas/OpenAIStaticContent"
+          },
+          "transforms" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "title" : "ArrayList<String>"
+          },
+          "models" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "title" : "ArrayList<String>"
+          },
+          "route" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "provider" : {
+            "$ref" : "#/components/schemas/ProviderPreferences"
+          },
+          "user" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "additionalProperties" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/JsonElement"
+            },
+            "title" : "LinkedHashMap<String,JsonElement>"
+          }
+        },
+        "required" : [ "messages" ],
+        "title" : "OpenRouterChatCompletionRequest"
+      },
+      "ProviderPreferences" : {
+        "type" : "object",
+        "properties" : {
+          "order" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "title" : "ArrayList<String>"
+          },
+          "allowFallbacks" : {
+            "type" : "boolean",
+            "title" : "Boolean"
+          },
+          "requireParameters" : {
+            "type" : "boolean",
+            "title" : "Boolean"
+          },
+          "dataCollection" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "only" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "title" : "ArrayList<String>"
+          },
+          "ignore" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "title" : "ArrayList<String>"
+          },
+          "quantizations" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "title" : "ArrayList<String>"
+          },
+          "sort" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "maxPrice" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "title" : "LinkedHashMap<String,String>"
+          }
+        },
+        "title" : "ProviderPreferences"
+      },
+      "DetailedLlmProxyResponseBody" : {
+        "type" : "object",
+        "properties" : {
+          "body" : {
+            "$ref" : "#/components/schemas/JsonElement"
+          }
+        },
+        "required" : [ "body" ],
+        "title" : "DetailedLlmProxyResponseBody"
+      },
+      "LlmUsage" : {
+        "type" : "object",
+        "properties" : {
+          "inputTokens" : {
+            "type" : "integer",
+            "format" : "int64",
+            "title" : "Long"
+          },
+          "outputTokens" : {
+            "type" : "integer",
+            "format" : "int64",
+            "title" : "Long"
+          }
+        },
+        "title" : "LlmUsage"
+      },
       "SessionThread" : {
         "type" : "object",
         "properties" : {
@@ -2210,12 +3652,21 @@
             },
             "title" : "SessionThreadState"
           },
+          "limitToPostingBy" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "title" : "LinkedHashSet<String>",
+            "uniqueItems" : true
+          },
           "timestamp" : {
             "type" : "string",
             "title" : "UTC timestamp ISO-8601"
           }
         },
-        "required" : [ "creatorName", "id", "messages", "name", "participants", "state", "timestamp" ],
+        "required" : [ "creatorName", "id", "limitToPostingBy", "messages", "name", "participants", "state", "timestamp" ],
         "title" : "SessionThread"
       },
       "LoggingEvent" : {
@@ -2306,6 +3757,30 @@
                   },
                   "required" : [ "mdcMap", "namespace", "type" ],
                   "title" : "namespace"
+                }, {
+                  "type" : "object",
+                  "properties" : {
+                    "type" : {
+                      "type" : "string",
+                      "enum" : [ "proxy_request" ],
+                      "title" : "String"
+                    },
+                    "proxyNumber" : {
+                      "type" : "integer",
+                      "format" : "int32",
+                      "title" : "Int"
+                    },
+                    "mdcMap" : {
+                      "type" : "object",
+                      "additionalProperties" : {
+                        "type" : "string",
+                        "title" : "String"
+                      },
+                      "title" : "LinkedHashMap<String,String>"
+                    }
+                  },
+                  "required" : [ "mdcMap", "proxyNumber", "type" ],
+                  "title" : "proxy_request"
                 }, {
                   "type" : "object",
                   "properties" : {
@@ -2439,6 +3914,30 @@
                   },
                   "required" : [ "mdcMap", "namespace", "type" ],
                   "title" : "namespace"
+                }, {
+                  "type" : "object",
+                  "properties" : {
+                    "type" : {
+                      "type" : "string",
+                      "enum" : [ "proxy_request" ],
+                      "title" : "String"
+                    },
+                    "proxyNumber" : {
+                      "type" : "integer",
+                      "format" : "int32",
+                      "title" : "Int"
+                    },
+                    "mdcMap" : {
+                      "type" : "object",
+                      "additionalProperties" : {
+                        "type" : "string",
+                        "title" : "String"
+                      },
+                      "title" : "LinkedHashMap<String,String>"
+                    }
+                  },
+                  "required" : [ "mdcMap", "proxyNumber", "type" ],
+                  "title" : "proxy_request"
                 }, {
                   "type" : "object",
                   "properties" : {
@@ -2585,6 +4084,30 @@
                   "properties" : {
                     "type" : {
                       "type" : "string",
+                      "enum" : [ "proxy_request" ],
+                      "title" : "String"
+                    },
+                    "proxyNumber" : {
+                      "type" : "integer",
+                      "format" : "int32",
+                      "title" : "Int"
+                    },
+                    "mdcMap" : {
+                      "type" : "object",
+                      "additionalProperties" : {
+                        "type" : "string",
+                        "title" : "String"
+                      },
+                      "title" : "LinkedHashMap<String,String>"
+                    }
+                  },
+                  "required" : [ "mdcMap", "proxyNumber", "type" ],
+                  "title" : "proxy_request"
+                }, {
+                  "type" : "object",
+                  "properties" : {
+                    "type" : {
+                      "type" : "string",
                       "enum" : [ "sensitive" ],
                       "title" : "String"
                     }
@@ -2718,6 +4241,30 @@
                   "properties" : {
                     "type" : {
                       "type" : "string",
+                      "enum" : [ "proxy_request" ],
+                      "title" : "String"
+                    },
+                    "proxyNumber" : {
+                      "type" : "integer",
+                      "format" : "int32",
+                      "title" : "Int"
+                    },
+                    "mdcMap" : {
+                      "type" : "object",
+                      "additionalProperties" : {
+                        "type" : "string",
+                        "title" : "String"
+                      },
+                      "title" : "LinkedHashMap<String,String>"
+                    }
+                  },
+                  "required" : [ "mdcMap", "proxyNumber", "type" ],
+                  "title" : "proxy_request"
+                }, {
+                  "type" : "object",
+                  "properties" : {
+                    "type" : {
+                      "type" : "string",
                       "enum" : [ "sensitive" ],
                       "title" : "String"
                     }
@@ -2846,6 +4393,30 @@
                   },
                   "required" : [ "mdcMap", "namespace", "type" ],
                   "title" : "namespace"
+                }, {
+                  "type" : "object",
+                  "properties" : {
+                    "type" : {
+                      "type" : "string",
+                      "enum" : [ "proxy_request" ],
+                      "title" : "String"
+                    },
+                    "proxyNumber" : {
+                      "type" : "integer",
+                      "format" : "int32",
+                      "title" : "Int"
+                    },
+                    "mdcMap" : {
+                      "type" : "object",
+                      "additionalProperties" : {
+                        "type" : "string",
+                        "title" : "String"
+                      },
+                      "title" : "LinkedHashMap<String,String>"
+                    }
+                  },
+                  "required" : [ "mdcMap", "proxyNumber", "type" ],
+                  "title" : "proxy_request"
                 }, {
                   "type" : "object",
                   "properties" : {
@@ -3156,9 +4727,17 @@
               "title" : "String"
             },
             "title" : "LinkedHashMap<String,String>"
+          },
+          "tokensByModel" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/TokenUsage"
+            },
+            "description" : "Token usage broken down by provider/model (e.g. 'openai/gpt-4.1')",
+            "title" : "LinkedHashMap<String,TokenUsage>"
           }
         },
-        "required" : [ "annotations", "links", "name", "registryAgentIdentifier", "status" ],
+        "required" : [ "annotations", "links", "name", "registryAgentIdentifier", "status", "tokensByModel" ],
         "title" : "SessionAgentState"
       },
       "RegistryAgentIdentifier" : {
@@ -3222,6 +4801,23 @@
         },
         "required" : [ "name", "registrySourceId", "version" ],
         "title" : "RegistryAgentIdentifier"
+      },
+      "TokenUsage" : {
+        "type" : "object",
+        "properties" : {
+          "inputTokens" : {
+            "type" : "integer",
+            "format" : "int64",
+            "title" : "Long"
+          },
+          "outputTokens" : {
+            "type" : "integer",
+            "format" : "int64",
+            "title" : "Long"
+          }
+        },
+        "required" : [ "inputTokens", "outputTokens" ],
+        "title" : "TokenUsage"
       },
       "SessionAgentUsageReport" : {
         "type" : "object",
@@ -3784,7 +5380,7 @@
           },
           "customToolAccess" : {
             "type" : "array",
-            "description" : "A list of custom tools that this agent can access.  The custom tools must be defined in the parent AgentGraphRequest object",
+            "description" : "A list of custom tools that this agent can access.  The custom tools must be defined in the parent AgentGraphRequest object.  Use '*' to grant access to all custom tools.",
             "items" : {
               "type" : "string",
               "title" : "String"
@@ -4229,6 +5825,32 @@
             },
             "title" : "ArrayList<X402BudgetedResource>"
           },
+          "proxies" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/GraphAgentProxyRequest"
+            },
+            "description" : "A map where the key is the name of the proxy request and the value is the configuration and model that should be selected.",
+            "title" : "LinkedHashMap<String,GraphAgentProxyRequest>"
+          },
+          "sleepEvents" : {
+            "type" : "array",
+            "description" : "A set of events that should cause this agent to enter a sleeping state",
+            "items" : {
+              "$ref" : "#/components/schemas/SleepEvent"
+            },
+            "title" : "LinkedHashSet<SleepEvent>",
+            "uniqueItems" : true
+          },
+          "wakeEvents" : {
+            "type" : "array",
+            "description" : "A set of events that should cause this agent to wake from a sleeping state",
+            "items" : {
+              "$ref" : "#/components/schemas/WakeEvent"
+            },
+            "title" : "LinkedHashSet<WakeEvent>",
+            "uniqueItems" : true
+          },
           "annotations" : {
             "type" : "object",
             "additionalProperties" : {
@@ -4238,7 +5860,7 @@
             "title" : "LinkedHashMap<String,String>"
           }
         },
-        "required" : [ "id", "name", "provider" ],
+        "required" : [ "id", "name", "provider", "proxies" ],
         "title" : "GraphAgentRequest"
       },
       "RuntimeId" : {
@@ -4403,6 +6025,33 @@
         "required" : [ "priority", "remainingBudget", "resource" ],
         "title" : "X402BudgetedResource"
       },
+      "GraphAgentProxyRequest" : {
+        "type" : "object",
+        "properties" : {
+          "configurationName" : {
+            "type" : "string",
+            "description" : "The name of the LLM proxy configuration",
+            "title" : "String"
+          },
+          "modelName" : {
+            "type" : "string",
+            "description" : "The name of the model",
+            "title" : "String"
+          }
+        },
+        "required" : [ "configurationName", "modelName" ],
+        "title" : "GraphAgentProxyRequest"
+      },
+      "SleepEvent" : {
+        "type" : "string",
+        "enum" : [ "agent_started", "removed_from_last_thread", "last_thread_closed" ],
+        "title" : "SleepEvent"
+      },
+      "WakeEvent" : {
+        "type" : "string",
+        "enum" : [ "added_to_any_thread", "added_to_thread_first_time", "mentioned", "added_to_thread_with_messages", "first_message_in_thread" ],
+        "title" : "WakeEvent"
+      },
       "GraphAgentTool" : {
         "type" : "object",
         "properties" : {
@@ -4426,6 +6075,17 @@
               },
               "required" : [ "type", "url" ],
               "title" : "http"
+            }, {
+              "type" : "object",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "local_function" ],
+                  "title" : "String"
+                }
+              },
+              "required" : [ "type" ],
+              "title" : "local_function"
             } ],
             "discriminator" : {
               "propertyName" : "type"
@@ -4485,11 +6145,6 @@
         },
         "required" : [ "type" ],
         "title" : "ToolSchema"
-      },
-      "JsonElement" : {
-        "type" : "object",
-        "properties" : { },
-        "title" : "JsonElement"
       },
       "ToolAnnotations" : {
         "type" : "object",
@@ -4779,6 +6434,17 @@
         },
         "required" : [ "base", "sessions" ],
         "title" : "SessionNamespaceStateExtended"
+      },
+      "SleepState" : {
+        "type" : "object",
+        "properties" : {
+          "sleeping" : {
+            "type" : "boolean",
+            "title" : "Boolean"
+          }
+        },
+        "required" : [ "sleeping" ],
+        "title" : "SleepState"
       },
       "AgentRegistrySource" : {
         "type" : "object",
@@ -5682,6 +7348,9 @@
             },
             "title" : "LinkedHashMap<String,AgentOption>"
           },
+          "llm" : {
+            "$ref" : "#/components/schemas/AgentLlmConfig"
+          },
           "marketplace" : {
             "$ref" : "#/components/schemas/RegistryAgentMarketplaceSettings"
           },
@@ -5728,7 +7397,7 @@
               "properties" : {
                 "type" : {
                   "type" : "string",
-                  "enum" : [ "sdpx" ],
+                  "enum" : [ "spdx" ],
                   "title" : "String"
                 },
                 "expression" : {
@@ -5737,7 +7406,7 @@
                 }
               },
               "required" : [ "expression", "type" ],
-              "title" : "sdpx"
+              "title" : "spdx"
             }, {
               "type" : "object",
               "properties" : {
@@ -5855,11 +7524,15 @@
       "FunctionRuntime" : {
         "type" : "object",
         "properties" : {
+          "volatile" : {
+            "type" : "boolean",
+            "title" : "Boolean"
+          },
           "transport" : {
             "$ref" : "#/components/schemas/McpTransportType"
           }
         },
-        "required" : [ "transport" ],
+        "required" : [ "transport", "volatile" ],
         "title" : "FunctionRuntime"
       },
       "PrototypeRuntime" : {
@@ -5869,175 +7542,36 @@
             "type" : "boolean",
             "title" : "Boolean"
           },
+          "proxy" : {
+            "$ref" : "#/components/schemas/PrototypeString"
+          },
+          "url" : {
+            "$ref" : "#/components/schemas/PrototypeString"
+          },
+          "api_key" : {
+            "$ref" : "#/components/schemas/PrototypeString"
+          },
           "model" : {
-            "anyOf" : [ {
-              "type" : "object",
-              "properties" : {
-                "provider" : {
-                  "type" : "string",
-                  "enum" : [ "anthropic" ],
-                  "title" : "String"
-                },
-                "key" : {
-                  "$ref" : "#/components/schemas/PrototypeString"
-                },
-                "name" : {
-                  "$ref" : "#/components/schemas/PrototypeString"
-                },
-                "url" : {
-                  "anyOf" : [ {
-                    "type" : "object",
-                    "properties" : {
-                      "type" : {
-                        "type" : "string",
-                        "enum" : [ "custom" ],
-                        "title" : "String"
-                      },
-                      "value" : {
-                        "type" : "string",
-                        "title" : "String"
-                      }
-                    },
-                    "required" : [ "type", "value" ],
-                    "title" : "custom"
-                  }, {
-                    "type" : "object",
-                    "properties" : {
-                      "type" : {
-                        "type" : "string",
-                        "enum" : [ "proxy" ],
-                        "title" : "String"
-                      }
-                    },
-                    "required" : [ "type" ],
-                    "title" : "proxy"
-                  } ],
-                  "discriminator" : {
-                    "propertyName" : "type"
-                  },
-                  "title" : "PrototypeApiUrl"
-                }
-              },
-              "required" : [ "key", "name", "provider" ],
-              "title" : "anthropic"
-            }, {
-              "type" : "object",
-              "properties" : {
-                "provider" : {
-                  "type" : "string",
-                  "enum" : [ "openai" ],
-                  "title" : "String"
-                },
-                "key" : {
-                  "$ref" : "#/components/schemas/PrototypeString"
-                },
-                "name" : {
-                  "$ref" : "#/components/schemas/PrototypeString"
-                },
-                "url" : {
-                  "anyOf" : [ {
-                    "type" : "object",
-                    "properties" : {
-                      "type" : {
-                        "type" : "string",
-                        "enum" : [ "custom" ],
-                        "title" : "String"
-                      },
-                      "value" : {
-                        "type" : "string",
-                        "title" : "String"
-                      }
-                    },
-                    "required" : [ "type", "value" ],
-                    "title" : "custom"
-                  }, {
-                    "type" : "object",
-                    "properties" : {
-                      "type" : {
-                        "type" : "string",
-                        "enum" : [ "proxy" ],
-                        "title" : "String"
-                      }
-                    },
-                    "required" : [ "type" ],
-                    "title" : "proxy"
-                  } ],
-                  "discriminator" : {
-                    "propertyName" : "type"
-                  },
-                  "title" : "PrototypeApiUrl"
-                }
-              },
-              "required" : [ "key", "name", "provider" ],
-              "title" : "openai"
-            }, {
-              "type" : "object",
-              "properties" : {
-                "provider" : {
-                  "type" : "string",
-                  "enum" : [ "openrouter" ],
-                  "title" : "String"
-                },
-                "key" : {
-                  "$ref" : "#/components/schemas/PrototypeString"
-                },
-                "name" : {
-                  "$ref" : "#/components/schemas/PrototypeString"
-                },
-                "url" : {
-                  "anyOf" : [ {
-                    "type" : "object",
-                    "properties" : {
-                      "type" : {
-                        "type" : "string",
-                        "enum" : [ "custom" ],
-                        "title" : "String"
-                      },
-                      "value" : {
-                        "type" : "string",
-                        "title" : "String"
-                      }
-                    },
-                    "required" : [ "type", "value" ],
-                    "title" : "custom"
-                  }, {
-                    "type" : "object",
-                    "properties" : {
-                      "type" : {
-                        "type" : "string",
-                        "enum" : [ "proxy" ],
-                        "title" : "String"
-                      }
-                    },
-                    "required" : [ "type" ],
-                    "title" : "proxy"
-                  } ],
-                  "discriminator" : {
-                    "propertyName" : "type"
-                  },
-                  "title" : "PrototypeApiUrl"
-                }
-              },
-              "required" : [ "key", "name", "provider" ],
-              "title" : "openrouter"
-            } ],
-            "discriminator" : {
-              "propertyName" : "provider"
-            },
-            "title" : "PrototypeModelProvider"
+            "$ref" : "#/components/schemas/PrototypeString"
+          },
+          "client" : {
+            "$ref" : "#/components/schemas/PrototypeClient"
           },
           "iterations" : {
-            "type" : "integer",
-            "format" : "int32",
-            "title" : "Int"
+            "$ref" : "#/components/schemas/PrototypeInteger"
           },
           "delay" : {
-            "type" : "integer",
-            "format" : "int32",
-            "title" : "Int"
+            "$ref" : "#/components/schemas/PrototypeInteger"
           },
           "prompts" : {
             "$ref" : "#/components/schemas/PrototypePrompts"
+          },
+          "proxies" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/PrototypeRuntimeProxy"
+            },
+            "title" : "LinkedHashMap<String,PrototypeRuntimeProxy>"
           },
           "tools" : {
             "type" : "array",
@@ -6171,13 +7705,23 @@
             "title" : "ArrayList<PrototypeToolServer>"
           }
         },
-        "required" : [ "delay", "iterations", "model", "prompts", "tools", "volatile" ],
+        "required" : [ "delay", "iterations", "prompts", "proxies", "proxy", "tools", "volatile" ],
         "title" : "PrototypeRuntime"
       },
       "PrototypeString" : {
         "type" : "object",
         "properties" : { },
         "title" : "PrototypeString"
+      },
+      "PrototypeClient" : {
+        "type" : "string",
+        "enum" : [ "openai", "openrouter", "anthropic" ],
+        "title" : "PrototypeClient"
+      },
+      "PrototypeInteger" : {
+        "type" : "object",
+        "properties" : { },
+        "title" : "PrototypeInteger"
       },
       "PrototypePrompts" : {
         "type" : "object",
@@ -6230,6 +7774,19 @@
         },
         "required" : [ "base" ],
         "title" : "PrototypeLoopInitialPrompt"
+      },
+      "PrototypeRuntimeProxy" : {
+        "type" : "object",
+        "properties" : {
+          "configuration" : {
+            "$ref" : "#/components/schemas/PrototypeString"
+          },
+          "model" : {
+            "$ref" : "#/components/schemas/PrototypeString"
+          }
+        },
+        "required" : [ "configuration", "model" ],
+        "title" : "PrototypeRuntimeProxy"
       },
       "AgentOptionDisplay" : {
         "type" : "object",
@@ -6584,6 +8141,69 @@
           }
         },
         "title" : "UShortAgentOptionValidation"
+      },
+      "AgentLlmConfig" : {
+        "type" : "object",
+        "properties" : {
+          "proxies" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AgentLlmProxyRequest"
+            },
+            "title" : "ArrayList<AgentLlmProxyRequest>"
+          }
+        },
+        "required" : [ "proxies" ],
+        "title" : "AgentLlmConfig"
+      },
+      "AgentLlmProxyRequest" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "format" : {
+            "anyOf" : [ {
+              "type" : "object",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "Anthropic" ],
+                  "title" : "String"
+                }
+              },
+              "required" : [ "type" ],
+              "title" : "Anthropic"
+            }, {
+              "type" : "object",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "OpenAI" ],
+                  "title" : "String"
+                }
+              },
+              "required" : [ "type" ],
+              "title" : "OpenAI"
+            } ],
+            "discriminator" : {
+              "propertyName" : "type"
+            },
+            "title" : "LlmProviderFormat"
+          },
+          "models" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "title" : "LinkedHashSet<String>",
+            "uniqueItems" : true
+          }
+        },
+        "required" : [ "format", "models", "name" ],
+        "title" : "AgentLlmProxyRequest"
       },
       "RegistryAgentMarketplaceSettings" : {
         "type" : "object",
@@ -7384,9 +9004,18 @@
               "title" : "String"
             },
             "title" : "ArrayList<String>"
+          },
+          "limitToPostingBy" : {
+            "type" : "array",
+            "description" : "Optionally, a list of agents that are allowed to post messages in the thread.  If empty, all participants will be allowed to post. Only agents in this list will be able to post messages OR close the thread.",
+            "items" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "title" : "ArrayList<String>"
           }
         },
-        "required" : [ "participantNames", "threadName" ],
+        "required" : [ "limitToPostingBy", "participantNames", "threadName" ],
         "title" : "CreateThreadInput"
       },
       "CreateThreadOutput" : {
@@ -7404,7 +9033,7 @@
         "properties" : {
           "threadId" : {
             "type" : "string",
-            "description" : "The unique identifier for the thread to close",
+            "description" : "The unique identifier for the thread to close. Note that if a thread has posting restrictions, only agents allowed to post can close it.",
             "title" : "String"
           },
           "summary" : {
@@ -7421,7 +9050,7 @@
         "properties" : {
           "threadId" : {
             "type" : "string",
-            "description" : "The unique identifier for the thread to send a message in",
+            "description" : "The unique identifier for the thread to send a message in. Note that some threads may have restricted posting permissions.",
             "title" : "String"
           },
           "content" : {

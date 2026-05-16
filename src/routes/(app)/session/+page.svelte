@@ -1,9 +1,10 @@
 <script lang="ts">
 	import * as Breadcrumb from '@coral-os/component-library/ui/breadcrumb/index.js';
+	import * as Tabs from '@coral-os/component-library/ui/tabs/index.js';
 	import { Separator } from '@coral-os/component-library/ui/separator/index.js';
 	import * as Sidebar from '@coral-os/component-library/ui/sidebar/index.js';
 	import { appContext } from '$lib/context';
-	import { base } from '$app/paths';
+	import Waterfall from '$lib/waterfall/Waterfall.svelte';
 
 	let ctx = appContext.get();
 	let conn = $derived(ctx.session);
@@ -21,25 +22,43 @@
 	</Breadcrumb.Root>
 </header>
 
-<main class="h-full p-4">
+<main class="flex h-full min-h-0 flex-col p-4">
 	{#if conn}
-		<h1 class="text-3xl font-bold">Session: {conn.sessionId}</h1>
-		<div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-			<div class="rounded-lg border p-4">
-				<h2 class="text-xl font-semibold">Status</h2>
-				<p class="mt-2">
-					Connected: <span class={conn.connected ? 'text-green-500' : 'text-red-500'}>
-						{conn.connected ? 'Yes' : 'No'}
-					</span>
-				</p>
-				<p>Namespace: {conn.namespace}</p>
-			</div>
-			<div class="rounded-lg border p-4">
-				<h2 class="text-xl font-semibold">Resources</h2>
-				<p class="mt-2">Agents: {Object.keys(conn.agents).length}</p>
-				<p>Threads: {Object.keys(conn.threads).length}</p>
-			</div>
-		</div>
+		<Tabs.Root value="overview" class="flex h-full min-h-0 flex-col">
+			<Tabs.List>
+				<Tabs.Trigger value="overview">Overview</Tabs.Trigger>
+				<Tabs.Trigger value="waterfall">Waterfall</Tabs.Trigger>
+			</Tabs.List>
+			<Tabs.Content value="overview" class="min-h-0 flex-1">
+				<h1 class="text-3xl font-bold">Session: {conn.sessionId}</h1>
+				<div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+					<div class="rounded-lg border p-4">
+						<h2 class="text-xl font-semibold">Status</h2>
+						<p class="mt-2">
+							Connected: <span class={conn.connected ? 'text-green-500' : 'text-red-500'}>
+								{conn.connected ? 'Yes' : 'No'}
+							</span>
+						</p>
+						<p>Namespace: {conn.namespace}</p>
+					</div>
+					<div class="rounded-lg border p-4">
+						<h2 class="text-xl font-semibold">Resources</h2>
+						<p class="mt-2">Agents: {Object.keys(conn.agents).length}</p>
+						<p>Threads: {Object.keys(conn.threads).length}</p>
+					</div>
+				</div>
+			</Tabs.Content>
+			<Tabs.Content value="waterfall" class="min-h-0 flex-1 basis-0 overflow-hidden">
+				<!--
+				  The waterfall is a dense, time-aligned view of the session's
+				  event stream. It owns its own scroll container, so we just
+				  hand it the full available height.
+				-->
+				<div class="h-full overflow-hidden rounded-lg border">
+					<Waterfall session={conn} />
+				</div>
+			</Tabs.Content>
+		</Tabs.Root>
 	{:else}
 		<p class="text-muted-foreground mt-4 text-center text-sm">No active session.</p>
 	{/if}
