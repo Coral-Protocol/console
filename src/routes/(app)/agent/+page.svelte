@@ -43,6 +43,10 @@
 	<Separator orientation="vertical" class="mr-2 h-4" />
 	<Breadcrumb.Root class="flex-grow">
 		<Breadcrumb.List>
+			<Breadcrumb.Item>
+				<Breadcrumb.Link href="{base}/session">Current Session</Breadcrumb.Link>
+			</Breadcrumb.Item>
+			<Breadcrumb.Separator />
 			<Breadcrumb.Item class="hidden md:block">
 				<Breadcrumb.Link>Agents</Breadcrumb.Link>
 			</Breadcrumb.Item>

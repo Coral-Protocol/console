@@ -8,6 +8,7 @@
 	import { onMount } from 'svelte';
 	import Message from './Message.svelte';
 	import { afterNavigate, goto } from '$app/navigation';
+	import { base } from '$app/paths';
 	import { cn } from '$lib/utils';
 	import { Button } from '@coral-os/component-library/ui/button/index.js';
 	import { Users } from '@lucide/svelte';
@@ -31,6 +32,10 @@
 	<Separator orientation="vertical" class="mr-2 h-4" />
 	<Breadcrumb.Root class="flex-grow">
 		<Breadcrumb.List>
+			<Breadcrumb.Item>
+				<Breadcrumb.Link href="{base}/session">Current Session</Breadcrumb.Link>
+			</Breadcrumb.Item>
+			<Breadcrumb.Separator />
 			<Breadcrumb.Item class="hidden md:block">
 				<Breadcrumb.Link>Threads</Breadcrumb.Link>
 			</Breadcrumb.Item>

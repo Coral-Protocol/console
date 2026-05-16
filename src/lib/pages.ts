@@ -2,6 +2,7 @@ export type PageTree = { [id: string]: Page };
 export type Page = { label: string; href?: string | null; pages?: PageTree } | string;
 
 export const pageTree = {
+	session: 'Current Session',
 	server: {
 		label: 'Server',
 		href: null,
