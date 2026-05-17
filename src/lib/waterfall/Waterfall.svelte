@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { VList } from 'virtua/svelte';
+	import type { VListHandle } from 'virtua/svelte';
 	import { flip } from 'svelte/animate';
 	import { fade, scale } from 'svelte/transition';
 
@@ -126,27 +127,28 @@
 
 	/* ──────────────────────────────────────────────────────────────────
 	   Auto-scroll-to-bottom when new events arrive, but only if the user
-	   is already pinned to the tail (within 32px of the bottom). This is
-	   the same heuristic chat UIs use to avoid stealing scroll position
-	   when the user is reading older history.
+	   is already pinned to the tail. virtua owns the vertical scroll, so
+	   we use its imperative handle to drive follow-tail.
 	   ────────────────────────────────────────────────────────────────── */
 	let stickToBottom = $state(true);
-	let scrollerEl = $state<HTMLDivElement | null>(null);
+	let vlist = $state<VListHandle | null>(null);
 
-	function handleScroll(ev: Event) {
-		const el = ev.currentTarget as HTMLElement;
-		const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+	function handleScroll(offset: number) {
+		if (!vlist) return;
+		const total = vlist.getScrollSize();
+		const viewport = vlist.getViewportSize();
+		const distance = total - offset - viewport;
 		stickToBottom = distance < 32;
 	}
 
 	// Auto-follow tail: when a new row is added and we were pinned, scroll
-	// the inner virtua viewport to the end on the next frame.
+	// the virtua viewport to the last index on the next microtask.
 	let lastRowCount = $state(0);
 	$effect(() => {
 		const n = rows.length;
-		if (n > lastRowCount && stickToBottom && scrollerEl) {
+		if (n > lastRowCount && stickToBottom && vlist) {
 			queueMicrotask(() => {
-				if (scrollerEl) scrollerEl.scrollTop = scrollerEl.scrollHeight;
+				vlist?.scrollToIndex(rows.length - 1, { align: 'end' });
 			});
 		}
 		lastRowCount = n;
@@ -246,11 +248,18 @@
 			No events match the current filter.
 		</div>
 	{:else}
-		<div class="relative flex-1 overflow-auto" bind:this={scrollerEl} onscroll={handleScroll}>
-			<!-- Sticky lane header. width matches the row content so chips and -->
-			<!-- header lane columns align pixel-for-pixel. -->
+		<!--
+		  Outer container scrolls horizontally only (for wide lane grids).
+		  virtua's VList owns the vertical scroll inside it, so the lane
+		  header is a regular sibling above the list rather than
+		  position:sticky inside a scrollable parent (which won't work
+		  because vertical scroll happens inside VList).
+		-->
+		<div class="relative flex min-h-0 flex-1 flex-col overflow-x-auto" style="width: 100%;">
+			<!-- Lane header. width matches the row content so chips and header -->
+			<!-- lane columns align pixel-for-pixel. -->
 			<div
-				class="bg-background/95 sticky top-0 z-20 flex border-b backdrop-blur"
+				class="bg-background/95 z-20 flex shrink-0 border-b backdrop-blur"
 				style="height: {HEADER_HEIGHT}px; width: {totalWidth}px;"
 			>
 				<div class="text-muted-foreground flex shrink-0 items-center justify-end pr-3 text-[10px]"
@@ -260,19 +269,19 @@
 				<div class="relative" style="width: {LANE_PAD * 2 + lanesWidth}px;">
 					{#each visibleLanes as { lane, visibleIndex } (lane.name)}
 						<div
-							class="absolute top-0 flex h-full flex-col items-center justify-center px-1"
+							class="absolute top-0 flex h-full flex-col items-center justify-center overflow-hidden px-2"
 							style="left: {laneCenterX(visibleIndex) - LANE_WIDTH / 2}px; width: {LANE_WIDTH}px;"
 							in:scale={{ duration: 200, start: 0.85 }}
 							animate:flip={{ duration: 200 }}
 						>
 							<span
-								class="truncate text-xs font-medium"
+								class="block w-full truncate text-center text-xs font-medium"
 								class:text-muted-foreground={!lane.present}
 								title={lane.name}
 							>
 								{lane.name}
 							</span>
-							<span class="text-muted-foreground font-mono text-[10px]">
+							<span class="text-muted-foreground block w-full truncate text-center font-mono text-[10px]">
 								#{lane.index}{lane.present ? '' : ' · gone'}
 							</span>
 						</div>
@@ -282,8 +291,22 @@
 
 			<!-- Virtualized row list. Each row paints its own lane lines so -->
 			<!-- the sequence-diagram effect survives even on long idle gaps. -->
-			<div style="width: {totalWidth}px;">
-				<VList data={rows} getKey={(row: WaterfallRow) => row.key} itemSize={ROW_HEIGHT}>
+			<!--
+			  VList owns the vertical scroll. We pin its width to totalWidth
+			  so horizontal overflow is driven by the outer container, and
+			  give it min-h-0 flex-1 so it actually gets a non-zero height
+			  inside the flex column (without this it collapses and no rows
+			  render).
+			-->
+			<div class="min-h-0 flex-1" style="width: {totalWidth}px;">
+				<VList
+					bind:this={vlist}
+					data={rows}
+					getKey={(row: WaterfallRow) => row.key}
+					itemSize={ROW_HEIGHT}
+					onscroll={handleScroll}
+					style="height: 100%;"
+				>
 					{#snippet children(row: WaterfallRow)}
 						{#if row.kind === 'event'}
 							{@const e = row}

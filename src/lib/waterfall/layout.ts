@@ -74,12 +74,10 @@ export interface BuildLayoutResult {
 }
 
 /**
- * Decide whether a given event belongs to a "sleeping" agent. We treat both
- * `agent_sleep_start` style transitions and an explicit
- * `connectionStatus.communicationStatus.type === 'sleeping'` as sleeping; the
- * status snapshot is authoritative for currently sleeping agents.
+ * Decide whether a given event belongs to an "inactive" (sleeping or stopped)
+ * agent.
  */
-function isAgentSleeping(
+function isAgentInactive(
 	agentName: string | null,
 	statuses: BuildLayoutInput['agentStatuses']
 ): boolean {
@@ -90,6 +88,7 @@ function isAgentSleeping(
 		type?: string;
 		connectionStatus?: { communicationStatus?: { type?: string } };
 	};
+	if (s.type === 'stopped') return true;
 	if (s.type === 'running') {
 		return s.connectionStatus?.communicationStatus?.type === 'sleeping';
 	}
@@ -134,7 +133,7 @@ export function buildLayout(input: BuildLayoutInput): BuildLayoutResult {
 		if (!allowAll && !allowedTypes.has(entry.event.type)) return false;
 		if (hideSleeping) {
 			const name = agentNameForEvent(entry.event);
-			if (isAgentSleeping(name, agentStatuses)) return false;
+			if (isAgentInactive(name, agentStatuses)) return false;
 		}
 		return true;
 	};

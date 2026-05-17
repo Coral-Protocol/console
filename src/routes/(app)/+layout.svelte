@@ -5,6 +5,8 @@
 	import { appContext, type AppContext } from '$lib/context';
 	import { CoralServer } from '$lib/CoralServer.svelte';
 	import { onMount } from 'svelte';
+	import { page } from '$app/state';
+	import { Session } from '$lib/session.svelte';
 
 	import TourOverlay from '$lib/components/tour/TourOverlay.svelte';
 	import { tour } from '$lib/components/tour/tourLib.svelte';
@@ -21,8 +23,20 @@
 	});
 	appContext.set(ctx);
 
-	onMount(() => {
-		ctx.server.fetchAll();
+	onMount(async () => {
+		await ctx.server.fetchAll();
+
+		const sessionId = page.url.searchParams.get('sessionId');
+		if (sessionId) {
+			const sessionData = ctx.server.sessions[sessionId];
+			if (sessionData) {
+				ctx.session = new Session({
+					server: ctx.server,
+					namespace: ctx.server.namespace,
+					sessionId: sessionId
+				});
+			}
+		}
 	});
 
 	let socket = $state({

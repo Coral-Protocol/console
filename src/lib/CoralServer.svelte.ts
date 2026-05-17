@@ -33,14 +33,14 @@ export type NamespaceData = components['schemas']['SessionNamespaceStateBase'] &
 
 export class CoralServer {
 	/** Unwrapped API Client. DO NOT use this without good reason - if the wrapped `api` is missing a method then add it there. **/
-	public rawApi = $derived.by(() => {
-		const token = building ? '' : page.url.searchParams.get('token');
-		return createClient<paths>({
-			baseUrl: `${(config.PUBLIC_API_PATH || base) ?? '/'}`,
-			headers: { Authorization: token ? `Bearer ${token}` : undefined },
-			credentials: 'include'
-		});
-	});
+ public rawApi = $derived.by(() => {
+                const token = building ? '' : (page.url.searchParams.get('token') || page.url.searchParams.get('key'));
+                return createClient<paths>({
+                        baseUrl: `${(config.PUBLIC_API_PATH || base) ?? '/'}`,
+                        headers: { Authorization: token ? `Bearer ${token}` : undefined },
+                        credentials: 'include'
+                });
+        });
 
 	public onNoAuth = () => {
 		console.warn('onNoAuth has not been set!');
@@ -94,7 +94,10 @@ export class CoralServer {
 
 	// TODO (alan): better server state repr
 	public alive = $state(false);
-	public namespace = $state((browser && localStorage.getItem('namespace')) || 'default');
+ public namespace = $state(
+         (browser && (page.url.searchParams.get('namespace') || localStorage.getItem('namespace'))) ||
+                 'default'
+ );
 	public namespaces = $derived(Object.keys(this.allSessions));
 
 	public sessions = $derived(this.allSessions[this.namespace]?.sessions ?? {});
