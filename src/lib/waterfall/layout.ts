@@ -128,9 +128,8 @@ export function buildLayout(input: BuildLayoutInput): BuildLayoutResult {
 
 	// Determine which lanes carry any visible events; this prevents a long
 	// tail of inactive agents from widening the timeline pointlessly.
-	const allowAll = allowedTypes.size === 0;
 	const accept = (entry: SessionEventEntry) => {
-		if (!allowAll && !allowedTypes.has(entry.event.type)) return false;
+		if (!allowedTypes.has(entry.event.type)) return false;
 		if (hideSleeping) {
 			const name = agentNameForEvent(entry.event);
 			if (isAgentInactive(name, agentStatuses)) return false;

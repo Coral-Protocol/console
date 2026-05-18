@@ -27,9 +27,10 @@
 	import { buildLayout, formatDuration } from './layout';
 	import type { WaterfallRow } from './layout';
 
-	import EventChip from './EventChip.svelte';
-	import EventDialog from './EventDialog.svelte';
-	import { SvelteSet } from 'svelte/reactivity';
+ import EventChip from './EventChip.svelte';
+ import EventDialog from './EventDialog.svelte';
+ import Telemetry from '$lib/components/dialogs/telemetry.svelte';
+ import { SvelteSet } from 'svelte/reactivity';
 
 	interface Props {
 		session: Session;
@@ -57,9 +58,10 @@
 	   Filter state
 	   ────────────────────────────────────────────────────────────────── */
 	let hideSleeping = $state(false);
-	// Empty set = "all types allowed". This keeps the common case cheap
-	// and avoids forcing users to manually opt-in every event type.
-	let allowedTypes = new SvelteSet<SessionEventType>();
+	// Set of event types currently shown. Starts with every known type
+	// enabled, so users can toggle individual types off or use the
+	// enable-all/disable-all buttons to flip the whole set at once.
+	let allowedTypes = new SvelteSet<SessionEventType>(allEventTypes);
 	let zoom = $state(1); // multiplier on pxPerMs
 
 	// Adaptive base scale: clamp the timeline so it doesn't explode to
@@ -101,9 +103,24 @@
 	   Click → modal
 	   ────────────────────────────────────────────────────────────────── */
 	let activeEntry = $state<SessionEventEntry | null>(null);
-	const openEntry = (entry: SessionEventEntry) => (activeEntry = entry);
+	let activeTelemetry = $state<SessionEventEntry | null>(null);
+
+	const openEntry = (entry: SessionEventEntry) => {
+		if (
+			entry.event.type === 'detailed_llm_proxy_request' ||
+			entry.event.type === 'detailed_llm_proxy_response'
+		) {
+			activeTelemetry = entry;
+			return;
+		}
+		activeEntry = entry;
+	};
+
 	const handleDialogChange = (open: boolean) => {
 		if (!open) activeEntry = null;
+	};
+	const handleTelemetryChange = (open: boolean) => {
+		if (!open) activeTelemetry = null;
 	};
 
 	/* ──────────────────────────────────────────────────────────────────
@@ -120,7 +137,11 @@
 		else allowedTypes.add(type);
 	}
 
-	function selectAllTypes() {
+	function enableAllTypes() {
+		for (const t of allEventTypes) allowedTypes.add(t);
+	}
+
+	function disableAllTypes() {
 		allowedTypes.clear();
 	}
 
@@ -173,36 +194,53 @@
 						<Filter class="size-3.5" />
 						Event types
 						<span class="text-muted-foreground ml-1 text-xs">
-							{allowedTypes.size === 0 ? 'all' : `${allowedTypes.size}/${allEventTypes.length}`}
+							{allowedTypes.size === allEventTypes.length
+								? 'all'
+								: `${allowedTypes.size}/${allEventTypes.length}`}
 						</span>
 					</Button>
 				{/snippet}
 			</Popover.Trigger>
 			<Popover.Content class="w-72" align="start">
-				<div class="mb-2 flex items-center justify-between">
+				<div class="mb-2 flex items-center justify-between gap-2">
 					<span class="text-sm font-semibold">Event types</span>
-					<button
-						type="button"
-						class="text-muted-foreground hover:text-foreground text-xs"
-						onclick={selectAllTypes}
-					>
-						Show all
-					</button>
+					<div class="flex items-center gap-1">
+						<button
+							type="button"
+							class="text-muted-foreground hover:text-foreground rounded border px-2 py-0.5 text-xs"
+							onclick={enableAllTypes}
+						>
+							All on
+						</button>
+						<button
+							type="button"
+							class="text-muted-foreground hover:text-foreground rounded border px-2 py-0.5 text-xs"
+							onclick={disableAllTypes}
+						>
+							All off
+						</button>
+					</div>
 				</div>
 				<div class="grid max-h-72 grid-cols-1 gap-1 overflow-auto">
     {#each allEventTypes as type (type)}
 						{@const m = eventMetaByType[type]}
 						{@const colors = colorClasses(m.color)}
-						{@const active = allowedTypes.size === 0 || allowedTypes.has(type)}
+						{@const active = allowedTypes.has(type)}
 						{@const Icon = m.icon}
 						<button
 							type="button"
-							class="hover:bg-accent flex items-center gap-2 rounded px-2 py-1 text-left text-xs"
+							class="hover:bg-accent flex items-center gap-2 rounded px-2 py-1 text-left text-xs transition-opacity {active
+								? ''
+								: 'opacity-50'}"
 							onclick={() => toggleType(type)}
 						>
 							<Icon class="size-3.5 {colors.icon}" />
 							<span class="flex-1 truncate">{m.label}</span>
-							<span class="text-muted-foreground text-[10px]">
+							<span
+								class="rounded px-1 text-[10px] {active
+									? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+									: 'text-muted-foreground'}"
+							>
 								{active ? 'on' : 'off'}
 							</span>
 						</button>
@@ -410,3 +448,4 @@
 </div>
 
 <EventDialog entry={activeEntry} onOpenChange={handleDialogChange} />
+<Telemetry entry={activeTelemetry} onOpenChange={handleTelemetryChange} />
