@@ -3,9 +3,11 @@
 	import * as Tabs from '@coral-os/component-library/ui/tabs/index.js';
 	import * as Card from '@coral-os/component-library/ui/card/index.js';
 	import * as Accordion from '@coral-os/component-library/ui/accordion/index.js';
+	import * as HoverCard from '@coral-os/component-library/ui/hover-card/index.js';
 	import { ScrollArea } from '@coral-os/component-library/ui/scroll-area/index.js';
 	import { Separator } from '@coral-os/component-library/ui/separator/index.js';
 	import { CodeBlock } from '@coral-os/component-library';
+	import { extractUsage, formatCostUsd, formatTokens } from '$lib/waterfall/llm-usage';
 
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
 	import ArrowDown from '@lucide/svelte/icons/arrow-down';
@@ -175,6 +177,13 @@
 
 	let responseBody = $derived(isResponse && event ? (event as DetailedResponse).body : null);
 
+	// Normalized token usage from `event.usage` and the raw response body.
+	// Only populated for `detailed_llm_proxy_response`; `null` otherwise.
+	let usage = $derived(isResponse ? extractUsage(event) : null);
+	let promptPct = $derived(
+		usage && usage.promptRatio !== null ? Math.round(usage.promptRatio * 100) : 50
+	);
+
 	let hasMessages = $derived(isRequest && messages.length > 0);
 	let hasTools = $derived(isRequest && tools.length > 0);
 	let hasHyperparameters = $derived(
@@ -224,7 +233,7 @@
 	>
 		{#if event && (isRequest || isResponse)}
 			<Tabs.Root value={defaultTab} class="flex h-full min-h-0 flex-col gap-4">
-				<Dialog.Header class="flex flex-col gap-2 pr-8">
+				<Dialog.Header class="relative flex flex-col gap-2 pr-8">
 					<Dialog.Title class="flex items-center gap-2 font-[400]">
 						{#if isRequest}
 							<ArrowUp class="size-5 text-violet-500" />
@@ -234,6 +243,87 @@
 							LLM Response
 						{/if}
 					</Dialog.Title>
+					{#if isResponse && usage}
+						<!--
+						  Right-aligned token usage strip. The compact summary in the
+						  header shows prompt/completion tokens and a ratio bar; the
+						  HoverCard reveals cached prompt tokens, reasoning tokens,
+						  and (when reported) cost. Sits to the right of the title,
+						  above the close button gutter so it never overlaps the `X`.
+						-->
+						<div class="absolute top-7 right-8 hidden sm:block">
+							<HoverCard.Root openDelay={120} closeDelay={80}>
+								<HoverCard.Trigger>
+									<div
+										class="flex cursor-default items-center gap-2 rounded-md border px-2 py-1 text-[11px]"
+									>
+										<span class="text-sky-600 dark:text-sky-400">
+											↑ <span class="font-mono">{formatTokens(usage.prompt)}</span>
+										</span>
+										<div class="bg-muted relative h-1.5 w-20 overflow-hidden rounded-full">
+											<div
+												class="absolute inset-y-0 left-0 bg-sky-500/70"
+												style="width: {promptPct}%;"
+											></div>
+											{#if usage.cachedRatio !== null}
+												<div
+													class="absolute inset-y-0 left-0 bg-sky-700/80"
+													style="width: {(promptPct * usage.cachedRatio).toFixed(2)}%;"
+												></div>
+											{/if}
+											<div
+												class="absolute inset-y-0 right-0 bg-violet-500/70"
+												style="width: {100 - promptPct}%;"
+											></div>
+										</div>
+										<span class="text-violet-600 dark:text-violet-400">
+											<span class="font-mono">{formatTokens(usage.completion)}</span> ↓
+										</span>
+										{#if usage.costUsd !== null}
+											<span class="text-muted-foreground font-mono">
+												· {formatCostUsd(usage.costUsd)}
+											</span>
+										{/if}
+									</div>
+								</HoverCard.Trigger>
+								<HoverCard.Content side="bottom" align="end" class="w-72 text-xs">
+									<div class="mb-2 text-sm font-semibold">Token usage</div>
+									<dl class="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1">
+										<dt class="text-sky-600 dark:text-sky-400">prompt</dt>
+										<dd class="text-right font-mono">{formatTokens(usage.prompt)}</dd>
+										{#if usage.cachedPrompt !== null}
+											<dt class="text-muted-foreground pl-3">↳ cached</dt>
+											<dd class="text-muted-foreground text-right font-mono">
+												{formatTokens(usage.cachedPrompt)}{#if usage.cachedRatio !== null}
+													<span class="ml-1">
+														({Math.round(usage.cachedRatio * 100)}%)
+													</span>
+												{/if}
+											</dd>
+										{/if}
+										<dt class="text-violet-600 dark:text-violet-400">completion</dt>
+										<dd class="text-right font-mono">{formatTokens(usage.completion)}</dd>
+										{#if usage.reasoning !== null}
+											<dt class="text-muted-foreground pl-3">↳ reasoning</dt>
+											<dd class="text-muted-foreground text-right font-mono">
+												{formatTokens(usage.reasoning)}
+											</dd>
+										{/if}
+										{#if usage.total !== null}
+											<dt class="border-border/60 mt-1 border-t pt-1">total</dt>
+											<dd class="border-border/60 mt-1 border-t pt-1 text-right font-mono">
+												{formatTokens(usage.total)}
+											</dd>
+										{/if}
+										{#if usage.costUsd !== null}
+											<dt class="text-muted-foreground">cost</dt>
+											<dd class="text-right font-mono">{formatCostUsd(usage.costUsd)}</dd>
+										{/if}
+									</dl>
+								</HoverCard.Content>
+							</HoverCard.Root>
+						</div>
+					{/if}
 					<span class="text-muted-foreground text-sm">
 						<span class="font-mono">#{entry?.seq}</span>
 						{#if 'agentName' in event}
@@ -449,11 +539,33 @@
 											<dt class="text-muted-foreground">status</dt>
 											<dd class="font-mono">{event.statusCode}</dd>
 										{/if}
-										{#if 'usage' in event && event.usage}
+										{#if usage}
 											<dt class="text-muted-foreground">tokens in</dt>
-											<dd class="font-mono">{event.usage.inputTokens ?? '—'}</dd>
+											<dd class="font-mono">
+												{formatTokens(usage.prompt)}
+												{#if usage.cachedPrompt !== null}
+													<span class="text-muted-foreground">
+														({formatTokens(usage.cachedPrompt)} cached)
+													</span>
+												{/if}
+											</dd>
 											<dt class="text-muted-foreground">tokens out</dt>
-											<dd class="font-mono">{event.usage.outputTokens ?? '—'}</dd>
+											<dd class="font-mono">
+												{formatTokens(usage.completion)}
+												{#if usage.reasoning !== null}
+													<span class="text-muted-foreground">
+														({formatTokens(usage.reasoning)} reasoning)
+													</span>
+												{/if}
+											</dd>
+											{#if usage.total !== null}
+												<dt class="text-muted-foreground">tokens total</dt>
+												<dd class="font-mono">{formatTokens(usage.total)}</dd>
+											{/if}
+											{#if usage.costUsd !== null}
+												<dt class="text-muted-foreground">cost</dt>
+												<dd class="font-mono">{formatCostUsd(usage.costUsd)}</dd>
+											{/if}
 										{/if}
 									{/if}
 									<dt class="text-muted-foreground">timestamp</dt>
