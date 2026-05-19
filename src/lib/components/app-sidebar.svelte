@@ -35,6 +35,7 @@
 	import IconEnvelopeOpen from 'phosphor-icons-svelte/IconEnvelopeOpenRegular.svelte';
 	import IconDotsThree from 'phosphor-icons-svelte/IconDotsThreeRegular.svelte';
 	import IconCheckRegular from 'phosphor-icons-svelte/IconCheckRegular.svelte';
+	import IconUpload from 'phosphor-icons-svelte/IconUploadSimpleRegular.svelte';
 
 	import * as Popover from '@coral-os/component-library/ui/popover/index.js';
 
@@ -51,6 +52,8 @@
 	import Shortcuts from './dialogs/shortcuts.svelte';
 	import { appContext } from '$lib/context';
 	import { base } from '$app/paths';
+	import { Session } from '$lib/session.svelte';
+	import { parseSessionJsonl } from '$lib/session-io';
 	import { useDebounce, watch } from 'runed';
 	import config from '$lib/config';
 	import SessionSwitcher from './SessionSwitcher.svelte';
@@ -226,6 +229,33 @@
 
 	let threadCreateOpen = $state(false);
 
+	let importInput = $state<HTMLInputElement | null>(null);
+
+	function triggerImport() {
+		importInput?.click();
+	}
+
+	async function handleImportFile(event: Event) {
+		const input = event.target as HTMLInputElement;
+		const file = input.files?.[0];
+		// Reset value immediately so re-importing the same file fires `change`.
+		input.value = '';
+		if (!file) return;
+		try {
+			const text = await file.text();
+			const snapshot = parseSessionJsonl(text);
+			// Replace the active session with an imported, read-only snapshot.
+			// We don't close the previous one — it may have been imported too
+			// (no socket) or the user may want to switch back via the picker.
+			if (ctx.session && !ctx.session.imported) ctx.session.close();
+			ctx.session = new Session({ imported: snapshot });
+			toast.success(`Imported session '${snapshot.sessionId}'.`);
+			goto(`${base}/session`);
+		} catch (e) {
+			toast.error(`Failed to import session: ${e}`);
+		}
+	}
+
 	let namespaces = $derived(ctx.server.namespaces.filter((ns) => ns !== 'default'));
 
 	watch([() => ctx.server.namespaces], () => {
@@ -397,14 +427,47 @@
 					<Sidebar.Menu class="relative">
 						<SessionSwitcher />
 						<Sidebar.MenuItem>
-							<Sidebar.MenuButton isActive={page.url.pathname === `${base}/session`}>
-								{#snippet child({ props })}
-									<a href="{base}/session" {...props}>
-										<IconMonitor />
-										<span>Current Session</span>
-									</a>
-								{/snippet}
-							</Sidebar.MenuButton>
+							<div class="relative flex items-center">
+								<Sidebar.MenuButton
+									isActive={page.url.pathname === `${base}/session`}
+									class="pr-9"
+								>
+									{#snippet child({ props })}
+										<a href="{base}/session" {...props}>
+											<IconMonitor />
+											<span>
+												{ctx.session?.imported ? 'Imported Session' : 'Current Session'}
+											</span>
+										</a>
+									{/snippet}
+								</Sidebar.MenuButton>
+								<Tooltip.Root delayDuration={0}>
+									<Tooltip.Trigger>
+										{#snippet child({ props: tProps })}
+											<Button
+												{...tProps}
+												variant="ghost"
+												size="icon"
+												class="absolute top-1/2 right-1 size-6 -translate-y-1/2"
+												aria-label="Import session"
+												onclick={triggerImport}
+											>
+												<IconUpload class="size-4" />
+											</Button>
+										{/snippet}
+									</Tooltip.Trigger>
+									<Tooltip.Content>
+										<span>Import a session from a .jsonl file</span>
+									</Tooltip.Content>
+								</Tooltip.Root>
+								<input
+									bind:this={importInput}
+									type="file"
+									accept=".jsonl,application/x-ndjson,application/json,text/plain"
+									class="hidden"
+									onchange={handleImportFile}
+								/>
+							</div>
 							<Sidebar.MenuSub class="mr-0">
 								{#if ctx.session?.possessed}
 									{@const agent = ctx.session.possessed}

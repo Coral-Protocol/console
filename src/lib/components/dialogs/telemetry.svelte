@@ -33,6 +33,10 @@
 		role: string;
 		name?: string;
 		content?: unknown;
+		// For tool-result messages whose `content` is a string of valid JSON,
+		// the parsed value is cached here at normalization time so the template
+		// doesn't have to re-parse on every reactive rerender.
+		parsedJsonContent?: unknown;
 		toolCalls?: NormalizedToolCall[];
 		toolCallId?: string;
 	}
@@ -76,6 +80,24 @@
 			return JSON.parse(input);
 		} catch {
 			return input;
+		}
+	}
+
+	// Returns the parsed value only when the input is a JSON object or array
+	// (i.e. something worth pretty-printing as JSON). Returns `undefined` for
+	// non-JSON strings or JSON scalars like plain numbers/strings/booleans so
+	// the caller can fall back to plain-text rendering.
+	function tryParseJsonStrict(input: string): unknown | undefined {
+		const trimmed = input.trim();
+		if (trimmed.length === 0) return undefined;
+		const first = trimmed[0];
+		if (first !== '{' && first !== '[') return undefined;
+		try {
+			const parsed = JSON.parse(trimmed);
+			if (parsed && typeof parsed === 'object') return parsed;
+			return undefined;
+		} catch {
+			return undefined;
 		}
 	}
 
@@ -130,10 +152,18 @@
 		const toolCalls = Array.isArray(rawTCs)
 			? (rawTCs.map(normalizeToolCall).filter((x): x is NormalizedToolCall => x !== null) ?? [])
 			: undefined;
+		// Tool-result messages typically carry their payload as a JSON-encoded
+		// string. Parse once here so render passes can cheaply pretty-print it
+		// without re-running JSON.parse on every reactive update.
+		let parsedJsonContent: unknown | undefined;
+		if (role === 'tool' && typeof obj.content === 'string') {
+			parsedJsonContent = tryParseJsonStrict(obj.content);
+		}
 		return {
 			role,
 			name,
 			content: obj.content,
+			parsedJsonContent,
 			toolCalls: toolCalls && toolCalls.length > 0 ? toolCalls : undefined,
 			toolCallId
 		};
@@ -393,17 +423,23 @@
 										</Card.Title>
 									</Card.Header>
 									<Card.Content class="flex flex-col gap-2">
-										{#if message.content !== undefined && message.content !== null && message.content !== ''}
-											{#if text !== null}
-												<p class="text-sm whitespace-pre-wrap">{text}</p>
-											{:else}
-												<CodeBlock
-													text={JSON.stringify(message.content, null, 2)}
-													class="overflow-auto whitespace-pre-wrap"
-													language="json"
-												/>
-											{/if}
+									{#if message.content !== undefined && message.content !== null && message.content !== ''}
+										{#if message.parsedJsonContent !== undefined}
+											<CodeBlock
+												text={JSON.stringify(message.parsedJsonContent, null, 2)}
+												class="overflow-auto whitespace-pre-wrap"
+												language="json"
+											/>
+										{:else if text !== null}
+											<p class="text-sm whitespace-pre-wrap">{text}</p>
+										{:else}
+											<CodeBlock
+												text={JSON.stringify(message.content, null, 2)}
+												class="overflow-auto whitespace-pre-wrap"
+												language="json"
+											/>
 										{/if}
+									{/if}
 										{#if message.toolCalls && message.toolCalls.length > 0}
 											{#if message.content !== undefined && message.content !== null && message.content !== ''}
 												<Separator />

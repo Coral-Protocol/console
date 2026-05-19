@@ -46,12 +46,41 @@ export interface AgentLane {
 	present: boolean;
 }
 
+export type SessionThreadState = Omit<SessionThread, 'participants'> & {
+	participants: SvelteSet<string>;
+	unread: number;
+};
+
+/**
+ * Plain (serializable) snapshot of a session, suitable for export/import.
+ * `participants` is stored as a plain array; the constructor re-wraps it as
+ * a `SvelteSet` when hydrating.
+ */
+export interface ImportedSessionSnapshot {
+	sessionId: string;
+	namespace: string;
+	agents: { [id: string]: SessionAgentState };
+	threads: {
+		[id: string]: Omit<SessionThread, 'participants'> & {
+			participants: string[];
+			unread: number;
+		};
+	};
+	agentLanes: { [name: string]: AgentLane };
+	events: SessionEventEntry[];
+}
+
 export class Session {
-	private socket: WebSocket;
+	private socket: WebSocket | null = null;
 	public connected = $state(false);
 
 	readonly sessionId: string;
 	readonly namespace: string;
+	/**
+	 * `true` for sessions hydrated from an exported jsonl file. Imported
+	 * sessions have no live websocket and are read-only snapshots.
+	 */
+	public readonly imported: boolean = false;
 
 	public agentId: string | null = $state(null);
 
@@ -59,10 +88,7 @@ export class Session {
 
 	public agents: { [id: string]: SessionAgentState } = $state({});
 	public threads: {
-		[id: string]: Omit<SessionThread, 'participants'> & {
-			participants: SvelteSet<string>;
-			unread: number;
-		};
+		[id: string]: SessionThreadState;
 	} = $state({});
 
 	/**
@@ -81,15 +107,35 @@ export class Session {
 	public agentLanes: { [name: string]: AgentLane } = $state({});
 	private nextAgentIndex = 0;
 
-	constructor({
-		namespace,
-		sessionId,
-		server
-	}: {
-		namespace: string;
-		sessionId: string;
-		server: CoralServer;
-	}) {
+	constructor(
+		opts:
+			| { namespace: string; sessionId: string; server: CoralServer }
+			| { imported: ImportedSessionSnapshot }
+	) {
+		if ('imported' in opts) {
+			const snap = opts.imported;
+			this.imported = true;
+			this.namespace = snap.namespace;
+			this.sessionId = snap.sessionId;
+			this.agents = { ...snap.agents };
+			this.threads = Object.fromEntries(
+				Object.entries(snap.threads).map(([id, t]) => [
+					id,
+					{ ...t, participants: new SvelteSet(t.participants) }
+				])
+			);
+			this.agentLanes = { ...snap.agentLanes };
+			this.events = snap.events.slice();
+			this.nextSeq = snap.events.reduce((m, e) => Math.max(m, e.seq + 1), 0);
+			this.nextAgentIndex = Object.values(snap.agentLanes).reduce(
+				(m, l) => Math.max(m, l.index + 1),
+				0
+			);
+			this.connected = false;
+			return;
+		}
+
+		const { namespace, sessionId, server } = opts;
 		let markInitialStateReady: (value?: any) => void;
 		const initialStateReady = new Promise((resolve) => {
 			markInitialStateReady = resolve;
@@ -109,7 +155,7 @@ export class Session {
 					toast.error(
 						`Error fetching session state${res.error ? ` - ${res.error.message}.` : '.'}`
 					);
-					this.socket.close();
+					socket.close();
 					return;
 				}
 				this.threads = Object.fromEntries(
@@ -140,22 +186,22 @@ export class Session {
 				toast.error(`Error fetching session state${reason ? ` - ${reason}.` : '.'}`, {
 					duration: Infinity
 				});
-				this.socket.close();
+				socket.close();
 			});
 
 		this.namespace = namespace;
 		this.sessionId = sessionId;
 
-		this.socket.onopen = () => {
+		socket.onopen = () => {
 			toast.success('Connected to session.');
 			this.connected = true;
 		};
-		this.socket.onerror = () => {
+		socket.onerror = () => {
 			toast.error(`Error connecting to session.`);
 			this.connected = false;
-			this.socket.close();
+			socket.close();
 		};
-		this.socket.onclose = (e) => {
+		socket.onclose = (e) => {
 			if (this.connected)
 				toast.info(`Session connection closed${e.reason ? ` - ${e.reason}` : '.'}`);
 			this.threads = {};
@@ -164,7 +210,7 @@ export class Session {
 			// the waterfall view doesn't lose its history if the socket drops.
 			this.connected = false;
 		};
-		this.socket.onmessage = async (ev) => {
+		socket.onmessage = async (ev) => {
 			// we don't process any events until initial state fetch,
 			// since events can give us only partial info on agents/threads
 			await initialStateReady;
@@ -311,7 +357,7 @@ export class Session {
 	}
 
 	public close() {
-		this.socket.close();
+		this.socket?.close();
 	}
 
 	/**
