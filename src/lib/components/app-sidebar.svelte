@@ -64,6 +64,7 @@
 
 	import Logo from '$lib/icons/logo.svelte';
 	import type { WithElementRef } from 'bits-ui';
+	import { isSharedMode } from '$lib/sharedMode';
 
 	let ctx = appContext.get();
 	let tools = socketCtx.get();
@@ -285,28 +286,30 @@
 	class="fixed top-3.5 right-3 z-50 flex items-center justify-end gap-1"
 	use:tourTarget={'quick-switch'}
 >
-	<Button
-		class="flex w-full max-w-64 cursor-text items-center justify-between gap-6 "
-		variant="ghost"
-		onclick={() => (openQuickswitch = true)}
-	>
-		<div class="text-muted-foreground flex items-center gap-2">
-			<IconSearch />
-			<span class="text-sm">Search</span>
-		</div>
-		<Kbd.Group>
-			<Kbd.Root>CTRL</Kbd.Root>
-			<Kbd.Root>K</Kbd.Root>
-		</Kbd.Group>
-	</Button>
+	{#if !isSharedMode}
+		<Button
+			class="flex w-full max-w-64 cursor-text items-center justify-between gap-6 "
+			variant="ghost"
+			onclick={() => (openQuickswitch = true)}
+		>
+			<div class="text-muted-foreground flex items-center gap-2">
+				<IconSearch />
+				<span class="text-sm">Search</span>
+			</div>
+			<Kbd.Group>
+				<Kbd.Root>CTRL</Kbd.Root>
+				<Kbd.Root>K</Kbd.Root>
+			</Kbd.Group>
+		</Button>
 
-	<Separator orientation="vertical" class="!h-6" />
+		<Separator orientation="vertical" class="!h-6" />
 
-	<Button size="icon" variant="ghost" onclick={() => (welcomeOpen = true)}>
-		<IconQuestion class="size-4" />
-	</Button>
+		<Button size="icon" variant="ghost" onclick={() => (welcomeOpen = true)}>
+			<IconQuestion class="size-4" />
+		</Button>
 
-	<Separator orientation="vertical" class="!h-6" />
+		<Separator orientation="vertical" class="!h-6" />
+	{/if}
 
 	<Button onclick={toggleMode} variant="ghost" size="icon">
 		<SunIcon
@@ -330,7 +333,9 @@
 					<span class="font-[Oxanium] font-semibold tracking-widest"
 						>Coral<span class="text-brand-primary font-bold tracking-normal">OS</span>
 					</span>
-					<span class="text-brand-primary font-sans text-sm">Console</span>
+					<span class="text-brand-primary font-sans text-sm">
+						{isSharedMode ? 'Shared Session' : 'Console'}
+					</span>
 				</div>
 			</a>
 			{#if config.PUBLIC_DEPLOYMENT === 'cloud'}
@@ -343,81 +348,85 @@
 			{/if}
 		</div>
 
-		<Sidebar.Group>
-			<Sidebar.GroupLabel class="text-muted-foreground">Namespace</Sidebar.GroupLabel>
-			<Sidebar.GroupContent>
-				<Sidebar.Menu>
-					<Sidebar.MenuItem class="flex">
-						<NamespaceSwitcher />
-					</Sidebar.MenuItem>
-				</Sidebar.Menu>
-			</Sidebar.GroupContent>
-		</Sidebar.Group>
+		{#if !isSharedMode}
+			<Sidebar.Group>
+				<Sidebar.GroupLabel class="text-muted-foreground">Namespace</Sidebar.GroupLabel>
+				<Sidebar.GroupContent>
+					<Sidebar.Menu>
+						<Sidebar.MenuItem class="flex">
+							<NamespaceSwitcher />
+						</Sidebar.MenuItem>
+					</Sidebar.Menu>
+				</Sidebar.GroupContent>
+			</Sidebar.Group>
+		{/if}
 	</Sidebar.Header>
 	<Sidebar.Content class="gap-0 overflow-hidden">
-		<Sidebar.Group>
-			<Sidebar.GroupLabel class="pr-0">
-				<span
-					class="text-muted-foreground w-full grow font-sans font-medium tracking-wide select-none"
-					>Server</span
-				>
-				<Tooltip.Root delayDuration={0}>
-					<Tooltip.Trigger disabled={error === null}>
-						<span
-							class={cn(
-								'text-muted-foreground font-normal',
-								(error || !ctx.server.alive) && 'text-destructive'
-							)}
-						>
-							{#if error || !ctx.server.alive}
-								disconnected
-							{:else}
-								connected
-							{/if}
-						</span>
-					</Tooltip.Trigger>
-					<Tooltip.Content><p>{error}</p></Tooltip.Content>
-				</Tooltip.Root>
-				<Button
-					size="icon"
-					variant="ghost"
-					class="mx-1 size-7"
-					disabled={connecting}
-					onclick={() => refreshAgents()}
-				>
-					<IconArrowsClockwise class={cn('size-4', connecting && 'animate-spin')} />
-				</Button>
-			</Sidebar.GroupLabel>
+		{#if !isSharedMode}
+			<Sidebar.Group>
+				<Sidebar.GroupLabel class="pr-0">
+					<span
+						class="text-muted-foreground w-full grow font-sans font-medium tracking-wide select-none"
+						>Server</span
+					>
+					<Tooltip.Root delayDuration={0}>
+						<Tooltip.Trigger disabled={error === null}>
+							<span
+								class={cn(
+									'text-muted-foreground font-normal',
+									(error || !ctx.server.alive) && 'text-destructive'
+								)}
+							>
+								{#if error || !ctx.server.alive}
+									disconnected
+								{:else}
+									connected
+								{/if}
+							</span>
+						</Tooltip.Trigger>
+						<Tooltip.Content><p>{error}</p></Tooltip.Content>
+					</Tooltip.Root>
+					<Button
+						size="icon"
+						variant="ghost"
+						class="mx-1 size-7"
+						disabled={connecting}
+						onclick={() => refreshAgents()}
+					>
+						<IconArrowsClockwise class={cn('size-4', connecting && 'animate-spin')} />
+					</Button>
+				</Sidebar.GroupLabel>
 
-			<Sidebar.GroupContent>
-				<Sidebar.Menu>
-					<!-- <SidebarLink url="{base}/" icon={IconHome} title="Home" /> -->
-					<div use:tourTarget={'registry'}>
-						<SidebarLink url="{base}/server/registry" icon={IconPackage} title="Agent Registry" />
-					</div>
-					<div use:tourTarget={'logs'}>
-						<SidebarLink url="{base}/server/logs" icon={IconNotepad} title="Logs" disabled />
-					</div>
-
-					<Sidebar.MenuItem>
-						<div use:tourTarget={'workbench'}>
-							<SidebarLink url="{base}/workbench" icon={IconCircuity} title="Workbench" />
+				<Sidebar.GroupContent>
+					<Sidebar.Menu>
+						<!-- <SidebarLink url="{base}/" icon={IconHome} title="Home" /> -->
+						<div use:tourTarget={'registry'}>
+							<SidebarLink url="{base}/server/registry" icon={IconPackage} title="Agent Registry" />
 						</div>
-						<Sidebar.MenuSub>
-							<Sidebar.MenuSubItem>
-								<div use:tourTarget={'templates'}>
-									<SidebarLink
-										url="{base}/workbench/templates/"
-										icon={IconFolder}
-										title="Templates"
-									/>
-								</div>
-							</Sidebar.MenuSubItem>
-						</Sidebar.MenuSub>
-					</Sidebar.MenuItem>
-				</Sidebar.Menu>
-			</Sidebar.GroupContent>
-		</Sidebar.Group>
+						<div use:tourTarget={'logs'}>
+							<SidebarLink url="{base}/server/logs" icon={IconNotepad} title="Logs" disabled />
+						</div>
+
+						<Sidebar.MenuItem>
+							<div use:tourTarget={'workbench'}>
+								<SidebarLink url="{base}/workbench" icon={IconCircuity} title="Workbench" />
+							</div>
+							<Sidebar.MenuSub>
+								<Sidebar.MenuSubItem>
+									<div use:tourTarget={'templates'}>
+										<SidebarLink
+											url="{base}/workbench/templates/"
+											icon={IconFolder}
+											title="Templates"
+										/>
+									</div>
+								</Sidebar.MenuSubItem>
+							</Sidebar.MenuSub>
+						</Sidebar.MenuItem>
+					</Sidebar.Menu>
+				</Sidebar.GroupContent>
+			</Sidebar.Group>
+		{/if}
 
 		<Sidebar.Group>
 			<Sidebar.GroupLabel class="text-muted-foreground">Session</Sidebar.GroupLabel>
@@ -428,10 +437,7 @@
 						<SessionSwitcher />
 						<Sidebar.MenuItem>
 							<div class="relative flex items-center">
-								<Sidebar.MenuButton
-									isActive={page.url.pathname === `${base}/session`}
-									class="pr-9"
-								>
+								<Sidebar.MenuButton isActive={page.url.pathname === `${base}/session`} class="pr-9">
 									{#snippet child({ props })}
 										<a href="{base}/session" {...props}>
 											<IconMonitor />
@@ -441,32 +447,34 @@
 										</a>
 									{/snippet}
 								</Sidebar.MenuButton>
-								<Tooltip.Root delayDuration={0}>
-									<Tooltip.Trigger>
-										{#snippet child({ props: tProps })}
-											<Button
-												{...tProps}
-												variant="ghost"
-												size="icon"
-												class="absolute top-1/2 right-1 size-6 -translate-y-1/2"
-												aria-label="Import session"
-												onclick={triggerImport}
-											>
-												<IconUpload class="size-4" />
-											</Button>
-										{/snippet}
-									</Tooltip.Trigger>
-									<Tooltip.Content>
-										<span>Import a session from a .jsonl file</span>
-									</Tooltip.Content>
-								</Tooltip.Root>
-								<input
-									bind:this={importInput}
-									type="file"
-									accept=".jsonl,application/x-ndjson,application/json,text/plain"
-									class="hidden"
-									onchange={handleImportFile}
-								/>
+								{#if !isSharedMode}
+									<Tooltip.Root delayDuration={0}>
+										<Tooltip.Trigger>
+											{#snippet child({ props: tProps })}
+												<Button
+													{...tProps}
+													variant="ghost"
+													size="icon"
+													class="absolute top-1/2 right-1 size-6 -translate-y-1/2"
+													aria-label="Import session"
+													onclick={triggerImport}
+												>
+													<IconUpload class="size-4" />
+												</Button>
+											{/snippet}
+										</Tooltip.Trigger>
+										<Tooltip.Content>
+											<span>Import a session from a .jsonl file</span>
+										</Tooltip.Content>
+									</Tooltip.Root>
+									<input
+										bind:this={importInput}
+										type="file"
+										accept=".jsonl,application/x-ndjson,application/json,text/plain"
+										class="hidden"
+										onchange={handleImportFile}
+									/>
+								{/if}
 							</div>
 							<Sidebar.MenuSub class="mr-0">
 								{#if ctx.session?.possessed}
@@ -504,7 +512,8 @@
 										emptyLabel="No threads."
 									>
 										{#snippet itemContextMenu({ item })}
-											{@const thread = item.id !== undefined ? ctx.session?.threads[item.id] : undefined}
+											{@const thread =
+												item.id !== undefined ? ctx.session?.threads[item.id] : undefined}
 											<ContextMenu.Item
 												disabled={!thread || thread.unread === 0}
 												onSelect={() => {
@@ -522,7 +531,10 @@
 															onclick={(e: any) => {
 																e.stopPropagation();
 															}}
-															class={cn(buttonVariants({ size: 'icon', variant: 'ghost' }), 'size-6')}
+															class={cn(
+																buttonVariants({ size: 'icon', variant: 'ghost' }),
+																'size-6'
+															)}
 														>
 															<IconPlus />
 														</Popover.Trigger>
@@ -575,7 +587,8 @@
 											<DropdownMenu.Root>
 												<DropdownMenu.Trigger>
 													{#snippet child({ props })}
-														<Button {...props} variant="ghost" size="icon"><IconDotsThree /></Button>
+														<Button {...props} variant="ghost" size="icon"><IconDotsThree /></Button
+														>
 													{/snippet}
 												</DropdownMenu.Trigger>
 												<DropdownMenu.Content class="w-56" align="start">

@@ -5,27 +5,49 @@
 	import * as Sidebar from '@coral-os/component-library/ui/sidebar/index.js';
 	import { Button } from '@coral-os/component-library/ui/button/index.js';
 	import { Badge } from '@coral-os/component-library/components/ui/badge/index.js';
+	import * as DropdownMenu from '@coral-os/component-library/ui/dropdown-menu/index.js';
 	import { toast } from 'svelte-sonner';
 	import IconDownload from 'phosphor-icons-svelte/IconDownloadSimpleRegular.svelte';
+	import IconCaretDown from 'phosphor-icons-svelte/IconCaretDownRegular.svelte';
+	import IconFileText from 'phosphor-icons-svelte/IconFileTextRegular.svelte';
+	import IconFileArchive from 'phosphor-icons-svelte/IconFileArchiveRegular.svelte';
 	import { appContext } from '$lib/context';
 	import Waterfall from '$lib/waterfall/Waterfall.svelte';
-	import { downloadSessionExport } from '$lib/session-io';
+	import { downloadSessionExport, downloadSessionBundle } from '$lib/session-io';
+	import { isSharedMode } from '$lib/sharedMode';
 
 	let ctx = appContext.get();
 	let conn = $derived(ctx.session);
 
-	function handleExport() {
+	function handleExportJsonl() {
 		if (!conn) return;
 		try {
 			downloadSessionExport(conn);
-			toast.success('Session exported.');
+			toast.success('Session exported as JSONL.');
 		} catch (e) {
 			toast.error(`Failed to export session: ${e}`);
 		}
 	}
+
+	function handleExportZip() {
+		if (!conn) return;
+		try {
+			downloadSessionBundle(conn);
+			toast.success('Session bundle exported.');
+		} catch (e) {
+			toast.error(`Failed to export bundle: ${e}`);
+		}
+	}
 </script>
 
-<header class="bg-background sticky top-0 flex h-16 shrink-0 items-center gap-2 border-b px-4">
+<!--
+  The right-side padding leaves room for the global floating toolbar
+  (search + help + theme toggle, rendered by app-sidebar.svelte) so the
+  Export button never sits underneath it.
+-->
+<header
+	class="bg-background sticky top-0 flex h-16 shrink-0 items-center gap-2 border-b px-4 pr-[22rem]"
+>
 	<Sidebar.Trigger class="-ml-1" />
 	<Separator orientation="vertical" class="mr-2 h-4" />
 	<Breadcrumb.Root class="flex-grow">
@@ -40,11 +62,28 @@
 	{#if conn?.imported}
 		<Badge variant="secondary">read-only</Badge>
 	{/if}
-	{#if conn}
-		<Button variant="outline" size="sm" onclick={handleExport}>
-			<IconDownload class="size-4" />
-			Export
-		</Button>
+	{#if conn && !isSharedMode}
+		<DropdownMenu.Root>
+			<DropdownMenu.Trigger>
+				{#snippet child({ props })}
+					<Button {...props} variant="outline" size="sm">
+						<IconDownload class="size-4" />
+						Export
+						<IconCaretDown class="size-3 opacity-70" />
+					</Button>
+				{/snippet}
+			</DropdownMenu.Trigger>
+			<DropdownMenu.Content align="end" class="w-56">
+				<DropdownMenu.Item onSelect={handleExportJsonl}>
+					<IconFileText class="size-4" />
+					Export as JSONL
+				</DropdownMenu.Item>
+				<DropdownMenu.Item onSelect={handleExportZip}>
+					<IconFileArchive class="size-4" />
+					Export as shareable ZIP
+				</DropdownMenu.Item>
+			</DropdownMenu.Content>
+		</DropdownMenu.Root>
 	{/if}
 </header>
 
