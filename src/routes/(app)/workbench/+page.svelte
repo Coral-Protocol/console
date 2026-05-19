@@ -45,6 +45,7 @@
 	import IconCaretDown from 'phosphor-icons-svelte/IconCaretDownRegular.svelte';
 	import IconPlusCircle from 'phosphor-icons-svelte/IconPlusCircleRegular.svelte';
 	import IconTrashRegular from 'phosphor-icons-svelte/IconTrashRegular.svelte';
+	import IconStorefront from 'phosphor-icons-svelte/IconStorefrontRegular.svelte';
 
 	import { Checkbox } from '@coral-os/component-library/ui/checkbox/index.js';
 	import { Label } from '@coral-os/component-library/ui/label/index.js';
@@ -85,6 +86,7 @@
 	import { tourTarget } from '$lib/components/tour/tourTarget';
 	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
 	import { cn } from '$lib/utils';
+	import MarketPane from './panes/MarketPane.svelte';
 
 	function sourceToRegistryId(source: AgentSource): RegistryAgentIdentifier['registrySourceId'] {
 		switch (source) {
@@ -252,15 +254,15 @@
 	let form = superForm(defaults(zod4(formSchema)), {
 		SPA: true,
 		dataType: 'json',
-		// svelte-ignore state_referenced_locally
 		validators: zod4(formSchema),
 		validationMethod: 'onblur',
 		resetForm: false,
-
 		async onUpdate({ form: f }) {
-			console.log('[onUpdate]', {
-				form: f
-			});
+			// console.log('[onUpdate]', {
+			// 	form: f
+			// });
+
+			// console.trace('SUPERFORM onUpdate fired');
 
 			if (!f.valid) {
 				toast.error('Please fix all errors in the form.');
@@ -293,7 +295,6 @@
 				const res = await ctx.server.api.POST('/api/v1/local/session', {
 					body
 				});
-				sendingForm = false;
 
 				if (res.error) {
 					// todo @alan there should probably be an api class where we can generic-ify the handling of this error
@@ -303,6 +304,7 @@
 
 					toast.error(`Failed to create session: ${error.message}`, { duration: Infinity });
 					return;
+					sendingForm = false;
 				}
 				if (res.data) {
 					lastSession.current.sessionId = res.data.sessionId;
@@ -312,6 +314,7 @@
 						namespace: ctx.server.namespace,
 						server: ctx.server
 					});
+					sendingForm = false;
 				} else {
 					sendingForm = false;
 					throw new Error('no data received');
@@ -768,6 +771,7 @@
 								invalid={Object.values($errors?.sessionRuntimeSettings ?? {}).length > 0}
 								>Tools</SidebarTab
 							>
+							<SidebarTab value="marketplace" icon={IconStorefront}>Market</SidebarTab>
 						</Tabs.List>
 						{#key sessCtx.selectedAgent}
 							<Tabs.Content
@@ -782,6 +786,9 @@
 						</Tabs.Content>
 						<Tabs.Content value="groups" class="flex h-full min-h-0 flex-col overflow-y-auto">
 							<GroupsPane />
+						</Tabs.Content>
+						<Tabs.Content value="marketplace" class="flex h-full min-h-0 flex-col overflow-y-auto">
+							<MarketPane />
 						</Tabs.Content>
 					</Tabs.Root>
 				</Card.Content>
@@ -835,30 +842,6 @@
 											<Spinner />
 										{/if}Create session</Form.Button
 									>
-									<!-- <DropdownMenu.Root>
-										<DropdownMenu.Trigger disabled={sendingForm || $formData.agents.length === 0}>
-											<Button variant="secondary">
-												<IconCaretDown class="size-4 rotate-180" />
-											</Button>
-										</DropdownMenu.Trigger>
-										<DropdownMenu.Content class="w-full">
-											<DropdownMenu.Sub>
-												<DropdownMenu.SubTrigger>Create in namespace...</DropdownMenu.SubTrigger>
-												<DropdownMenu.SubContent>
-													<DropdownMenu.Item onclick={() => (ctx.server.namespace = 'default')}>
-														default
-													</DropdownMenu.Item>
-													{#each namespaces as namespace}
-														<DropdownMenu.Item onclick={() => (ctx.server.namespace = namespace)}>
-															{namespace}
-														</DropdownMenu.Item>
-													{/each}
-													<DropdownMenu.Separator />
-													<DropdownMenu.Item>Create new namespace</DropdownMenu.Item>
-												</DropdownMenu.SubContent>
-											</DropdownMenu.Sub>
-										</DropdownMenu.Content>
-									</DropdownMenu.Root> -->
 								</Tooltip.Trigger>
 								<Tooltip.Content>
 									<p>
