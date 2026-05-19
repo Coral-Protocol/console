@@ -1,7 +1,6 @@
 @import 'tailwindcss';
-
 @import 'tw-animate-css';
-
+@plugin "@tailwindcss/typography";
 @import '@coral-os/component-library/theme.css';
 
 @source "../node_modules/@coral-os/component-library";
