@@ -35,7 +35,7 @@
 					<HoverCard.Root
 						closeDelay={0}
 						open={openId === id}
-						onOpenChange={(v) => {
+						onOpenChange={(v: any) => {
 							openId = v ? id : null;
 						}}
 					>
