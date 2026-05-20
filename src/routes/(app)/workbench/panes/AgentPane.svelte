@@ -3,11 +3,14 @@
 	import * as Accordion from '@coral-os/component-library/ui/accordion/index.js';
 	import * as Select from '@coral-os/component-library/ui/select/index.js';
 	import * as Popover from '@coral-os/component-library/ui/popover/index.js';
+	import AgentPanelIcon from '$lib/icons/agent-panel.svelte';
 
 	import { Input } from '@coral-os/component-library/ui/input/index.js';
 	import { Spinner } from '@coral-os/component-library/ui/spinner/index.js';
 
 	import { TooltipLabel, Combobox } from '@coral-os/component-library';
+	import IconInfo from 'phosphor-icons-svelte/IconInfoRegular.svelte';
+
 	import OptionField from '../OptionField.svelte';
 
 	import { createSessionContext } from '../+page.svelte';
@@ -18,10 +21,15 @@
 
 	import { buttonVariants } from '@coral-os/component-library/components/ui/button/index.js';
 	import AgentPicker from '../AgentPicker.svelte';
+	import { CarTaxiFrontIcon } from '@lucide/svelte';
+	import { toast } from 'svelte-sonner';
+	import * as Alert from '@coral-os/component-library/components/ui/alert/index.js';
 
 	let appCtx = appContext.get();
 
 	let ctx = createSessionContext.get();
+	let serverCtx = appContext.get();
+
 	let form = $derived(ctx.form);
 	let formData = $derived(ctx.formData);
 
@@ -238,8 +246,55 @@
 	{/if}
 {:else}
 	<section
-		class="text-muted-foreground flex grow flex-col items-center justify-center gap-2 text-center"
+		class="text-muted-foreground m-auto flex w-3/4 grow flex-col items-center justify-center gap-6 text-center"
 	>
-		<p>No agent selected</p>
+		<AgentPanelIcon class="w-4/5 py-8" />
+		<span class="flex flex-col gap-2">
+			<h2 class="text-foreground text-xl">No agent selected</h2>
+			<p>
+				Create and then select an agent from then left to view and edits its details, or load a
+				template to get started.
+			</p>
+		</span>
+		<Popover.Root>
+			<Popover.Trigger class="{buttonVariants()}, w-42">Add agent</Popover.Trigger>
+			<Popover.Content class="p-1">
+				<AgentPicker
+					server={serverCtx.server}
+					onSelect={(agent, catalogId) => {
+						toast.promise(ctx.addAgent(agent.name, catalogId.type, agent.versions[0]!), {
+							loading: 'Adding agent...',
+							success: 'Agent added successfully',
+							error: (err: any) => `Failed: ${err.message || err}`
+						});
+					}}
+				/>
+			</Popover.Content>
+		</Popover.Root>
+		<Popover.Root>
+			<Popover.Trigger class="{buttonVariants({ variant: 'secondary' })}, w-42"
+				>Load template</Popover.Trigger
+			>
+			<Popover.Content class="p-1">
+				<AgentPicker
+					server={serverCtx.server}
+					onSelect={(agent, catalogId) => {
+						toast.promise(ctx.addAgent(agent.name, catalogId.type, agent.versions[0]!), {
+							loading: 'Adding agent...',
+							success: 'Agent added successfully',
+							error: (err: any) => `Failed: ${err.message || err}`
+						});
+					}}
+				/>
+			</Popover.Content>
+		</Popover.Root>
+		<Alert.Root class="text-left">
+			<IconInfo />
+			<Alert.Title>Tip</Alert.Title>
+			<Alert.Description
+				>Agents are the building blocks of sessions, they communicate, execute tools, and output
+				results.</Alert.Description
+			>
+		</Alert.Root>
 	</section>
 {/if}
