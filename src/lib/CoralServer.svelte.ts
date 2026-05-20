@@ -111,9 +111,6 @@ export class CoralServer {
 			if (browser) localStorage.setItem('namespace', this.namespace);
 			this.fetchSessions(this.namespace);
 		});
-		$effect(() => {
-			console.log('catalogs: ', $state.snapshot(this.catalogs));
-		});
 
 		const onmessage = (msg: MessageEvent) => {
 			let data;
