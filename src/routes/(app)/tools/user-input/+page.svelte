@@ -3,7 +3,7 @@
 	import * as Breadcrumb from '@coral-os/component-library/ui/breadcrumb/index.js';
 	import * as Sidebar from '@coral-os/component-library/ui/sidebar/index.js';
 
-	import IconRobot from 'phosphor-icons-svelte/IconRobotRegular.svelte';
+	import IconRobot from '$lib/icons/robot.svelte';
 	import { Input } from '@coral-os/component-library/ui/input/index.js';
 	import { Separator } from '@coral-os/component-library/ui/separator/index.js';
 

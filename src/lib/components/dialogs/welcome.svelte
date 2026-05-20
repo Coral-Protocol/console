@@ -28,12 +28,6 @@
 			side: 'right'
 		},
 		{
-			id: 'logs',
-			text: 'View agent interactions and debug here (coming soon)',
-			title: 'Logs',
-			side: 'right'
-		},
-		{
 			id: 'workbench',
 			text: 'This is your playground for using Agents and building configurations.\n\nCreate Sessions to interact with agents in real-time, and save Templates to build reusable agent configurations.',
 			title: 'Workbench',

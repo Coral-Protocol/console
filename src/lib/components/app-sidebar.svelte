@@ -20,7 +20,7 @@
 	import IconArrowDownRegular from 'phosphor-icons-svelte/IconArrowDownRegular.svelte';
 	import IconArrowLeft from 'phosphor-icons-svelte/IconArrowLeftRegular.svelte';
 	import IconCaretDownRegular from 'phosphor-icons-svelte/IconCaretDownRegular.svelte';
-	import IconRobot from 'phosphor-icons-svelte/IconRobotRegular.svelte';
+	import IconRobot from '$lib/icons/robot.svelte';
 	import IconSearch from 'phosphor-icons-svelte/IconMagnifyingGlassRegular.svelte';
 	import IconQuestion from 'phosphor-icons-svelte/IconQuestionRegular.svelte';
 	import IconPackage from 'phosphor-icons-svelte/IconPackageRegular.svelte';
@@ -114,7 +114,6 @@
 		() => ctx.server.alive,
 		(alive) => {
 			if (alive) {
-				console.log('alive');
 				toast.success('Connected to server.');
 				toast.dismiss('server-disconnected');
 				refreshAgents(false);
@@ -359,30 +358,22 @@
 
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
-					<!-- <SidebarLink url="{base}/" icon={IconHome} title="Home" /> -->
+					<SidebarLink url="{base}/" icon={IconHome} title="Home" />
 					<div use:tourTarget={'registry'}>
 						<SidebarLink url="{base}/server/registry" icon={IconPackage} title="Agent Registry" />
 					</div>
-					<div use:tourTarget={'logs'}>
+					<!-- <div use:tourTarget={'logs'}>
 						<SidebarLink url="{base}/server/logs" icon={IconNotepad} title="Logs" disabled />
-					</div>
+					</div> -->
 
-					<Sidebar.MenuItem>
-						<div use:tourTarget={'workbench'}>
-							<SidebarLink url="{base}/workbench" icon={IconCircuity} title="Workbench" />
+					<div use:tourTarget={'workbench'}>
+						<SidebarLink url="{base}/workbench" icon={IconCircuity} title="Workbench" />
+					</div>
+					<Sidebar.MenuSub>
+						<div use:tourTarget={'templates'}>
+							<SidebarLink url="{base}/workbench/templates/" icon={IconFolder} title="Templates" />
 						</div>
-						<Sidebar.MenuSub>
-							<Sidebar.MenuSubItem>
-								<div use:tourTarget={'templates'}>
-									<SidebarLink
-										url="{base}/workbench/templates/"
-										icon={IconFolder}
-										title="Templates"
-									/>
-								</div>
-							</Sidebar.MenuSubItem>
-						</Sidebar.MenuSub>
-					</Sidebar.MenuItem>
+					</Sidebar.MenuSub>
 				</Sidebar.Menu>
 			</Sidebar.GroupContent>
 		</Sidebar.Group>
@@ -439,15 +430,18 @@
 								<Popover.Root bind:open={threadCreateOpen}>
 									<Tooltip.Root disabled={!ctx.session || ctx.session.possessed !== null}>
 										<Tooltip.Trigger>
-											<Popover.Trigger
-												disabled={!ctx.session || !ctx.session?.possessed}
-												onclick={(e: any) => {
-													e.stopPropagation();
-												}}
-												class={cn(buttonVariants({ size: 'icon', variant: 'ghost' }), 'size-6')}
-											>
-												<IconPlus />
-											</Popover.Trigger>
+											{#snippet child({ props }: any)}
+												<Popover.Trigger
+													{...props}
+													disabled={!ctx.session || !ctx.session?.possessed}
+													onclick={(e: any) => {
+														e.stopPropagation();
+													}}
+													class={cn(buttonVariants({ size: 'icon', variant: 'ghost' }), 'size-6')}
+												>
+													<IconPlus />
+												</Popover.Trigger>
+											{/snippet}
 										</Tooltip.Trigger>
 										<Tooltip.Content
 											><span>You must be possessing an agent to create a thread!</span
@@ -506,7 +500,7 @@
 							{#snippet itemActions({ item })}
 								<DropdownMenu.Root>
 									<DropdownMenu.Trigger>
-										{#snippet child({ props })}
+										{#snippet child({ props }: any)}
 											<Button {...props} variant="ghost" size="icon"><IconDotsThree /></Button>
 										{/snippet}
 									</DropdownMenu.Trigger>

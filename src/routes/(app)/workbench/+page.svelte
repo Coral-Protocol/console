@@ -41,7 +41,7 @@
 
 	import IconWrenchRegular from 'phosphor-icons-svelte/IconWrenchRegular.svelte';
 	import IconUsersThreeRegular from 'phosphor-icons-svelte/IconUsersThreeRegular.svelte';
-	import IconRobotRegular from 'phosphor-icons-svelte/IconRobotRegular.svelte';
+	import IconRobotRegular from '$lib/icons/robot.svelte';
 	import IconCaretDown from 'phosphor-icons-svelte/IconCaretDownRegular.svelte';
 	import IconPlusCircle from 'phosphor-icons-svelte/IconPlusCircleRegular.svelte';
 	import IconTrashRegular from 'phosphor-icons-svelte/IconTrashRegular.svelte';
@@ -87,6 +87,7 @@
 	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
 	import { cn } from '$lib/utils';
 	import MarketPane from './panes/MarketPane.svelte';
+	import Skeleton from '@coral-os/component-library/components/ui/skeleton/skeleton.svelte';
 
 	function sourceToRegistryId(source: AgentSource): RegistryAgentIdentifier['registrySourceId'] {
 		switch (source) {
@@ -301,10 +302,8 @@
 					// with a proper type implementation too..!
 					let error: { message?: string; stackTrace?: string[] } = res.error;
 					console.error(error.stackTrace);
-
 					toast.error(`Failed to create session: ${error.message}`, { duration: Infinity });
 					return;
-					sendingForm = false;
 				}
 				if (res.data) {
 					lastSession.current.sessionId = res.data.sessionId;
@@ -314,16 +313,14 @@
 						namespace: ctx.server.namespace,
 						server: ctx.server
 					});
-					sendingForm = false;
 				} else {
-					sendingForm = false;
 					throw new Error('no data received');
 				}
 			} catch (e) {
 				console.log(e);
 				toast.error(`Failed to create session: ${e}`, { duration: Infinity });
-				sendingForm = false;
 			}
+			sendingForm = false;
 		}
 	});
 
@@ -627,9 +624,9 @@
 							>
 								<Tabs.Content
 									value="table"
-									class="flex h-full min-h-0 flex-1 grow flex-col overflow-hidden"
+									class="relative flex h-full min-h-0 flex-1 grow flex-col overflow-hidden "
 								>
-									<Table.Root class="w-full grow ">
+									<Table.Root class="w-full grow border-amber-100/50 text-sm ">
 										<Table.Header>
 											<Table.Row>
 												<Table.Head class="w-12"><Checkbox /></Table.Head>
@@ -641,80 +638,67 @@
 											</Table.Row>
 										</Table.Header>
 										<Table.Body>
-											{#each $formData.agents as agent, i}
-												<Table.Row
-													class="cursor-pointer {i === sessCtx.selectedAgent ? 'bg-muted' : ''}"
-												>
-													<Table.Cell>
-														<p class="truncate font-medium"><Checkbox /></p>
-													</Table.Cell>
-													<Table.Cell onclick={() => (sessCtx.selectedAgent = i)}>
-														<p class="truncate font-medium">{agent.name}</p>
-													</Table.Cell>
+											{#if $formData.agents.length == 0}
+												{#each { length: 10 }, i}
+													<Table.Row
+														style={`opacity: ${1 - i * 0.1}; border-color: color-mix(in oklab, var(--color-border) ${100 - i * 10}%, transparent);`}
+													>
+														<Table.Cell>
+															<Checkbox disabled class="cursor-default!" />
+														</Table.Cell>
+														{#each { length: 5 }}
+															<Table.Cell>
+																<Skeleton class="h-6 w-18 animate-none!" />
+															</Table.Cell>
+														{/each}
+													</Table.Row>
+												{/each}
+											{:else}
+												{#each $formData.agents as agent, i}
+													<Table.Row
+														class="cursor-pointer {i === sessCtx.selectedAgent ? 'bg-muted' : ''}"
+													>
+														<Table.Cell>
+															<p class="truncate font-medium"><Checkbox /></p>
+														</Table.Cell>
+														<Table.Cell onclick={() => (sessCtx.selectedAgent = i)}>
+															<p class="truncate font-medium">{agent.name}</p>
+														</Table.Cell>
 
-													<Table.Cell onclick={() => (sessCtx.selectedAgent = i)}>
-														<p class="truncate">{agent.id.version}</p>
-													</Table.Cell>
+														<Table.Cell onclick={() => (sessCtx.selectedAgent = i)}>
+															<p class="truncate">{agent.id.version}</p>
+														</Table.Cell>
 
-													<Table.Cell onclick={() => (sessCtx.selectedAgent = i)}>
-														<p class="truncate">{agent.id.registrySourceId.type}</p>
-													</Table.Cell>
+														<Table.Cell onclick={() => (sessCtx.selectedAgent = i)}>
+															<p class="truncate">{agent.id.registrySourceId.type}</p>
+														</Table.Cell>
 
-													<Table.Cell onclick={() => (sessCtx.selectedAgent = i)}>
-														<p class="truncate">{agent.id.name}</p>
-													</Table.Cell>
+														<Table.Cell onclick={() => (sessCtx.selectedAgent = i)}>
+															<p class="truncate">{agent.id.name}</p>
+														</Table.Cell>
 
-													<Table.Cell class="flex gap-2">
-														<Tooltip.Provider>
-															<Tooltip.Root>
-																<Tooltip.Trigger>
-																	<TwostepButton
-																		disabled={sessCtx.selectedAgent === null}
-																		class="m-auto"
-																		variant="ghost"
-																		onclick={() => removeAgent(i)}
-																		><span class="sr-only">remove agent</span><IconTrashRegular
-																		></IconTrashRegular></TwostepButton
-																	>
-																</Tooltip.Trigger>
-																<Tooltip.Content>Remove agent</Tooltip.Content>
-															</Tooltip.Root>
-														</Tooltip.Provider>
-													</Table.Cell>
-												</Table.Row>
-											{/each}
+														<Table.Cell class="flex gap-2">
+															<Tooltip.Provider>
+																<Tooltip.Root>
+																	<Tooltip.Trigger>
+																		<TwostepButton
+																			disabled={sessCtx.selectedAgent === null}
+																			class="m-auto"
+																			variant="ghost"
+																			onclick={() => removeAgent(i)}
+																			><span class="sr-only">remove agent</span><IconTrashRegular
+																			></IconTrashRegular></TwostepButton
+																		>
+																	</Tooltip.Trigger>
+																	<Tooltip.Content>Remove agent</Tooltip.Content>
+																</Tooltip.Root>
+															</Tooltip.Provider>
+														</Table.Cell>
+													</Table.Row>
+												{/each}
+											{/if}
 										</Table.Body>
 									</Table.Root>
-									{#if $formData.agents.length == 0}
-										<section
-											class="flex h-full grow flex-col items-center justify-center gap-2 text-center"
-										>
-											<p>No agents.</p>
-											<p class="flex flex-col gap-1">
-												<Popover.Root>
-													<Popover.Trigger class={buttonVariants({ size: 'sm' })}
-														>Add an agent</Popover.Trigger
-													>
-													<Popover.Content class="p-1">
-														<AgentPicker
-															server={ctx.server}
-															onSelect={(agent, catalogId) => {
-																toast.promise(
-																	sessCtx.addAgent(agent.name, catalogId.type, agent.versions[0]!),
-																	{
-																		loading: 'Adding agent...',
-																		success: 'Agent added successfully',
-																		error: (err: any) => `Failed: ${err.message || err}`
-																	}
-																);
-															}}
-														/>
-													</Popover.Content>
-												</Popover.Root>
-												<span class="text-muted-foreground text-sm">to get started.</span>
-											</p>
-										</section>
-									{/if}
 								</Tabs.Content>
 								<Tabs.Content value="graph" class="flex min-h-0 flex-1 overflow-hidden ">
 									<Graph
