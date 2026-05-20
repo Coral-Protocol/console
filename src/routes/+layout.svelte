@@ -14,10 +14,10 @@
 
 <ModeWatcher />
 <Toaster
-	position="bottom-center"
+	position="bottom-left"
 	toastOptions={{
 		classes: {
-			toast: '!rounded-none'
+			toast: '!rounded-none !w-[270px]'
 		}
 	}}
 />
