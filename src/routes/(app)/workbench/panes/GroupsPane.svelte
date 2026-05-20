@@ -41,6 +41,11 @@
 	{/if}
 </header>
 <ul class=" flex flex-col">
+	{#if Object.keys($formData.groups).length == 0}
+		<p class="text-muted-foreground flex w-full place-items-center justify-center pt-8">
+			No groups to display.
+		</p>
+	{/if}
 	{#each $formData.groups as link, i}
 		<Accordion.Root type="single">
 			<Accordion.Item value="item-1">
