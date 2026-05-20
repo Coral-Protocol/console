@@ -1,6 +1,6 @@
 <script lang="ts">
 	import User from 'phosphor-icons-svelte/IconUserRegular.svelte';
-	import Robot from 'phosphor-icons-svelte/IconRobotRegular.svelte';
+	import Robot from '$lib/icons/robot.svelte';
 	import Wrench from 'phosphor-icons-svelte/IconWrenchRegular.svelte';
 	import { CodeBlock } from '@coral-os/component-library';
 	import { Separator } from '@coral-os/component-library/ui/separator/index.js';

@@ -6,7 +6,7 @@
 	import type { AppContext } from '$lib/context';
 	import { Session } from '$lib/session.svelte';
 	import IconChats from 'phosphor-icons-svelte/IconChatsRegular.svelte';
-	import IconRobot from 'phosphor-icons-svelte/IconRobotRegular.svelte';
+	import IconRobot from '$lib/icons/robot.svelte';
 
 	let {
 		ctx,
