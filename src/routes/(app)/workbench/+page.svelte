@@ -825,8 +825,10 @@
 
 						<Tooltip.Root>
 							<Tooltip.Trigger class="flex gap-2">
-								<Button disabled={sendingForm || $formData.agents.length === 0} variant="outline">
-									Save template</Button
+								<Button
+									onclick={() => (templateSaverDialogOpen = true)}
+									disabled={sendingForm || $formData.agents.length === 0}
+									class={sendingForm ? '' : 'bg-accent/80'}>Save template</Button
 								>
 							</Tooltip.Trigger>
 							<Tooltip.Content>
