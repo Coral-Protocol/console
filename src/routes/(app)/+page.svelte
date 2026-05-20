@@ -12,3 +12,64 @@
 <Header />
 
 <h1 class="text-muted-foreground m-auto">Welcome back</h1>
+<!-- 
+<UnderlineTabs.Root value="overview">
+	<UnderlineTabs.List>
+		<UnderlineTabs.Trigger value="overview">Overview</UnderlineTabs.Trigger>
+		<UnderlineTabs.Trigger value="settings">Settings</UnderlineTabs.Trigger>
+	</UnderlineTabs.List>
+</UnderlineTabs.Root> -->
+<!-- 
+<section class="m-auto">
+	<h1>Welcome back</h1>
+	<div>
+		<p>Here's what's happening with your sessions today:</p>
+		<ul>
+			<li>You have 3 active sessions.</li>
+			<li>Your most recent session was created 2 hours ago.</li>
+			<li>You have 5 sessions that have completed their tasks.</li>
+		</ul>
+	</div>
+	<div class="grid grid-cols-2 gap-4">
+		<button onclick={() => goto(`${base}/workbench`)}>
+			<Card.Root>
+				<Card.Content>
+					<p>Card Content</p>
+				</Card.Content>
+				<Card.Footer>
+					<p>Workbench</p>
+				</Card.Footer>
+			</Card.Root>
+		</button>
+		<button onclick={() => goto(`${base}/workbench`)}>
+			<Card.Root>
+				<Card.Content>
+					<p>Card Content</p>
+				</Card.Content>
+				<Card.Footer>
+					<p>Workbench</p>
+				</Card.Footer>
+			</Card.Root>
+		</button>
+		<button onclick={() => goto(`${base}/workbench`)}>
+			<Card.Root>
+				<Card.Content>
+					<p>Card Content</p>
+				</Card.Content>
+				<Card.Footer>
+					<p>Workbench</p>
+				</Card.Footer>
+			</Card.Root>
+		</button>
+		<button onclick={() => goto(`${base}/workbench`)}>
+			<Card.Root>
+				<Card.Content>
+					<p>Card Content</p>
+				</Card.Content>
+				<Card.Footer>
+					<p>Workbench</p>
+				</Card.Footer>
+			</Card.Root>
+		</button>
+	</div>
+</section> -->
