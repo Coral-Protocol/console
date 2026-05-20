@@ -250,7 +250,7 @@
 <Welcome bind:open={welcomeOpen} bind:tourToggle={tourOpen} />
 
 <div
-	class="fixed top-3.5 right-3 z-50 flex items-center justify-end gap-1"
+	class="fixed top-3.5 right-3 z-1 flex items-center justify-end gap-1"
 	use:tourTarget={'quick-switch'}
 >
 	<Button
