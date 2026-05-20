@@ -47,8 +47,8 @@
 	let selectedTool: string | null = $state(null);
 </script>
 
-<section class="flex flex-col gap-4 px-4">
-	<h1 class="font-semibold">Custom Tools</h1>
+<header class="flex w-full flex-col gap-4 border-b p-4">
+	<p class="text-sm">Custom tools</p>
 	<Button
 		onclick={() => {
 			const id = crypto.randomUUID() as string;
@@ -62,12 +62,14 @@
 				(selectedTool = id);
 		}}>+</Button
 	>
+</header>
+<section class="flex flex-col gap-4 px-4 pt-4">
 	<Item.Root variant="outline" class="p-2">
 		<Item.Content>
 			<ScrollArea class="max-h-60 overflow-scroll">
 				{#if Object.keys($formData.tools).length == 0}
 					<p class="text-muted-foreground flex h-9 w-full place-items-center justify-center">
-						No tools.
+						No tools have been created.
 					</p>
 				{/if}
 				{#each Object.values($formData.tools) as tool (tool.id)}
