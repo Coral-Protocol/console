@@ -253,7 +253,7 @@
 									sessCtx.addAgent(
 										details.registryAgent.info.identifier.name,
 										details.registryAgent.info.identifier.registrySourceId.type,
-										details.registryAgent.info.identifier.version
+										selectedVersion || details.registryAgent.info.identifier.version
 									),
 									{
 										loading: 'Adding agent...',
