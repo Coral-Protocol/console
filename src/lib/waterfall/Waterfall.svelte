@@ -8,6 +8,7 @@
 	import { Checkbox } from '@coral-os/component-library/ui/checkbox/index.js';
 	import { Button } from '@coral-os/component-library/ui/button/index.js';
 	import { Separator } from '@coral-os/component-library/ui/separator/index.js';
+	import { Input } from '@coral-os/component-library/ui/input/index.js';
 
 	import Filter from '@lucide/svelte/icons/filter';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
@@ -15,6 +16,7 @@
 	import Minimize2 from '@lucide/svelte/icons/minimize-2';
 	import Plus from '@lucide/svelte/icons/plus';
 	import Minus from '@lucide/svelte/icons/minus';
+	import Search from '@lucide/svelte/icons/search';
 
 	import type {
 		AgentLane,
@@ -62,6 +64,7 @@
 	// enabled, so users can toggle individual types off or use the
 	// enable-all/disable-all buttons to flip the whole set at once.
 	let allowedTypes = new SvelteSet<SessionEventType>(allEventTypes);
+	let agentNameFilter = $state('');
 	let zoom = $state(1); // multiplier on pxPerMs
 
 	// Adaptive base scale: clamp the timeline so it doesn't explode to
@@ -83,6 +86,7 @@
 			lanes,
 			agentStatuses: session.agents,
 			hideSleeping,
+			agentNameFilter,
 			allowedTypes,
 			pxPerMs,
 			minRowGap: MIN_ROW_GAP,
@@ -274,9 +278,19 @@
 			</button>
 		</div>
 
-		<div class="text-muted-foreground ml-auto text-xs">
-			{session.events.length} event{session.events.length === 1 ? '' : 's'} ·
-			{visibleLanes.length}/{lanes.length} agent{lanes.length === 1 ? '' : 's'}
+		<div class="ml-auto flex items-center gap-3">
+			<div class="relative w-48">
+				<Search class="text-muted-foreground absolute top-1/2 left-2 size-3.5 -translate-y-1/2" />
+				<Input
+					bind:value={agentNameFilter}
+					placeholder="Filter agents..."
+					class="h-7 pl-7 text-xs"
+				/>
+			</div>
+			<div class="text-muted-foreground text-xs whitespace-nowrap">
+				{session.events.length} event{session.events.length === 1 ? '' : 's'} ·
+				{visibleLanes.length}/{lanes.length} agent{lanes.length === 1 ? '' : 's'}
+			</div>
 		</div>
 	</div>
 
@@ -307,19 +321,19 @@
 				<div class="relative" style="width: {LANE_PAD * 2 + lanesWidth}px;">
 					{#each visibleLanes as { lane, visibleIndex } (lane.name)}
 						<div
-							class="absolute top-0 flex h-full flex-col items-center justify-center overflow-hidden px-2"
+							class="absolute top-0 flex h-full flex-col items-center justify-center px-2 hover:z-50 hover:bg-background"
 							style="left: {laneCenterX(visibleIndex) - LANE_WIDTH / 2}px; width: {LANE_WIDTH}px;"
 							in:scale={{ duration: 200, start: 0.85 }}
 							animate:flip={{ duration: 200 }}
 						>
 							<span
-								class="block w-full truncate text-center text-xs font-medium"
+								class="block w-full truncate text-center text-xs font-medium hover:whitespace-normal"
 								class:text-muted-foreground={!lane.present}
 								title={lane.name}
 							>
 								{lane.name}
 							</span>
-							<span class="text-muted-foreground block w-full truncate text-center font-mono text-[10px]">
+							<span class="text-muted-foreground block w-full truncate text-center font-mono text-[10px] hover:whitespace-normal">
 								#{lane.index}{lane.present ? '' : ' · gone'}
 							</span>
 						</div>

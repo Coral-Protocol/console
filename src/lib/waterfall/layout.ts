@@ -50,6 +50,8 @@ export interface BuildLayoutInput {
 	 */
 	agentStatuses: Record<string, unknown>;
 	hideSleeping: boolean;
+	/** Filter agents by name; case-insensitive substring match. */
+	agentNameFilter: string;
 	/** Allowed event types; if empty, all types are allowed. */
 	allowedTypes: ReadonlySet<SessionEventType>;
 	/** Vertical distance per millisecond, scaled live by the zoom slider. */
@@ -118,6 +120,7 @@ export function buildLayout(input: BuildLayoutInput): BuildLayoutResult {
 		lanes,
 		agentStatuses,
 		hideSleeping,
+		agentNameFilter,
 		allowedTypes,
 		pxPerMs,
 		minRowGap,
@@ -130,10 +133,18 @@ export function buildLayout(input: BuildLayoutInput): BuildLayoutResult {
 	// tail of inactive agents from widening the timeline pointlessly.
 	const accept = (entry: SessionEventEntry) => {
 		if (!allowedTypes.has(entry.event.type)) return false;
-		if (hideSleeping) {
-			const name = agentNameForEvent(entry.event);
-			if (isAgentInactive(name, agentStatuses)) return false;
+
+		const name = agentNameForEvent(entry.event);
+		if (hideSleeping && isAgentInactive(name, agentStatuses)) return false;
+
+		if (
+			agentNameFilter &&
+			name &&
+			!name.toLowerCase().includes(agentNameFilter.toLowerCase())
+		) {
+			return false;
 		}
+
 		return true;
 	};
 
