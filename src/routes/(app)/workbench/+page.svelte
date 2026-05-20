@@ -87,7 +87,7 @@
 	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
 	import { cn } from '$lib/utils';
 	import MarketPane from './panes/MarketPane.svelte';
-	import Skeleton from '@coral-os/component-library/components/ui/skeleton/skeleton.svelte';
+	import { Skeleton } from '@coral-os/component-library/components/ui/skeleton/index.js';
 
 	function sourceToRegistryId(source: AgentSource): RegistryAgentIdentifier['registrySourceId'] {
 		switch (source) {
