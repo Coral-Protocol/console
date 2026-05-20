@@ -52,6 +52,19 @@ export type SessionThreadState = Omit<SessionThread, 'participants'> & {
 };
 
 /**
+ * A "group" is a set of agents that the backend declared visible to each
+ * other via a `group_added` event. Groups are append-only — once added,
+ * they remain in the registry; new groups appear as the session evolves.
+ */
+export interface SessionGroup {
+	/** Stable, never-reused index assigned in arrival order. */
+	index: number;
+	agents: string[];
+	/** Wallclock time (ms) the group was first observed. */
+	firstSeen: number;
+}
+
+/**
  * Plain (serializable) snapshot of a session, suitable for export/import.
  * `participants` is stored as a plain array; the constructor re-wraps it as
  * a `SvelteSet` when hydrating.
@@ -67,6 +80,7 @@ export interface ImportedSessionSnapshot {
 		};
 	};
 	agentLanes: { [name: string]: AgentLane };
+	groups?: SessionGroup[];
 	events: SessionEventEntry[];
 }
 
@@ -107,6 +121,15 @@ export class Session {
 	public agentLanes: { [name: string]: AgentLane } = $state({});
 	private nextAgentIndex = 0;
 
+	/**
+	 * Append-only registry of agent groups observed via `group_added`
+	 * events. Order matches arrival order. Duplicate groups (same set of
+	 * agents) are ignored, so reconnecting clients that replay groups don't
+	 * accumulate duplicates.
+	 */
+	public groups: SessionGroup[] = $state([]);
+	private nextGroupIndex = 0;
+
 	constructor(
 		opts:
 			| { namespace: string; sessionId: string; server: CoralServer }
@@ -125,6 +148,8 @@ export class Session {
 				])
 			);
 			this.agentLanes = { ...snap.agentLanes };
+			this.groups = (snap.groups ?? []).slice();
+			this.nextGroupIndex = this.groups.reduce((m, g) => Math.max(m, g.index + 1), 0);
 			this.events = snap.events.slice();
 			this.nextSeq = snap.events.reduce((m, e) => Math.max(m, e.seq + 1), 0);
 			this.nextAgentIndex = Object.values(snap.agentLanes).reduce(
@@ -344,6 +369,9 @@ export class Session {
 					if (!this.threads[data.threadId]) return;
 					this.threads[data.threadId]!.participants.delete(data.name);
 					break;
+				case 'group_added':
+					this.recordGroup(data.agents, entryTime);
+					break;
 				case undefined:
 				case null:
 					toast.error('WS with empty message type! Please report this to the team.');
@@ -389,6 +417,29 @@ export class Session {
 		const overflow = this.events.length - this.eventLogLimit;
 		if (overflow > 0) this.events.splice(0, overflow);
 	}
+
+	/**
+	 * Add a new group to the registry, deduplicating on exact agent-set
+	 * equality. Member ordering within a group is preserved (it carries
+	 * meaning at the source) but membership is treated as a set when
+	 * comparing for duplicates so a reconnect doesn't churn the list.
+	 *
+	 * Also makes sure each referenced agent has a lane entry so downstream
+	 * views can render the new node immediately even if no other event has
+	 * mentioned that agent yet.
+	 */
+	private recordGroup(agents: string[], time: number) {
+		const key = [...agents].sort().join('\u0000');
+		for (const g of this.groups) {
+			if ([...g.agents].sort().join('\u0000') === key) return;
+		}
+		for (const name of agents) this.touchAgentLane(name, time);
+		this.groups.push({
+			index: this.nextGroupIndex++,
+			agents: agents.slice(),
+			firstSeen: time
+		});
+	}
 }
 
 /**
@@ -420,6 +471,7 @@ export function agentNameForEvent(event: SessionEvent): string | null {
 		case 'thread_closed':
 		case 'docker_container_created':
 		case 'docker_container_removed':
+		case 'group_added':
 			return null;
 		default:
 			return null;

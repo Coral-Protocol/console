@@ -2362,6 +2362,30 @@
           "properties" : {
             "type" : {
               "type" : "string",
+              "enum" : [ "group_added" ],
+              "title" : "String"
+            },
+            "timestamp" : {
+              "type" : "string",
+              "title" : "UTC timestamp ISO-8601"
+            },
+            "agents" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string",
+                "title" : "String"
+              },
+              "title" : "LinkedHashSet<String>",
+              "uniqueItems" : true
+            }
+          },
+          "required" : [ "agents", "timestamp", "type" ],
+          "title" : "group_added"
+        }, {
+          "type" : "object",
+          "properties" : {
+            "type" : {
+              "type" : "string",
               "enum" : [ "llm_proxy_call" ],
               "title" : "String"
             },
@@ -7715,7 +7739,7 @@
       },
       "PrototypeClient" : {
         "type" : "string",
-        "enum" : [ "openai", "openrouter", "anthropic" ],
+        "enum" : [ "openai", "openrouter", "anthropic", "minimax" ],
         "title" : "PrototypeClient"
       },
       "PrototypeInteger" : {
@@ -8180,12 +8204,34 @@
               "properties" : {
                 "type" : {
                   "type" : "string",
+                  "enum" : [ "MiniMax" ],
+                  "title" : "String"
+                }
+              },
+              "required" : [ "type" ],
+              "title" : "MiniMax"
+            }, {
+              "type" : "object",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
                   "enum" : [ "OpenAI" ],
                   "title" : "String"
                 }
               },
               "required" : [ "type" ],
               "title" : "OpenAI"
+            }, {
+              "type" : "object",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "OpenRouter" ],
+                  "title" : "String"
+                }
+              },
+              "required" : [ "type" ],
+              "title" : "OpenRouter"
             } ],
             "discriminator" : {
               "propertyName" : "type"

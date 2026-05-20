@@ -13,6 +13,7 @@
  *   - "lane":     one per agentLanes entry (preserves horizontal ordering).
  *   - "thread":   one per known thread, with participants flattened to an
  *                 array (the live representation is a SvelteSet).
+ *   - "group":    one per agent group declared by a `group_added` event.
  *   - "event":    one per event log entry, in arrival order.
  */
 
@@ -20,7 +21,8 @@ import type {
 	AgentLane,
 	ImportedSessionSnapshot,
 	Session,
-	SessionEventEntry
+	SessionEventEntry,
+	SessionGroup
 } from './session.svelte';
 import type { SessionAgentState, SessionThread } from './session.svelte';
 
@@ -41,9 +43,10 @@ type HeaderLine = {
 type AgentLine = { type: 'agent'; name: string; state: SessionAgentState };
 type LaneLine = { type: 'lane'; lane: AgentLane };
 type ThreadLine = { type: 'thread'; thread: ExportedThread };
+type GroupLine = { type: 'group'; group: SessionGroup };
 type EventLine = { type: 'event'; entry: SessionEventEntry };
 
-type Line = HeaderLine | AgentLine | LaneLine | ThreadLine | EventLine;
+type Line = HeaderLine | AgentLine | LaneLine | ThreadLine | GroupLine | EventLine;
 
 /**
  * Serialize a live or imported `Session` to a JSONL string.
@@ -77,6 +80,10 @@ export function exportSessionToJsonl(session: Session): string {
 			type: 'thread',
 			thread: { ...rest, participants: Array.from(participants) }
 		});
+	}
+
+	for (const group of session.groups) {
+		lines.push({ type: 'group', group });
 	}
 
 	for (const entry of session.events) {
@@ -362,6 +369,7 @@ export function parseSessionJsonl(text: string): ImportedSessionSnapshot {
 	const agents: ImportedSessionSnapshot['agents'] = {};
 	const agentLanes: ImportedSessionSnapshot['agentLanes'] = {};
 	const threads: ImportedSessionSnapshot['threads'] = {};
+	const groups: SessionGroup[] = [];
 	const events: SessionEventEntry[] = [];
 
 	for (const raw of rawLines) {
@@ -389,6 +397,9 @@ export function parseSessionJsonl(text: string): ImportedSessionSnapshot {
 			case 'thread':
 				threads[parsed.thread.id] = parsed.thread;
 				break;
+			case 'group':
+				groups.push(parsed.group);
+				break;
 			case 'event':
 				events.push(parsed.entry);
 				break;
@@ -410,6 +421,7 @@ export function parseSessionJsonl(text: string): ImportedSessionSnapshot {
 		agents,
 		agentLanes,
 		threads,
+		groups,
 		events
 	};
 }

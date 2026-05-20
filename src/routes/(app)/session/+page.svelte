@@ -13,6 +13,7 @@
 	import IconFileArchive from 'phosphor-icons-svelte/IconFileArchiveRegular.svelte';
 	import { appContext } from '$lib/context';
 	import Waterfall from '$lib/waterfall/Waterfall.svelte';
+	import SessionGraph from '$lib/components/SessionGraph.svelte';
 	import { downloadSessionExport, downloadSessionBundle } from '$lib/session-io';
 	import { isSharedMode } from '$lib/sharedMode';
 
@@ -92,6 +93,7 @@
 		<Tabs.Root value="overview" class="flex h-full min-h-0 flex-col">
 			<Tabs.List>
 				<Tabs.Trigger value="overview">Overview</Tabs.Trigger>
+				<Tabs.Trigger value="graph">Graph</Tabs.Trigger>
 				<Tabs.Trigger value="waterfall">Waterfall</Tabs.Trigger>
 			</Tabs.List>
 			<Tabs.Content value="overview" class="min-h-0 flex-1">
@@ -111,6 +113,16 @@
 						<p class="mt-2">Agents: {Object.keys(conn.agents).length}</p>
 						<p>Threads: {Object.keys(conn.threads).length}</p>
 					</div>
+				</div>
+			</Tabs.Content>
+			<Tabs.Content value="graph" class="min-h-0 flex-1 basis-0 overflow-hidden">
+				<!--
+				  Live force-directed view of the session's agents, threads,
+				  group memberships, and message flow. Hover for tooltips;
+				  click any node for full details.
+				-->
+				<div class="h-full overflow-hidden rounded-lg border">
+					<SessionGraph session={conn} />
 				</div>
 			</Tabs.Content>
 			<Tabs.Content value="waterfall" class="min-h-0 flex-1 basis-0 overflow-hidden">
