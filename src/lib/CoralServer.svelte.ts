@@ -187,8 +187,8 @@ export class CoralServer {
 		});
 	}
 
-	public addNamespace(namespace: string) {
-		this.api.POST('/api/v1/local/namespace', {
+	public async addNamespace(namespace: string) {
+		await this.api.POST('/api/v1/local/namespace', {
 			body: { deleteOnLastSessionExit: false, name: namespace, annotations: {} }
 		});
 		this.allSessions[namespace] = {
@@ -197,6 +197,16 @@ export class CoralServer {
 			deleteOnLastSessionExit: false,
 			sessions: {}
 		};
+	}
+
+	public async deleteNamespace(namespace: string) {
+		await this.api.DELETE('/api/v1/local/namespace/{namespace}', {
+			params: { path: { namespace } }
+		});
+		delete this.allSessions[namespace];
+		if (this.namespace === namespace) {
+			this.namespace = 'default';
+		}
 	}
 
 	public async fetchRegistries() {
@@ -224,7 +234,7 @@ export class CoralServer {
 				// wrapped GET normally handles this, but 404 usually does not mean good things,
 				// so we have to manually mark ourselves alive
 				this.alive = true;
-				this.addNamespace(namespace);
+				await this.addNamespace(namespace);
 				return;
 			}
 			if (res.error) throw new Error(`Error fetching sessions - ${res.error.message}`);
