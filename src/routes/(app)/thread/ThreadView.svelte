@@ -13,14 +13,16 @@
 	import * as InputGroup from '@coral-os/component-library/ui/input-group/index.js';
 
 	import { Toggle } from '@coral-os/component-library/ui/toggle/index.js';
-	import { Input } from '@coral-os/component-library/components/ui/input/index.js';
 
 	import IconPaperPlaneRight from 'phosphor-icons-svelte/IconPaperPlaneRightRegular.svelte';
+	import { Combobox } from '@coral-os/component-library';
+	import { watch } from 'runed';
+	import type { VirtualizerHandle } from 'virtua/svelte';
 
 	let ctx = appContext.get();
 
 	let {
-		thread,
+		thread = $bindable(),
 		messages,
 		memberListOpen = $bindable(true)
 	}: {
@@ -47,12 +49,36 @@
 					.map((m) => m.message)
 			: messages
 	);
+
+	let others = $derived(
+		(thread &&
+			ctx.session?.possessed &&
+			Array.from(thread.participants.keys().filter((p) => p !== ctx.session?.possessed))) ||
+			[]
+	);
+	$inspect(others);
+	$inspect(ctx.session?.possessed);
+
+	let mentions: string[] = $state([]);
+	watch(
+		() => others,
+		() => {
+			if (mentions.length === 0) mentions = others;
+			else mentions = mentions.filter((m) => others.indexOf(m) !== -1);
+		}
+	);
+	let canTalk = $derived(
+		!!ctx.session?.possessed && thread.participants.has(ctx.session.possessed)
+	);
+
+	let vlist: VirtualizerHandle | undefined = $state(undefined);
 </script>
 
 <Resizable.PaneGroup direction="horizontal">
 	<Resizable.Pane class="flex h-full">
 		<main class="relative flex flex-grow flex-col gap-0 overflow-scroll">
 			<VList
+				bind:this={vlist}
 				data={filteredMessages}
 				class="flex-grow p-4"
 				viewportClass="flex flex-grow flex-col gap-0"
@@ -84,39 +110,63 @@
 						await ctx.server.sendMessage(ctx.session.sessionId, agent, {
 							threadId: thread.id,
 							content: msg,
-							mentions: Array.from(thread.participants.keys().filter((p) => p !== agent))
+							mentions
 						});
 						thread.unread = 0;
+						vlist?.scrollToIndex(messages.length);
 						message = '';
 					}}
 				>
 					<Tooltip.Root>
-						<Tooltip.Trigger
-							disabled={!!ctx.session?.possessed && thread.participants.has(ctx.session.possessed)}
-							class="size-full"
-						>
-							<InputGroup.Root>
-								<InputGroup.Input
-									bind:value={message}
-									disabled={!ctx.session?.possessed ||
-										!thread.participants.has(ctx.session.possessed)}
-									placeholder={ctx.session?.possessed
-										? `send a message as '${ctx.session?.possessed}'`
-										: 'send a message'}
-								/>
-								<InputGroup.Addon align="inline-end">
-									<InputGroup.Button
-										type="submit"
-										variant="default"
-										size="icon-xs"
-										disabled={!ctx.session?.possessed ||
-											!thread.participants.has(ctx.session.possessed)}
-									>
-										<IconPaperPlaneRight />
-										<span class="sr-only">Send</span>
-									</InputGroup.Button>
-								</InputGroup.Addon>
-							</InputGroup.Root>
+						<Tooltip.Trigger disabled={canTalk} class="size-full">
+							{#snippet child({ props })}
+								<InputGroup.Root {...props}>
+									<InputGroup.Input
+										bind:value={message}
+										disabled={!canTalk}
+										placeholder={ctx.session?.possessed
+											? `send a message as '${ctx.session?.possessed}'`
+											: 'send a message'}
+									/>
+									<InputGroup.Addon align="inline-end">
+										<Combobox
+											type="multiple"
+											disabled={!canTalk}
+											bind:selected={mentions}
+											options={[{ items: others }]}
+											emptyLabel="No agents found."
+											searchPlaceholder="Search agents..."
+										>
+											{#snippet trigger({ props })}
+												<InputGroup.Button
+													{...props}
+													variant="ghost"
+													class="!pe-1.5 text-xs"
+													role="combobox"
+												>
+													Mentions {mentions.length === 0
+														? 'nobody'
+														: mentions.length > 1 && mentions.length === others.length
+															? 'everyone'
+															: mentions.join(', ')}
+												</InputGroup.Button>
+											{/snippet}
+										</Combobox>
+									</InputGroup.Addon>
+									<InputGroup.Addon align="inline-end">
+										<InputGroup.Button
+											type="submit"
+											variant="default"
+											size="icon-xs"
+											disabled={!ctx.session?.possessed ||
+												!thread.participants.has(ctx.session.possessed)}
+										>
+											<IconPaperPlaneRight />
+											<span class="sr-only">Send</span>
+										</InputGroup.Button>
+									</InputGroup.Addon>
+								</InputGroup.Root>
+							{/snippet}
 						</Tooltip.Trigger>
 						<Tooltip.Content>
 							You must be possessing an agent that is a participant of this thread.
