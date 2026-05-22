@@ -42,7 +42,22 @@
 	);
 	let filteredCount = $derived(filtered.reduce((acc, cur) => acc + cur.agents.length, 0));
 	loading = false;
+
+	let selectedAgent = $state<{
+		agent: { name: string; versions: string[] };
+		details: Awaited<ReturnType<typeof ctx.server.lookupAgent>>;
+	} | null>(null);
+
+	let dialogOpen = $state(false);
 </script>
+
+<Dialog.Root bind:open={dialogOpen}>
+	<Dialog.Content class="bg-card h-full max-h-4/5 max-w-4/5! overflow-hidden" showClose={false}>
+		{#if selectedAgent}
+			<AgentMarketView agent={selectedAgent.agent} />
+		{/if}
+	</Dialog.Content>
+</Dialog.Root>
 
 <main class="main flex min-h-0 grow flex-col">
 	<header class="flex w-full flex-col gap-4 border-b p-4">
@@ -82,58 +97,55 @@
 										{#await ctx.server.lookupAgent( { name: agent.name, version: agent.versions[0]!, registrySourceId: catalog.identifier } )}
 											<div class="bg-foreground/5 h-[250px] w-xs border"></div>
 										{:then details}
-											<li class="grow">
-												<Dialog.Root>
-													<Dialog.Trigger class="w-full text-left" type="button">
-														<Card.Root
-															class="hover:dark:bg-ring/20 hover:bg-ring/10 h-full grow border-0 border-t bg-transparent"
-														>
-															<Card.Header class="flex gap-2">
-																<Avatar.Root class="size-12">
-																	<Avatar.Image
-																		class="bg-cover object-cover"
-																		src={details.extension?.iconUrl}
-																		alt={agent.name.charAt(0).toUpperCase()}
-																	/>
-																	<Avatar.Fallback
-																		>{agent.name.charAt(0).toUpperCase()}</Avatar.Fallback
-																	>
-																</Avatar.Root>
-																<div class="flex flex-col gap-1">
-																	<Card.Title class="font-bold">{agent.name}</Card.Title>
-																	<Card.Description>
-																		{details.extension?.developer
-																			? 'By ' + details.extension.developer
-																			: 'Unknown developer'}</Card.Description
-																	>
-																</div>
-															</Card.Header>
-															<Card.Content class="flex w-full grow flex-col gap-2">
-																<p class="line-clamp-4 overflow-ellipsis">
-																	{details.registryAgent.info.description}
-																</p>
-																{#if details.registryAgent?.marketplace?.keywords && details.registryAgent.marketplace.keywords.length > 0}
-																	<div class="flex flex-wrap gap-1">
-																		{#each details.registryAgent.marketplace.keywords.slice(0, 3) as keyword}
-																			<span
-																				class="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs"
-																			>
-																				{keyword}
-																			</span>
-																		{/each}
-																	</div>
-																{/if}
-															</Card.Content>
-														</Card.Root>
-													</Dialog.Trigger>
-													<Dialog.Content
-														class="bg-card h-full max-h-4/5 max-w-4/5! overflow-hidden"
-														showClose={false}
+											<button
+												onclick={() => {
+													selectedAgent = { agent, details };
+													dialogOpen = true;
+												}}
+											>
+												<li class="grow cursor-pointer">
+													<Card.Root
+														class="hover:dark:bg-ring/20 hover:bg-ring/10 h-full grow border-0 border-t bg-transparent"
 													>
-														<AgentMarketView {agent} />
-													</Dialog.Content>
-												</Dialog.Root>
-											</li>
+														<Card.Header class="flex gap-2">
+															<Avatar.Root class="size-12">
+																<Avatar.Image
+																	class="bg-cover object-cover"
+																	src={details.extension?.iconUrl}
+																	alt={agent.name.charAt(0).toUpperCase()}
+																/>
+																<Avatar.Fallback>
+																	{agent.name.charAt(0).toUpperCase()}
+																</Avatar.Fallback>
+															</Avatar.Root>
+															<div class="flex flex-col gap-1">
+																<Card.Title class="font-bold">{agent.name}</Card.Title>
+																<Card.Description>
+																	{details.extension?.developer
+																		? 'By ' + details.extension.developer
+																		: 'Unknown developer'}
+																</Card.Description>
+															</div>
+														</Card.Header>
+														<Card.Content class="flex w-full grow flex-col gap-2">
+															<p class="line-clamp-4 overflow-ellipsis">
+																{details.registryAgent.info.description}
+															</p>
+															{#if details.registryAgent?.marketplace?.keywords?.length}
+																<div class="flex flex-wrap gap-1">
+																	{#each details.registryAgent.marketplace.keywords.slice(0, 3) as keyword}
+																		<span
+																			class="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs"
+																		>
+																			{keyword}
+																		</span>
+																	{/each}
+																</div>
+															{/if}
+														</Card.Content>
+													</Card.Root>
+												</li>
+											</button>
 										{/await}
 									{/each}
 								</ol>
