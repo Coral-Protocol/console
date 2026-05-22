@@ -188,7 +188,9 @@ export class CoralServer {
 	}
 
 	public addNamespace(namespace: string) {
-		this.api.POST('/api/v1/local/namespace');
+		this.api.POST('/api/v1/local/namespace', {
+			body: { deleteOnLastSessionExit: false, name: namespace, annotations: {} }
+		});
 		this.allSessions[namespace] = {
 			name: namespace,
 			annotations: {},

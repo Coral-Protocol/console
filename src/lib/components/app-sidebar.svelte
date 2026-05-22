@@ -226,12 +226,6 @@
 
 	let namespaces = $derived(ctx.server.namespaces.filter((ns) => ns !== 'default'));
 
-	watch([() => ctx.server.namespaces], () => {
-		if (!(ctx.server.namespace in ctx.server.sessions)) {
-			ctx.server.namespace = 'default';
-		}
-	});
-
 	let dialogOpen = $state(false);
 
 	let newNamespace = $state('Untitled Namespace');
