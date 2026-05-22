@@ -79,7 +79,7 @@
 	type SelectedRow = TData;
 	let selectedRow: AgentDialogView | null = $state(null);
 
-	const isFailed = (row: TData | null): row is TData & { failed: boolean } =>
+	const isFailed = (row: unknown): row is { failed: boolean } =>
 		row != null && (row as any).failed === true;
 </script>
 
@@ -122,7 +122,7 @@
 					</div>
 				</div>
 
-				<Accordion.Root type="single" collapsible>
+				<Accordion.Root type="single">
 					<Accordion.Item value="details">
 						<Accordion.Trigger variant="compact">Raw data</Accordion.Trigger>
 
