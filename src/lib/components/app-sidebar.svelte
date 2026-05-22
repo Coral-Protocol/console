@@ -380,7 +380,7 @@
 					>Debug</span
 				></Sidebar.GroupLabel
 			>
-			<SidebarLink url="{base}/events/" icon={IconBug} title="Event viewer" disabled />
+			<SidebarLink icon={IconBug} title="Event viewer" disabled />
 			<div use:tourTarget={'registry'}>
 				<SidebarLink url="{base}/server/registry" icon={IconPackage} title="Agent Registry" />
 			</div>
