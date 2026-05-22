@@ -27,6 +27,7 @@
 	import IconNotepad from 'phosphor-icons-svelte/IconNotepadRegular.svelte';
 	import IconCircuity from 'phosphor-icons-svelte/IconCircuitryRegular.svelte';
 	import IconFolder from 'phosphor-icons-svelte/IconFolderRegular.svelte';
+	import IconBug from 'phosphor-icons-svelte/IconBugRegular.svelte';
 	import IconPlus from 'phosphor-icons-svelte/IconPlusRegular.svelte';
 	import IconHome from 'phosphor-icons-svelte/IconHouseRegular.svelte';
 	import IconXRegular from 'phosphor-icons-svelte/IconXRegular.svelte';
@@ -358,13 +359,7 @@
 
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
-					<SidebarLink url="{base}/" icon={IconHome} title="Home" />
-					<div use:tourTarget={'registry'}>
-						<SidebarLink url="{base}/server/registry" icon={IconPackage} title="Agent Registry" />
-					</div>
-					<!-- <div use:tourTarget={'logs'}>
-						<SidebarLink url="{base}/server/logs" icon={IconNotepad} title="Logs" disabled />
-					</div> -->
+					<SidebarLink url="{base}/" icon={IconHome} title="Home" disabled />
 
 					<div use:tourTarget={'workbench'}>
 						<SidebarLink url="{base}/workbench" icon={IconCircuity} title="Workbench" />
@@ -376,6 +371,22 @@
 					</Sidebar.MenuSub>
 				</Sidebar.Menu>
 			</Sidebar.GroupContent>
+		</Sidebar.Group>
+
+		<Sidebar.Group>
+			<Sidebar.GroupLabel
+				><span
+					class="text-muted-foreground w-full grow font-sans font-medium tracking-wide select-none"
+					>Debug</span
+				></Sidebar.GroupLabel
+			>
+			<SidebarLink url="{base}/events/" icon={IconBug} title="Event viewer" disabled />
+			<div use:tourTarget={'registry'}>
+				<SidebarLink url="{base}/server/registry" icon={IconPackage} title="Agent Registry" />
+			</div>
+			<!-- <div use:tourTarget={'logs'}> -->
+			<SidebarLink url="{base}/server/logs" icon={IconNotepad} title="Logs" disabled />
+			<!-- </div> -->
 		</Sidebar.Group>
 
 		<Sidebar.Group>
