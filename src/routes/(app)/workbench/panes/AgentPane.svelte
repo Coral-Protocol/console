@@ -24,6 +24,8 @@
 	import { CarTaxiFrontIcon } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import * as Alert from '@coral-os/component-library/components/ui/alert/index.js';
+	import TemplatePicker from '../TemplatePicker.svelte';
+	import { getSessionDataFromTemplateName } from '../templates/TemplateLib';
 
 	let appCtx = appContext.get();
 
@@ -39,6 +41,23 @@
 	let curCatalog = $derived(
 		curAgent && appCtx.server.catalogs[registryIdOf(curAgent.id.registrySourceId)]
 	);
+
+	const loadTemplate = (template: string) => {
+		if (template) {
+			toast('Loading template...', { duration: 2000 });
+			try {
+				const templateSessionData = getSessionDataFromTemplateName(template);
+
+				ctx.importSession({
+					from: templateSessionData,
+					success: 'Template loaded successfully'
+				});
+			} catch (err) {
+				console.error('Failed to load template:', err);
+				toast.error('Failed to load template: ' + err);
+			}
+		}
+	};
 
 	const UNGROUPED = '__ungrouped';
 
@@ -276,14 +295,10 @@
 				>Load template</Popover.Trigger
 			>
 			<Popover.Content class="p-1">
-				<AgentPicker
+				<TemplatePicker
 					server={serverCtx.server}
-					onSelect={(agent, catalogId) => {
-						toast.promise(ctx.addAgent(agent.name, catalogId.type, agent.versions[0]!), {
-							loading: 'Adding agent...',
-							success: 'Agent added successfully',
-							error: (err: any) => `Failed: ${err.message || err}`
-						});
+					onSelect={(template) => {
+						loadTemplate(template);
 					}}
 				/>
 			</Popover.Content>
