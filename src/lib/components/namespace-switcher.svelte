@@ -1,60 +1,53 @@
 <script lang="ts">
-	import { Button } from '@coral-os/component-library/ui/button/index.js';
-
-	import CaretUpDown from 'phosphor-icons-svelte/IconCaretUpDownRegular.svelte';
 	import { toast } from 'svelte-sonner';
 
 	import * as Command from '@coral-os/component-library/ui/command/index.js';
 	import * as Popover from '@coral-os/component-library/ui/popover/index.js';
+	import * as Dialog from '@coral-os/component-library/ui/dialog/index.js';
+
+	import { Button } from '@coral-os/component-library/ui/button/index.js';
 	import { Input } from '@coral-os/component-library/ui/input/index.js';
-	import { TooltipLabel } from '@coral-os/component-library';
+	import { TooltipLabel, TwostepButton } from '@coral-os/component-library';
+
+	import CaretUpDown from 'phosphor-icons-svelte/IconCaretUpDownRegular.svelte';
 	import IconPlus from 'phosphor-icons-svelte/IconPlusRegular.svelte';
+	import IconTrash from 'phosphor-icons-svelte/IconTrashRegular.svelte';
 
 	import { fade } from 'svelte/transition';
 
-	import { Session } from '$lib/session.svelte';
 	import { tick } from 'svelte';
 	import { appContext } from '$lib/context';
-	import { cn } from '$lib/utils';
-	import * as Dialog from '@coral-os/component-library/ui/dialog/index.js';
 
 	let ctx = appContext.get();
 
 	let sessionSearcherOpen = $state(false);
 	let triggerRef = $state<HTMLButtonElement>(null!);
 
-	let value = $state('');
-
-	function closeAndFocusTrigger() {
-		sessionSearcherOpen = false;
-		tick().then(() => {
-			triggerRef.focus();
-		});
-	}
-
 	let namespaces = $derived(ctx.server.namespaces.filter((ns) => ns !== 'default'));
-	let dialogOpen = $state(false);
+	let createOpen = $state(false);
 
 	let newNamespace = $state('Untitled Namespace');
 	let duplicate = $derived(newNamespace === 'default' || newNamespace in ctx.server.namespaces);
 </script>
 
-<Dialog.Root bind:open={dialogOpen}>
+<Dialog.Root bind:open={createOpen}>
 	<Dialog.Content>
 		<form
 			class="grid w-full gap-4"
 			onsubmit={(e) => {
 				e.preventDefault();
-				ctx.server.namespace = newNamespace;
-				if (duplicate) {
-					toast.info(`Using existing namespace '${newNamespace}'.`);
-				} else {
-					toast.info(`Using namespace '${newNamespace}'.`);
-					ctx.server.addNamespace(newNamespace);
+				(async () => {
 					ctx.server.namespace = newNamespace;
-				}
-				newNamespace = '';
-				dialogOpen = false;
+					if (duplicate) {
+						toast.info(`Using existing namespace '${newNamespace}'.`);
+					} else {
+						toast.info(`Using namespace '${newNamespace}'.`);
+						await ctx.server.addNamespace(newNamespace);
+						ctx.server.namespace = newNamespace;
+					}
+					newNamespace = '';
+					createOpen = false;
+				})();
 			}}
 		>
 			<Dialog.Header>
@@ -103,7 +96,7 @@
 				</Button>
 			{/snippet}
 		</Popover.Trigger>
-		<Button onclick={() => (dialogOpen = true)} size="icon" variant="outline">
+		<Button onclick={() => (createOpen = true)} size="icon" variant="outline">
 			<IconPlus />
 		</Button>
 		<Popover.Content align="start" class="p-1">
@@ -115,15 +108,31 @@
 
 						{#each namespaces as namespace}
 							<Command.Item
-								class="text-wrap break-all"
+								class="flex text-wrap break-all"
 								onSelect={() => (ctx.server.namespace = namespace)}
 							>
-								{namespace}
+								<span class="grow">{namespace}</span>
+								<TwostepButton
+									variant="destructive"
+									size="icon-xs"
+									onclick={() => {
+										ctx.server
+											.deleteNamespace(namespace)
+											.then(() => {
+												toast.success(`Namespace '${namespace}' deleted.`);
+											})
+											.catch((e) => {
+												toast.error(
+													`Failed to delete namespace '${namespace}'${e ? ` - ${e}` : ''}`
+												);
+											});
+									}}><IconTrash /></TwostepButton
+								>
 							</Command.Item>
 						{/each}
 					</Command.Group>
 					<Command.Separator />
-					<Command.Item onSelect={() => ((dialogOpen = true), (sessionSearcherOpen = false))}
+					<Command.Item onSelect={() => ((createOpen = true), (sessionSearcherOpen = false))}
 						>Create new namespace</Command.Item
 					>
 				</Command.List>
