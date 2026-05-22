@@ -410,6 +410,7 @@
 	createSessionContext.set(sessCtx);
 
 	$effect(() => {
+		ctx.server.namespace;
 		toPayload(ctx.server, $formData)
 			.then((val) => {
 				sessCtx.payload = val;
