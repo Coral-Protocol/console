@@ -1,3 +1,5 @@
+import { base } from '$app/paths';
+
 export type PageTree = { [id: string]: Page };
 export type Page = { label: string; href?: string | null; pages?: PageTree } | string;
 
@@ -23,7 +25,7 @@ export const lookupPage = (path: string): ResolvedPage[] => {
 
 	let pages: ResolvedPage[] = [];
 	let href = '';
-	for (const node of path.split('/')) {
+	for (const node of path.replace(new RegExp(`^${base}/`), '').split('/')) {
 		if (node.length === 0) continue;
 		if (!tree) {
 			pages.push({ label: '??', href: null });
