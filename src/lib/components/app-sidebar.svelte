@@ -254,7 +254,7 @@
 	use:tourTarget={'quick-switch'}
 >
 	<Button
-		class="flex w-full max-w-64 cursor-text items-center justify-between gap-6 "
+		class="flex w-fit max-w-64 cursor-text items-center justify-between gap-6 "
 		variant="ghost"
 		onclick={() => (openQuickswitch = true)}
 	>
