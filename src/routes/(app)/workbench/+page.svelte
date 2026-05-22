@@ -619,8 +619,6 @@
 								</Menubar.Menu>
 							</Menubar.Root>
 
-							seek and destory missing snippets...
-
 							<Tabs.Root
 								bind:value={agentsListTabs}
 								class="h-full min-h-0 flex-1 grow overflow-hidden"
