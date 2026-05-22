@@ -51,6 +51,7 @@
 				} else {
 					toast.info(`Using namespace '${newNamespace}'.`);
 					ctx.server.addNamespace(newNamespace);
+					ctx.server.namespace = newNamespace;
 				}
 				newNamespace = '';
 				dialogOpen = false;
