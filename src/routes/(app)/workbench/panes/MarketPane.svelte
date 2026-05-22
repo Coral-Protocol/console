@@ -18,7 +18,6 @@
 	import { Badge } from '@coral-os/component-library/ui/badge/index.js';
 	import { Skeleton } from '@coral-os/component-library/ui/skeleton/index.js';
 	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
-	import { settings } from '$lib/settings';
 
 	import Header from '$lib/components/header.svelte';
 	import AgentMarketView from '$lib/components/dialogs/AgentMarketView.svelte';
