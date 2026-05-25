@@ -1,5 +1,49 @@
 # Changelog
 
+## [0.3.14](https://github.com/Coral-Protocol/console/compare/v0.3.13...v0.3.14) (2026-05-22)
+
+
+### Features
+
+* add tailwind typo plugin and mdsvex ([63c6248](https://github.com/Coral-Protocol/console/commit/63c62487e8cacf4e92c64dfd0eb778a2bf1887d1))
+* allow choosing message mentions in thread ([205a939](https://github.com/Coral-Protocol/console/commit/205a93991d4e8ecbc9d45710ee21688276021dd3))
+* allow choosing message mentions in thread ([#162](https://github.com/Coral-Protocol/console/issues/162)) ([205a939](https://github.com/Coral-Protocol/console/commit/205a93991d4e8ecbc9d45710ee21688276021dd3))
+* delete namespaces + make add/delete methods async ([3882e13](https://github.com/Coral-Protocol/console/commit/3882e13b266128875fbb46dbf815083b733f57f7))
+* lots of changes and a beautiful new page design for workbench ([7709851](https://github.com/Coral-Protocol/console/commit/7709851161989d582ba0312202bb0fdddbc4b400))
+* new imagery! ([0c45674](https://github.com/Coral-Protocol/console/commit/0c4567467e6cb459ea013cb3c2809ccf0cbda901))
+* new registry page and data table ([6fd371b](https://github.com/Coral-Protocol/console/commit/6fd371bf070d7b844194015159c95e1682575104))
+* new tab for accessing the server discovered marketplace agents from the workbench ([b793150](https://github.com/Coral-Protocol/console/commit/b793150e6bb5f39ca330181b7fcd653fb1c6d262))
+* sidebar links organised ([8539ced](https://github.com/Coral-Protocol/console/commit/8539ced1208d92072dd7bb399770a3c0c088e6c7))
+* switch to namespace on creation ([0b27bba](https://github.com/Coral-Protocol/console/commit/0b27bba56eb0d05a9fa9bf7c8d797171cdd15f6c))
+* tanstack and ui lib comp update ([350cc2c](https://github.com/Coral-Protocol/console/commit/350cc2cd7321259410a6f3a80eaafaf20b69fd8d))
+
+
+### Bug Fixes
+
+* added template saving back in ! ([89e53d2](https://github.com/Coral-Protocol/console/commit/89e53d2ceef27ada24ccf5a3fb328dd19a995fd4))
+* breadcrumbs when base != '' ([9de35a5](https://github.com/Coral-Protocol/console/commit/9de35a50c63df543810166de1f9e11c824d1c001))
+* create namespace ([1754570](https://github.com/Coral-Protocol/console/commit/17545701f71e6dd6422e864f375306537809a33d))
+* fix large hydration issues, changed icons, and some over fixes ([a7bf4f6](https://github.com/Coral-Protocol/console/commit/a7bf4f66a70938528149f56ba9e129ad73240a8c))
+* home page text ([00504f6](https://github.com/Coral-Protocol/console/commit/00504f6dec130219e3414a5172babbe657170579))
+* kbd under overlays ([07601f0](https://github.com/Coral-Protocol/console/commit/07601f09ea5b482679b5f507922f2428ecbc0dd2))
+* load template from empty  workbench ([9e9e576](https://github.com/Coral-Protocol/console/commit/9e9e576d93328770a7f5c7ad1935a048c5dbf74b))
+* move toast and change width ([36da707](https://github.com/Coral-Protocol/console/commit/36da707c71efb353ed7a7d4b69b2baeabff1c1f0))
+* moved svelte render out of body element ([bac2bba](https://github.com/Coral-Protocol/console/commit/bac2bbabe473368bff9016286cdd320adef4395b))
+* namespace reactivity in workbench json payload ([ed6777e](https://github.com/Coral-Protocol/console/commit/ed6777efc02d000a91c9211ca997562d377383f8))
+* nicer words ([b8d96b4](https://github.com/Coral-Protocol/console/commit/b8d96b42db67905a66a3a9f6c6c26c2e9ce96950))
+* overlay light theme support ([768d20b](https://github.com/Coral-Protocol/console/commit/768d20b5149dc5f113594c16d49d357fc0bea037))
+* quickie homepage ([f00a10d](https://github.com/Coral-Protocol/console/commit/f00a10db85b257453096c46ba31af214754f3b6b))
+* remove disabled url to nonexistant page ([60b5a04](https://github.com/Coral-Protocol/console/commit/60b5a04855b1f39c8692fcf6316b63d47f51a4b8))
+* remove note ([466383e](https://github.com/Coral-Protocol/console/commit/466383e10d369a4d3cdfa669a3260c09d32e6a3e))
+* remove old page ([5342ef8](https://github.com/Coral-Protocol/console/commit/5342ef84c30034008f079bd8ba1992edd80a388a))
+* remove old settings file ([71a5d61](https://github.com/Coral-Protocol/console/commit/71a5d61f48bf277cbf55082dd5d9a4fa1f0cd480))
+* remove this old unrequired console log ([d647b76](https://github.com/Coral-Protocol/console/commit/d647b760aac7819f00ae4ce74b2c77cff39b9442))
+* search width ([618a814](https://github.com/Coral-Protocol/console/commit/618a81490b8e28253c1d1f62fe3f0ba2f935e43e))
+* skeleton import ([b948ceb](https://github.com/Coral-Protocol/console/commit/b948cebb8b8a936340f6c97af8eefa2f11034999))
+* typing ([dbdc0f0](https://github.com/Coral-Protocol/console/commit/dbdc0f028bf7588792288f8ff65fab62332c8613))
+* typing + rando keyword ([e82f632](https://github.com/Coral-Protocol/console/commit/e82f632488555b4738a606ed3afb63f696904771))
+* version selecting ([07cc061](https://github.com/Coral-Protocol/console/commit/07cc061b99262132b347c3f84f4d2fdd6da03e3b))
+
 ## [0.3.13](https://github.com/Coral-Protocol/console/compare/v0.3.12...v0.3.13) (2026-05-08)
 
 
