@@ -202,7 +202,7 @@ export function chipPrimaryText(event: SessionEvent): string {
 		case 'llm_proxy_call':
 			return event.modelName;
 		case 'detailed_llm_proxy_response':
-			return event.requestId.slice(0, 8);
+			return event.originatingRequest.slice(0, 8);
 		case 'docker_container_created':
 		case 'docker_container_removed':
 			return event.containerId.slice(0, 12);

@@ -372,6 +372,14 @@ export class Session {
 				case 'group_added':
 					this.recordGroup(data.agents, entryTime);
 					break;
+				case 'llm_proxy_call':
+				case 'detailed_llm_proxy_request':
+				case 'detailed_llm_proxy_response':
+				case 'docker_container_created':
+				case 'docker_container_removed':
+					// Log-only events: already pushed into the event log above,
+					// no derived state to mutate here.
+					break;
 				case undefined:
 				case null:
 					toast.error('WS with empty message type! Please report this to the team.');

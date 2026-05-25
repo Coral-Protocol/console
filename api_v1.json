@@ -1524,6 +1524,295 @@
         } ]
       }
     },
+    "/api/v1/llm-proxy/providers" : {
+      "get" : {
+        "tags" : [ "llm-proxy" ],
+        "summary" : "List configured LLM proxy providers",
+        "description" : "Returns the list of LLM proxy providers (and their models) configured on this server. Provider API keys are stripped from the response.",
+        "operationId" : "listLlmProxyProviders",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "headers" : { },
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/LlmProxyProviderInfo"
+                  },
+                  "title" : "ArrayList<LlmProxyProviderInfo>"
+                }
+              }
+            }
+          }
+        },
+        "deprecated" : false,
+        "security" : [ {
+          "token" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/llm-proxy/session/{namespace}/{sessionId}/{agentName}/proxies" : {
+      "get" : {
+        "tags" : [ "llm-proxy" ],
+        "summary" : "List an agent's LLM proxy bindings",
+        "description" : "Returns the agent's current proxy request name to provider/model bindings",
+        "operationId" : "listAgentLlmProxyBindings",
+        "parameters" : [ {
+          "name" : "namespace",
+          "in" : "path",
+          "description" : "The session's namespace",
+          "required" : true,
+          "deprecated" : false,
+          "explode" : false,
+          "schema" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        }, {
+          "name" : "sessionId",
+          "in" : "path",
+          "description" : "The session's ID",
+          "required" : true,
+          "deprecated" : false,
+          "explode" : false,
+          "schema" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        }, {
+          "name" : "agentName",
+          "in" : "path",
+          "description" : "The agent's name",
+          "required" : true,
+          "deprecated" : false,
+          "explode" : false,
+          "schema" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "headers" : { },
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/AgentLlmProxyBinding"
+                  },
+                  "title" : "ArrayList<AgentLlmProxyBinding>"
+                }
+              }
+            }
+          },
+          "404" : {
+            "headers" : { },
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RouteException"
+                }
+              }
+            }
+          }
+        },
+        "deprecated" : false,
+        "security" : [ {
+          "token" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/llm-proxy/session/{namespace}/{sessionId}/{agentName}/{proxyRequestName}/binding" : {
+      "post" : {
+        "tags" : [ "llm-proxy" ],
+        "summary" : "Change an agent's LLM proxy binding",
+        "description" : "Re-binds the given proxy request name on the targeted agent to a different configured provider/model combination.  Takes effect for future proxy requests.",
+        "operationId" : "setAgentLlmProxyBinding",
+        "parameters" : [ {
+          "name" : "namespace",
+          "in" : "path",
+          "description" : "The session's namespace",
+          "required" : true,
+          "deprecated" : false,
+          "explode" : false,
+          "schema" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        }, {
+          "name" : "sessionId",
+          "in" : "path",
+          "description" : "The session's ID",
+          "required" : true,
+          "deprecated" : false,
+          "explode" : false,
+          "schema" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        }, {
+          "name" : "agentName",
+          "in" : "path",
+          "description" : "The agent's name",
+          "required" : true,
+          "deprecated" : false,
+          "explode" : false,
+          "schema" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        }, {
+          "name" : "proxyRequestName",
+          "in" : "path",
+          "description" : "The proxy request name to rebind",
+          "required" : true,
+          "deprecated" : false,
+          "explode" : false,
+          "schema" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SetAgentLlmProxyPayload"
+              }
+            }
+          },
+          "required" : false
+        },
+        "responses" : {
+          "200" : {
+            "headers" : { },
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AgentLlmProxyBinding"
+                }
+              }
+            }
+          },
+          "400" : {
+            "headers" : { },
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RouteException"
+                }
+              }
+            }
+          },
+          "404" : {
+            "headers" : { },
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RouteException"
+                }
+              }
+            }
+          }
+        },
+        "deprecated" : false,
+        "security" : [ {
+          "token" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/llm-proxy/session/{namespace}/{sessionId}/{agentName}/{proxyRequestName}/replay" : {
+      "post" : {
+        "tags" : [ "llm-proxy" ],
+        "summary" : "Replay an LLM proxy request",
+        "description" : "Sends a (possibly edited) [DetailedLlmProxyRequestBody] to the configured upstream provider, emitting a new DetailedLlmProxyRequest (with editOf referencing the original request) and a matching DetailedLlmProxyResponse.",
+        "operationId" : "replayLlmProxyRequest",
+        "parameters" : [ {
+          "name" : "namespace",
+          "in" : "path",
+          "description" : "The session's namespace",
+          "required" : true,
+          "deprecated" : false,
+          "explode" : false,
+          "schema" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        }, {
+          "name" : "sessionId",
+          "in" : "path",
+          "description" : "The session's ID",
+          "required" : true,
+          "deprecated" : false,
+          "explode" : false,
+          "schema" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        }, {
+          "name" : "agentName",
+          "in" : "path",
+          "description" : "The agent's name",
+          "required" : true,
+          "deprecated" : false,
+          "explode" : false,
+          "schema" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        }, {
+          "name" : "proxyRequestName",
+          "in" : "path",
+          "description" : "The proxy request name",
+          "required" : true,
+          "deprecated" : false,
+          "explode" : false,
+          "schema" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DetailedLlmProxyReplayPayload"
+              }
+            }
+          },
+          "required" : false
+        },
+        "responses" : {
+          "400" : {
+            "headers" : { },
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RouteException"
+                }
+              }
+            }
+          },
+          "404" : {
+            "headers" : { },
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RouteException"
+                }
+              }
+            }
+          }
+        },
+        "deprecated" : false,
+        "security" : [ {
+          "token" : [ ]
+        } ]
+      }
+    },
     "/api/v1/agent-rpc/rental-claim" : {
       "post" : {
         "tags" : [ "agent-rpc" ],
@@ -2029,9 +2318,13 @@
             "name" : {
               "type" : "string",
               "title" : "String"
+            },
+            "sessionEventId" : {
+              "type" : "string",
+              "title" : "SessionEventId"
             }
           },
-          "required" : [ "name", "timestamp", "type" ],
+          "required" : [ "name", "sessionEventId", "timestamp", "type" ],
           "title" : "agent_connected"
         }, {
           "type" : "object",
@@ -2048,9 +2341,13 @@
             "name" : {
               "type" : "string",
               "title" : "String"
+            },
+            "sessionEventId" : {
+              "type" : "string",
+              "title" : "SessionEventId"
             }
           },
-          "required" : [ "name", "timestamp", "type" ],
+          "required" : [ "name", "sessionEventId", "timestamp", "type" ],
           "title" : "agent_sleep_start"
         }, {
           "type" : "object",
@@ -2067,9 +2364,13 @@
             "name" : {
               "type" : "string",
               "title" : "String"
+            },
+            "sessionEventId" : {
+              "type" : "string",
+              "title" : "SessionEventId"
             }
           },
-          "required" : [ "name", "timestamp", "type" ],
+          "required" : [ "name", "sessionEventId", "timestamp", "type" ],
           "title" : "agent_sleep_stop"
         }, {
           "type" : "object",
@@ -2143,9 +2444,13 @@
               },
               "title" : "LinkedHashSet<SessionThreadMessageFilter>",
               "uniqueItems" : true
+            },
+            "sessionEventId" : {
+              "type" : "string",
+              "title" : "SessionEventId"
             }
           },
-          "required" : [ "filters", "name", "timestamp", "type" ],
+          "required" : [ "filters", "name", "sessionEventId", "timestamp", "type" ],
           "title" : "agent_wait_start"
         }, {
           "type" : "object",
@@ -2165,9 +2470,13 @@
             },
             "message" : {
               "$ref" : "#/components/schemas/SessionThreadMessage"
+            },
+            "sessionEventId" : {
+              "type" : "string",
+              "title" : "SessionEventId"
             }
           },
-          "required" : [ "message", "name", "timestamp", "type" ],
+          "required" : [ "message", "name", "sessionEventId", "timestamp", "type" ],
           "title" : "agent_wait_stop"
         }, {
           "type" : "object",
@@ -2180,10 +2489,6 @@
             "timestamp" : {
               "type" : "string",
               "title" : "UTC timestamp ISO-8601"
-            },
-            "requestId" : {
-              "type" : "string",
-              "title" : "String"
             },
             "agentName" : {
               "type" : "string",
@@ -2220,6 +2525,14 @@
                 "title" : "String"
               },
               "title" : "LinkedHashMap<String,String>"
+            },
+            "futureResponseEventId" : {
+              "type" : "string",
+              "title" : "SessionEventId"
+            },
+            "editOf" : {
+              "type" : "string",
+              "title" : "SessionEventId"
             },
             "body" : {
               "anyOf" : [ {
@@ -2269,9 +2582,13 @@
                 "propertyName" : "format"
               },
               "title" : "DetailedLlmProxyRequestBody"
+            },
+            "sessionEventId" : {
+              "type" : "string",
+              "title" : "SessionEventId"
             }
           },
-          "required" : [ "agentName", "body", "configurationName", "headers", "method", "modelName", "providerRequestName", "requestId", "streaming", "timestamp", "type", "upstreamUrl" ],
+          "required" : [ "agentName", "body", "configurationName", "futureResponseEventId", "headers", "method", "modelName", "providerRequestName", "sessionEventId", "streaming", "timestamp", "type", "upstreamUrl" ],
           "title" : "detailed_llm_proxy_request"
         }, {
           "type" : "object",
@@ -2284,10 +2601,6 @@
             "timestamp" : {
               "type" : "string",
               "title" : "UTC timestamp ISO-8601"
-            },
-            "requestId" : {
-              "type" : "string",
-              "title" : "String"
             },
             "agentName" : {
               "type" : "string",
@@ -2315,9 +2628,17 @@
             },
             "usage" : {
               "$ref" : "#/components/schemas/LlmUsage"
+            },
+            "originatingRequest" : {
+              "type" : "string",
+              "title" : "SessionEventId"
+            },
+            "sessionEventId" : {
+              "type" : "string",
+              "title" : "SessionEventId"
             }
           },
-          "required" : [ "agentName", "body", "headers", "providerRequestName", "requestId", "statusCode", "timestamp", "type" ],
+          "required" : [ "agentName", "body", "headers", "originatingRequest", "providerRequestName", "sessionEventId", "statusCode", "timestamp", "type" ],
           "title" : "detailed_llm_proxy_response"
         }, {
           "type" : "object",
@@ -2334,9 +2655,13 @@
             "containerId" : {
               "type" : "string",
               "title" : "String"
+            },
+            "sessionEventId" : {
+              "type" : "string",
+              "title" : "SessionEventId"
             }
           },
-          "required" : [ "containerId", "timestamp", "type" ],
+          "required" : [ "containerId", "sessionEventId", "timestamp", "type" ],
           "title" : "docker_container_created"
         }, {
           "type" : "object",
@@ -2353,9 +2678,13 @@
             "containerId" : {
               "type" : "string",
               "title" : "String"
+            },
+            "sessionEventId" : {
+              "type" : "string",
+              "title" : "SessionEventId"
             }
           },
-          "required" : [ "containerId", "timestamp", "type" ],
+          "required" : [ "containerId", "sessionEventId", "timestamp", "type" ],
           "title" : "docker_container_removed"
         }, {
           "type" : "object",
@@ -2377,9 +2706,13 @@
               },
               "title" : "LinkedHashSet<String>",
               "uniqueItems" : true
+            },
+            "sessionEventId" : {
+              "type" : "string",
+              "title" : "SessionEventId"
             }
           },
-          "required" : [ "agents", "timestamp", "type" ],
+          "required" : [ "agents", "sessionEventId", "timestamp", "type" ],
           "title" : "group_added"
         }, {
           "type" : "object",
@@ -2412,9 +2745,13 @@
             },
             "usage" : {
               "$ref" : "#/components/schemas/LlmUsage"
+            },
+            "sessionEventId" : {
+              "type" : "string",
+              "title" : "SessionEventId"
             }
           },
-          "required" : [ "agentName", "modelName", "providerRequestName", "statusCode", "timestamp", "type", "usage" ],
+          "required" : [ "agentName", "modelName", "providerRequestName", "sessionEventId", "statusCode", "timestamp", "type", "usage" ],
           "title" : "llm_proxy_call"
         }, {
           "type" : "object",
@@ -2431,9 +2768,13 @@
             "name" : {
               "type" : "string",
               "title" : "String"
+            },
+            "sessionEventId" : {
+              "type" : "string",
+              "title" : "SessionEventId"
             }
           },
-          "required" : [ "name", "timestamp", "type" ],
+          "required" : [ "name", "sessionEventId", "timestamp", "type" ],
           "title" : "runtime_started"
         }, {
           "type" : "object",
@@ -2450,9 +2791,13 @@
             "name" : {
               "type" : "string",
               "title" : "String"
+            },
+            "sessionEventId" : {
+              "type" : "string",
+              "title" : "SessionEventId"
             }
           },
-          "required" : [ "name", "timestamp", "type" ],
+          "required" : [ "name", "sessionEventId", "timestamp", "type" ],
           "title" : "runtime_stopped"
         }, {
           "type" : "object",
@@ -2473,9 +2818,13 @@
             "summary" : {
               "type" : "string",
               "title" : "String"
+            },
+            "sessionEventId" : {
+              "type" : "string",
+              "title" : "SessionEventId"
             }
           },
-          "required" : [ "summary", "threadId", "timestamp", "type" ],
+          "required" : [ "sessionEventId", "summary", "threadId", "timestamp", "type" ],
           "title" : "thread_closed"
         }, {
           "type" : "object",
@@ -2491,9 +2840,13 @@
             },
             "thread" : {
               "$ref" : "#/components/schemas/SessionThread"
+            },
+            "sessionEventId" : {
+              "type" : "string",
+              "title" : "SessionEventId"
             }
           },
-          "required" : [ "thread", "timestamp", "type" ],
+          "required" : [ "sessionEventId", "thread", "timestamp", "type" ],
           "title" : "thread_created"
         }, {
           "type" : "object",
@@ -2509,9 +2862,13 @@
             },
             "message" : {
               "$ref" : "#/components/schemas/SessionThreadMessage"
+            },
+            "sessionEventId" : {
+              "type" : "string",
+              "title" : "SessionEventId"
             }
           },
-          "required" : [ "message", "timestamp", "type" ],
+          "required" : [ "message", "sessionEventId", "timestamp", "type" ],
           "title" : "thread_message_sent"
         }, {
           "type" : "object",
@@ -2532,9 +2889,13 @@
             "name" : {
               "type" : "string",
               "title" : "String"
+            },
+            "sessionEventId" : {
+              "type" : "string",
+              "title" : "SessionEventId"
             }
           },
-          "required" : [ "name", "threadId", "timestamp", "type" ],
+          "required" : [ "name", "sessionEventId", "threadId", "timestamp", "type" ],
           "title" : "thread_participant_added"
         }, {
           "type" : "object",
@@ -2555,9 +2916,13 @@
             "name" : {
               "type" : "string",
               "title" : "String"
+            },
+            "sessionEventId" : {
+              "type" : "string",
+              "title" : "SessionEventId"
             }
           },
-          "required" : [ "name", "threadId", "timestamp", "type" ],
+          "required" : [ "name", "sessionEventId", "threadId", "timestamp", "type" ],
           "title" : "thread_participant_removed"
         } ],
         "discriminator" : {
@@ -9164,6 +9529,238 @@
         },
         "required" : [ "participantName", "threadId" ],
         "title" : "RemoveParticipantInput"
+      },
+      "LlmProxyProviderInfo" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "format" : {
+            "anyOf" : [ {
+              "type" : "object",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "Anthropic" ],
+                  "title" : "String"
+                }
+              },
+              "required" : [ "type" ],
+              "title" : "Anthropic"
+            }, {
+              "type" : "object",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "MiniMax" ],
+                  "title" : "String"
+                }
+              },
+              "required" : [ "type" ],
+              "title" : "MiniMax"
+            }, {
+              "type" : "object",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "OpenAI" ],
+                  "title" : "String"
+                }
+              },
+              "required" : [ "type" ],
+              "title" : "OpenAI"
+            }, {
+              "type" : "object",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "OpenRouter" ],
+                  "title" : "String"
+                }
+              },
+              "required" : [ "type" ],
+              "title" : "OpenRouter"
+            } ],
+            "discriminator" : {
+              "propertyName" : "type"
+            },
+            "title" : "LlmProviderFormat"
+          },
+          "models" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "title" : "LinkedHashSet<String>",
+            "uniqueItems" : true
+          },
+          "baseUrl" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "allowAnyModel" : {
+            "type" : "boolean",
+            "title" : "Boolean"
+          },
+          "strictToolCalling" : {
+            "type" : "boolean",
+            "title" : "Boolean"
+          }
+        },
+        "required" : [ "allowAnyModel", "baseUrl", "format", "models", "name", "strictToolCalling" ],
+        "title" : "LlmProxyProviderInfo"
+      },
+      "AgentLlmProxyBinding" : {
+        "type" : "object",
+        "properties" : {
+          "proxyRequestName" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "configurationName" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "modelName" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "format" : {
+            "anyOf" : [ {
+              "type" : "object",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "Anthropic" ],
+                  "title" : "String"
+                }
+              },
+              "required" : [ "type" ],
+              "title" : "Anthropic"
+            }, {
+              "type" : "object",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "MiniMax" ],
+                  "title" : "String"
+                }
+              },
+              "required" : [ "type" ],
+              "title" : "MiniMax"
+            }, {
+              "type" : "object",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "OpenAI" ],
+                  "title" : "String"
+                }
+              },
+              "required" : [ "type" ],
+              "title" : "OpenAI"
+            }, {
+              "type" : "object",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "OpenRouter" ],
+                  "title" : "String"
+                }
+              },
+              "required" : [ "type" ],
+              "title" : "OpenRouter"
+            } ],
+            "discriminator" : {
+              "propertyName" : "type"
+            },
+            "title" : "LlmProviderFormat"
+          }
+        },
+        "required" : [ "configurationName", "format", "modelName", "proxyRequestName" ],
+        "title" : "AgentLlmProxyBinding"
+      },
+      "SetAgentLlmProxyPayload" : {
+        "type" : "object",
+        "properties" : {
+          "configurationName" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "modelName" : {
+            "type" : "string",
+            "title" : "String"
+          }
+        },
+        "required" : [ "configurationName", "modelName" ],
+        "title" : "SetAgentLlmProxyPayload"
+      },
+      "DetailedLlmProxyReplayPayload" : {
+        "type" : "object",
+        "properties" : {
+          "body" : {
+            "anyOf" : [ {
+              "type" : "object",
+              "properties" : {
+                "format" : {
+                  "type" : "string",
+                  "enum" : [ "openai" ],
+                  "title" : "String"
+                },
+                "request" : {
+                  "$ref" : "#/components/schemas/OpenAIChatCompletionRequest"
+                }
+              },
+              "required" : [ "format", "request" ],
+              "title" : "openai"
+            }, {
+              "type" : "object",
+              "properties" : {
+                "format" : {
+                  "type" : "string",
+                  "enum" : [ "openrouter" ],
+                  "title" : "String"
+                },
+                "request" : {
+                  "$ref" : "#/components/schemas/OpenRouterChatCompletionRequest"
+                }
+              },
+              "required" : [ "format", "request" ],
+              "title" : "openrouter"
+            }, {
+              "type" : "object",
+              "properties" : {
+                "format" : {
+                  "type" : "string",
+                  "enum" : [ "raw" ],
+                  "title" : "String"
+                },
+                "body" : {
+                  "$ref" : "#/components/schemas/JsonElement"
+                }
+              },
+              "required" : [ "body", "format" ],
+              "title" : "raw"
+            } ],
+            "discriminator" : {
+              "propertyName" : "format"
+            },
+            "title" : "DetailedLlmProxyRequestBody"
+          },
+          "upstreamUrl" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "editOf" : {
+            "type" : "string",
+            "title" : "SessionEventId"
+          }
+        },
+        "required" : [ "body" ],
+        "title" : "DetailedLlmProxyReplayPayload"
       },
       "AgentPaymentClaimRequest" : {
         "type" : "object",

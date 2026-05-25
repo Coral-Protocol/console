@@ -16,8 +16,16 @@
 	import SlidersIcon from '@lucide/svelte/icons/sliders-horizontal';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
 	import WrenchIcon from '@lucide/svelte/icons/wrench';
+	import BookmarkIcon from '@lucide/svelte/icons/bookmark-plus';
 
-	import type { SessionEvent, SessionEventEntry } from '$lib/session.svelte';
+	import { Button } from '@coral-os/component-library/ui/button/index.js';
+	import { goto } from '$app/navigation';
+	import { base } from '$app/paths';
+	import { toast } from 'svelte-sonner';
+
+	import type { Session, SessionEvent, SessionEventEntry } from '$lib/session.svelte';
+	import { memoryFromRequestBody } from '$lib/saved-memories/convert';
+	import { savedMemories } from '$lib/saved-memories/store.svelte';
 
 	type DetailedRequest = Extract<SessionEvent, { type: 'detailed_llm_proxy_request' }>;
 	type DetailedResponse = Extract<SessionEvent, { type: 'detailed_llm_proxy_response' }>;
@@ -47,12 +55,39 @@
 		parameters?: unknown;
 	}
 
-	interface Props {
+ interface Props {
 		entry: SessionEventEntry | null;
 		onOpenChange: (open: boolean) => void;
+		/** Optional — when provided, lets us capture origin (namespace, sessionId)
+		 * onto a saved memory so it can be replayed later from the Memories page. */
+		session?: Session | null;
 	}
 
-	let { entry, onOpenChange }: Props = $props();
+	let { entry, onOpenChange, session = null }: Props = $props();
+
+	async function saveToMemories() {
+		if (!isRequest || !requestBody) return;
+		const e = event as DetailedRequest;
+		const origin = session
+			? {
+					namespace: session.namespace,
+					sessionId: session.sessionId,
+					agentName: e.agentName,
+					providerRequestName: e.providerRequestName,
+					originalEventId: e.sessionEventId,
+					upstreamUrl: e.upstreamUrl
+				}
+			: undefined;
+		const memory = memoryFromRequestBody(requestBody, { origin });
+		try {
+			await savedMemories.save(memory);
+			toast.success('Saved to memories');
+			onOpenChange(false);
+			goto(`${base}/memories/${memory.id}`);
+		} catch (err) {
+			toast.error(`Failed to save: ${err instanceof Error ? err.message : String(err)}`);
+		}
+	}
 
 	let event = $derived(entry?.event ?? null);
 	let isRequest = $derived(event?.type === 'detailed_llm_proxy_request');
@@ -372,6 +407,19 @@
 							· <span class="font-mono">HTTP {event.statusCode}</span>
 						{/if}
 					</span>
+					{#if isRequest}
+						<div class="absolute top-0 right-12 sm:hidden">
+							<!-- compact action mirror for narrow screens (parent reserves pr-8 for the X) -->
+						</div>
+						<Button
+							variant="outline"
+							size="sm"
+							class="absolute top-3 right-12 hidden h-7 gap-1.5 text-xs sm:flex"
+							onclick={saveToMemories}
+						>
+							<BookmarkIcon class="size-3.5" /> Save to memories
+						</Button>
+					{/if}
 					<Tabs.List>
 						{#if hasMessages}
 							<Tabs.Trigger value="messages">
@@ -540,13 +588,25 @@
 							</Card.Header>
 							<Card.Content>
 								<dl class="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-sm">
-									{#if 'requestId' in event}
-										<dt class="text-muted-foreground">requestId</dt>
-										<dd class="font-mono">{event.requestId}</dd>
+									{#if 'sessionEventId' in event}
+										<dt class="text-muted-foreground">eventId</dt>
+										<dd class="font-mono">{event.sessionEventId}</dd>
+									{/if}
+									{#if 'originatingRequest' in event}
+										<dt class="text-muted-foreground">originatingRequest</dt>
+										<dd class="font-mono">{event.originatingRequest}</dd>
+									{/if}
+									{#if 'futureResponseEventId' in event}
+										<dt class="text-muted-foreground">futureResponseEventId</dt>
+										<dd class="font-mono">{event.futureResponseEventId}</dd>
 									{/if}
 									{#if 'agentName' in event}
 										<dt class="text-muted-foreground">agent</dt>
 										<dd class="font-mono">{event.agentName}</dd>
+									{/if}
+									{#if 'providerRequestName' in event}
+										<dt class="text-muted-foreground">providerRequest</dt>
+										<dd class="font-mono">{event.providerRequestName}</dd>
 									{/if}
 									{#if isRequest}
 										{#if 'configurationName' in event}

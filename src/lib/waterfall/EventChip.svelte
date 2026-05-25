@@ -67,7 +67,7 @@
 			case 'detailed_llm_proxy_request':
 				return `${event.agentName} → ${event.modelName} request`;
 			case 'detailed_llm_proxy_response':
-				return `${event.agentName} ← response (${event.statusCode})`;
+				return `${event.agentName} ← ${event.providerRequestName} (${event.statusCode})`;
 			case 'docker_container_created':
 				return `Container ${event.containerId.slice(0, 12)} created`;
 			case 'docker_container_removed':

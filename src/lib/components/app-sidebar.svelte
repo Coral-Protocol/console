@@ -423,6 +423,11 @@
 								</Sidebar.MenuSubItem>
 							</Sidebar.MenuSub>
 						</Sidebar.MenuItem>
+						<SidebarLink
+							url="{base}/memories"
+							icon={IconEnvelopeOpen}
+							title="Saved Memories"
+						/>
 					</Sidebar.Menu>
 				</Sidebar.GroupContent>
 			</Sidebar.Group>
