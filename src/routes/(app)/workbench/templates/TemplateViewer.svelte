@@ -154,11 +154,11 @@
 
 					<ul class="flex gap-2">
 						{#if !allAgentsAvailable}
-							<Badge variant="destructive" size="sm">Missing agents</Badge>
+							<Badge variant="destructive">Missing agents</Badge>
 						{/if}
 
 						{#if !templateData.trusted}
-							<Badge variant="destructive" size="sm">Externally Imported</Badge>
+							<Badge variant="destructive">Externally Imported</Badge>
 						{/if}
 					</ul>
 				</div>
