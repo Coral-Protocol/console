@@ -8,6 +8,9 @@
 	import { Input } from '@coral-os/component-library/ui/input/index.js';
 	import { Spinner } from '@coral-os/component-library/ui/spinner/index.js';
 
+	import IconPlusCircle from 'phosphor-icons-svelte/IconPlusCircleRegular.svelte';
+	import IconFileText from 'phosphor-icons-svelte/IconFileTextRegular.svelte';
+
 	import { TooltipLabel, Combobox } from '@coral-os/component-library';
 	import IconInfo from 'phosphor-icons-svelte/IconInfoRegular.svelte';
 
@@ -267,48 +270,52 @@
 	<section
 		class="text-muted-foreground m-auto flex w-3/4 grow flex-col items-center justify-center gap-6 text-center"
 	>
-		<AgentPanelIcon class="w-4/5 py-8" />
+		<AgentPanelIcon class="w-4/5 py-8 " />
 		<span class="flex flex-col gap-2">
-			<h2 class="text-foreground text-xl">No agent selected</h2>
+			<h2 class="text-foreground text-xl">Start a new session</h2>
 			<p>
-				Create and then select an agent from then left to view and edits its details, or load a
-				template to get started.
+				Get started creating a new session by <span class="font-medium">adding an agent</span> or
+				choosing a <span class="font-medium">template</span>.
 			</p>
 		</span>
-		<Popover.Root>
-			<Popover.Trigger class="{buttonVariants()}, w-42">Add agent</Popover.Trigger>
-			<Popover.Content class="p-1">
-				<AgentPicker
-					server={serverCtx.server}
-					onSelect={(agent, catalogId) => {
-						toast.promise(ctx.addAgent(agent.name, catalogId.type, agent.versions[0]!), {
-							loading: 'Adding agent...',
-							success: 'Agent added successfully',
-							error: (err: any) => `Failed: ${err.message || err}`
-						});
-					}}
-				/>
-			</Popover.Content>
-		</Popover.Root>
-		<Popover.Root>
-			<Popover.Trigger class="{buttonVariants({ variant: 'secondary' })}, w-42"
-				>Load template</Popover.Trigger
-			>
-			<Popover.Content class="p-1">
-				<TemplatePicker
-					server={serverCtx.server}
-					onSelect={(template) => {
-						loadTemplate(template);
-					}}
-				/>
-			</Popover.Content>
-		</Popover.Root>
+		<div class="flex flex-col gap-2">
+			<Popover.Root>
+				<Popover.Trigger class="{buttonVariants()}, w-42">
+					<IconPlusCircle /> Add agent</Popover.Trigger
+				>
+				<Popover.Content class="p-1">
+					<AgentPicker
+						server={serverCtx.server}
+						onSelect={(agent, catalogId) => {
+							toast.promise(ctx.addAgent(agent.name, catalogId.type, agent.versions[0]!), {
+								loading: 'Adding agent...',
+								success: 'Agent added successfully',
+								error: (err: any) => `Failed: ${err.message || err}`
+							});
+						}}
+					/>
+				</Popover.Content>
+			</Popover.Root>
+			<Popover.Root>
+				<Popover.Trigger class="{buttonVariants({ variant: 'outline' })}, w-42"
+					><IconFileText /> Load template</Popover.Trigger
+				>
+				<Popover.Content class="p-1">
+					<TemplatePicker
+						server={serverCtx.server}
+						onSelect={(template) => {
+							loadTemplate(template);
+						}}
+					/>
+				</Popover.Content>
+			</Popover.Root>
+		</div>
 		<Alert.Root class="text-left">
 			<IconInfo />
 			<Alert.Title>Tip</Alert.Title>
 			<Alert.Description
-				>Agents are the building blocks of sessions, they communicate, execute tools, and output
-				results.</Alert.Description
+				>New here? Agents are the building blocks of sessions, they communicate, execute tools, and
+				output results, try loading a template for a prebuilt configuration.</Alert.Description
 			>
 		</Alert.Root>
 	</section>

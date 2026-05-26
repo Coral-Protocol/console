@@ -90,7 +90,7 @@
 									</span>
 								{/if}
 							</Accordion.Trigger>
-							<Accordion.Content class="flex flex-col border-b p-0!">
+							<Accordion.Content class="flex h-full grow flex-col border-b p-0!">
 								<ol class="flex flex-col justify-center">
 									{#each catalog.agents as agent}
 										{#await ctx.server.lookupAgent( { name: agent.name, version: agent.versions[0]!, registrySourceId: catalog.identifier } )}
@@ -101,10 +101,11 @@
 													selectedAgent = { agent, details };
 													dialogOpen = true;
 												}}
+												type="button"
 											>
 												<li class="grow cursor-pointer">
 													<Card.Root
-														class="hover:dark:bg-ring/20 hover:bg-ring/10 h-full grow border-0 border-t bg-transparent"
+														class="hover:dark:bg-ring/20 hover:bg-ring/10 h-full grow border-0 border-t bg-transparent text-left"
 													>
 														<Card.Header class="flex gap-2">
 															<Avatar.Root class="size-12">
@@ -117,7 +118,7 @@
 																	{agent.name.charAt(0).toUpperCase()}
 																</Avatar.Fallback>
 															</Avatar.Root>
-															<div class="flex flex-col gap-1">
+															<div class="flex flex-col items-start gap-1">
 																<Card.Title class="font-bold">{agent.name}</Card.Title>
 																<Card.Description>
 																	{details.extension?.developer
