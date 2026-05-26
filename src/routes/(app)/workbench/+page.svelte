@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import { Context } from 'runed';
+	import { Context, Debounced } from 'runed';
 	import type { SuperForm, SuperFormData, SuperFormErrors } from 'sveltekit-superforms/client';
 	import type { FormSchema } from './schemas';
 	import type z from 'zod';
@@ -643,6 +643,7 @@
 											{#if $formData.agents.length == 0}
 												{#each { length: 10 }, i}
 													<Table.Row
+														class="hover:bg-transparent"
 														style={`opacity: ${1 - i * 0.1}; border-color: color-mix(in oklab, var(--color-border) ${100 - i * 10}%, transparent);`}
 													>
 														<Table.Cell>
@@ -785,17 +786,19 @@
 						<div class="my-auto mr-auto flex items-center">
 							<Tooltip.Root>
 								<Tooltip.Trigger class="my-auto">
-									<div class=" flex h-full items-center gap-2">
-										<Checkbox
-											id="close-last-session"
-											bind:checked={lastSession.current.closeLastSession}
-										/>
-										<Label
-											for="close-last-session"
-											class="cursor-pointer text-left text-sm leading-none font-medium"
-											>Terminate previous session</Label
-										>
-									</div>
+									{#snippet child()}
+										<div class=" flex h-full items-center gap-2">
+											<Checkbox
+												id="close-last-session"
+												bind:checked={lastSession.current.closeLastSession}
+											/>
+											<Label
+												for="close-last-session"
+												class="cursor-pointer text-left text-sm leading-none font-medium"
+												>Terminate previous session</Label
+											>
+										</div>
+									{/snippet}
 								</Tooltip.Trigger>
 								<Tooltip.Content>
 									<p>
@@ -811,11 +814,13 @@
 
 						<Tooltip.Root>
 							<Tooltip.Trigger class="flex gap-2">
-								<Button
-									onclick={() => (templateSaverDialogOpen = true)}
-									disabled={sendingForm || $formData.agents.length === 0}
-									class={sendingForm ? '' : 'bg-accent/80'}>Save template</Button
-								>
+								{#snippet child()}
+									<Button
+										onclick={() => (templateSaverDialogOpen = true)}
+										disabled={sendingForm || $formData.agents.length === 0}
+										class={sendingForm ? '' : 'bg-accent/80'}>Save template</Button
+									>
+								{/snippet}
 							</Tooltip.Trigger>
 							<Tooltip.Content>
 								<p>Save to templates for quick reuse</p>
@@ -825,11 +830,13 @@
 						<span class="flex gap-1">
 							<Tooltip.Root delayDuration={30}>
 								<Tooltip.Trigger class="flex">
-									<Form.Button disabled={sendingForm || $formData.agents.length === 0}>
-										{#if sendingForm}
-											<Spinner />
-										{/if}Create session</Form.Button
-									>
+									{#snippet child()}
+										<Form.Button disabled={sendingForm || $formData.agents.length === 0}>
+											{#if sendingForm}
+												<Spinner />
+											{/if}Create session</Form.Button
+										>
+									{/snippet}
 								</Tooltip.Trigger>
 								<Tooltip.Content>
 									<p>
