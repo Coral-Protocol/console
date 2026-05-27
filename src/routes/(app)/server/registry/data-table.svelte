@@ -98,7 +98,7 @@
 				{/if}
 			</Dialog.Header>
 
-			<div class="min-h-0 flex-1 overflow-auto">
+			<div class="min-h-0 flex-1 overflow-ellipsis">
 				<div class="border-muted/30 bg-muted/5 mb-4 grid gap-3 rounded-lg border p-4 text-sm">
 					<div class="grid grid-cols-2 gap-4">
 						<div>
@@ -154,7 +154,7 @@
 	/>
 </div>
 
-<div class="h-full border">
+<div class="h-full overflow-y-scroll border">
 	<Table.Root class="w-full table-fixed">
 		<Table.Header>
 			{#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
@@ -194,11 +194,11 @@
 
 						dialogOpen = true;
 					}}
-					class="cursor-pointer overflow-ellipsis"
+					class="odd:bg-muted/30 cursor-pointer overflow-ellipsis"
 				>
 					{#each row.getVisibleCells() as cell (cell.id)}
 						<Table.Cell
-							class="overflow-auto overflow-ellipsis {agent.failed ? 'bg-destructive/10' : ''}"
+							class="overflow-hidden overflow-ellipsis {agent.failed ? 'bg-destructive/10' : ''}"
 						>
 							<FlexRender content={cell.column.columnDef.cell} context={cell.getContext()} />
 						</Table.Cell>
