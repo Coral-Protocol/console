@@ -19,8 +19,6 @@
 
 	import IconPlus from 'phosphor-icons-svelte/IconPlusRegular.svelte';
 
-	import AgentGraph from '$lib/components/AgentGraph.svelte';
-
 	import IconWarningCircleRegular from 'phosphor-icons-svelte/IconWarningCircleRegular.svelte';
 	import type { TemplateV1 } from './TemplateV1';
 	import {
@@ -35,6 +33,8 @@
 		downloadTemplate
 	} from './TemplateLib';
 	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
+	import Graph from '$lib/components/Graph/Graph.svelte';
+	import { SvelteFlowProvider } from '@xyflow/svelte';
 
 	let templates = $state<string[]>([]);
 
@@ -193,20 +193,17 @@
 							<Dialog.Root bind:open={dialogOpen}>
 								<Card.Content class="flex flex-col p-0 ">
 									<button
-										class=" bg-sidebar hover:bg-accent-foreground/10 aspect-video w-full overflow-clip transition-all"
+										class="bg-sidebar hover:bg-accent-foreground/10 aspect-video w-full overflow-clip transition-all *:cursor-pointer!"
 										onclick={() => openTemplate(template)}
 									>
-										<AgentGraph
-											agents={graphData?.agentGraphRequest?.agents || []}
-											groups={graphData?.agentGraphRequest?.groups || []}
-											options={{
-												disableZoom: true,
-												disableDrag: true,
-												disableBrush: true,
-												nodeSubLabel: null,
-												selectedNodeId: null
-											}}
-										/>
+										<SvelteFlowProvider>
+											<Graph
+												agents={graphData?.agentGraphRequest?.agents || []}
+												groups={graphData?.agentGraphRequest?.groups || []}
+												id={template}
+												viewOnly
+											></Graph>
+										</SvelteFlowProvider>
 									</button>
 
 									<Card.Footer class="flex justify-between gap-2 border-t px-6 !py-4">
