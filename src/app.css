@@ -10,14 +10,15 @@
 	--telemetry-assistant: oklch(0.75 0.23 145);
 	--telemetry-user: oklch(0.78 0.18 180);
 	--telemetry-tool: oklch(0.8 0.22 85);
+
 }
 
 .dark {
 	--telemetry-assistant: oklch(0.65 0.14 215); 
 	--telemetry-user: oklch(0.78 0.17 75); 
 	--telemetry-tool: oklch(0.67 0.18 55); 
-	--sidebar: oklch(0.2372 0.0095 285.65); 
 }
+
 
 @theme inline {
 	--font-sans: 'Inter', ui-sans-serif, sans-serif;
@@ -27,5 +28,5 @@
 	--color-telemetry-assistant: var(--telemetry-assistant);
 	--color-telemetry-user: var(--telemetry-user);
 	--color-telemetry-tool: var(--telemetry-tool);
-}
 
+}
