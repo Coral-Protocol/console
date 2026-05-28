@@ -81,10 +81,6 @@
 			return acc;
 		}, {});
 	});
-
-	let agent = $derived(() => {
-		return ctx.selectedAgent !== null ? $formData.agents[ctx.selectedAgent] : null;
-	});
 </script>
 
 {#if ctx.selectedAgent !== null && curAgent && curCatalog}
@@ -102,7 +98,7 @@
 						<TooltipLabel tooltip={'Name of the agent in this session'} class="m-0 max-w-1/4"
 							>Name
 						</TooltipLabel>
-						<Input {...props} bind:value={agent.name} />
+						<Input {...props} bind:value={$formData.agents[ctx.selectedAgent!]!.name} />
 					{/snippet}
 				</Form.Control>
 			</Form.ElementField>
