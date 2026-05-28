@@ -38,7 +38,8 @@
 		onSelect,
 		id,
 		controls = false,
-		viewOnly = false
+		viewOnly = false,
+		fitDefault = true
 	}: {
 		agents: z.infer<FormSchema>['agents'];
 		groups: z.infer<FormSchema>['groups'];
@@ -47,6 +48,7 @@
 		id?: string;
 		controls?: boolean;
 		viewOnly?: boolean;
+		fitDefault?: boolean;
 	} = $props();
 
 	type AgentNode = Node<{ label: string }>;
@@ -182,7 +184,9 @@
 		}) as Node[];
 
 		window.requestAnimationFrame(() => {
-			fitView();
+			if (fitDefault) {
+				fitView();
+			}
 			if (running) tick();
 		});
 	}
@@ -250,7 +254,7 @@
 	onnodedrag={handleNodeDrag}
 	onnodedragstop={handleNodeDragStop}
 	defaultEdgeOptions={{ selectable: false, focusable: false }}
-	panOnDrag={!running && !viewOnly}
+	panOnDrag={!viewOnly}
 	onnodeclick={(e) => {
 		const node = e.node;
 		const index = agents.findIndex((a) => a.name === node.id);
@@ -266,7 +270,14 @@
 	}}
 >
 	{#if controls && nodes.length > 0}
-		<Panel position="top-right">
+		<Panel position="top-right" class="flex gap-4">
+			<button
+				onclick={() => fitView()}
+				type="button"
+				class="text-muted-foreground opacity-20 transition-opacity hover:opacity-100"
+			>
+				Home
+			</button>
 			<button
 				onclick={toggleLayout}
 				type="button"
