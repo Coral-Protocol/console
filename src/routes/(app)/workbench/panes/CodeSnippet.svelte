@@ -55,7 +55,7 @@ requests.post(
 <script lang="ts">
 	import { CopyButton } from '@coral-os/component-library';
 	import { Highlight } from 'svelte-highlight';
-	import type { CreateSessionRequest } from '../schemas/types';
+	import type { CreateSessionRequest } from '$lib/sessionSchema/types';
 	let {
 		snippet: snippetName,
 		body

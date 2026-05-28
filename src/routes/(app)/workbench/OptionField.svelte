@@ -1,6 +1,6 @@
 <script lang="ts" module>
 	import type { z } from 'zod';
-	import * as schemas from './schemas';
+	import * as schemas from '$lib/sessionSchema';
 	import type { ControlAttrs } from 'formsnap';
 
 	type Schema = z.output<schemas.FormSchema>;
