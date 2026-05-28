@@ -462,4 +462,9 @@
 </div>
 
 <EventDialog entry={activeEntry} onOpenChange={handleDialogChange} />
-<Telemetry entry={activeTelemetry} onOpenChange={handleTelemetryChange} {session} />
+<Telemetry
+	entry={activeTelemetry}
+	onOpenChange={handleTelemetryChange}
+	onEntryChange={(e) => (activeTelemetry = e)}
+	{session}
+/>

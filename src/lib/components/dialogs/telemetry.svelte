@@ -11,6 +11,10 @@
 
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
 	import ArrowDown from '@lucide/svelte/icons/arrow-down';
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
+	import ChevronsLeft from '@lucide/svelte/icons/chevrons-left';
+	import ChevronsRight from '@lucide/svelte/icons/chevrons-right';
 	import MessagesSquare from '@lucide/svelte/icons/messages-square';
 	import GlobeIcon from '@lucide/svelte/icons/globe';
 	import SlidersIcon from '@lucide/svelte/icons/sliders-horizontal';
@@ -58,24 +62,29 @@
  interface Props {
 		entry: SessionEventEntry | null;
 		onOpenChange: (open: boolean) => void;
+		onEntryChange?: (entry: SessionEventEntry) => void;
 		/** Optional — when provided, lets us capture origin (namespace, sessionId)
 		 * onto a saved memory so it can be replayed later from the Memories page. */
 		session?: Session | null;
 	}
 
-	let { entry, onOpenChange, session = null }: Props = $props();
+	let { entry, onOpenChange, onEntryChange, session = null }: Props = $props();
 
 	async function saveToMemories() {
-		if (!isRequest || !requestBody) return;
-		const e = event as DetailedRequest;
+		if (!requestBody) return;
+		const reqEvent = isRequest
+			? (event as DetailedRequest)
+			: (partnerEntry?.event as DetailedRequest);
+		if (!reqEvent) return;
+
 		const origin = session
 			? {
 					namespace: session.namespace,
 					sessionId: session.sessionId,
-					agentName: e.agentName,
-					providerRequestName: e.providerRequestName,
-					originalEventId: e.sessionEventId,
-					upstreamUrl: e.upstreamUrl
+					agentName: reqEvent.agentName,
+					providerRequestName: reqEvent.providerRequestName,
+					originalEventId: reqEvent.sessionEventId,
+					upstreamUrl: reqEvent.upstreamUrl
 				}
 			: undefined;
 		const memory = memoryFromRequestBody(requestBody, { origin });
@@ -93,8 +102,57 @@
 	let isRequest = $derived(event?.type === 'detailed_llm_proxy_request');
 	let isResponse = $derived(event?.type === 'detailed_llm_proxy_response');
 
+	let partnerEntry = $derived.by(() => {
+		if (!session || !event) return null;
+		if (isRequest) {
+			const responseId = (event as DetailedRequest).futureResponseEventId;
+			if (!responseId) return null;
+			return session.events.find((e) => e.event.sessionEventId === responseId) ?? null;
+		} else if (isResponse) {
+			const requestId = (event as DetailedResponse).originatingRequest;
+			if (!requestId) return null;
+			return session.events.find((e) => e.event.sessionEventId === requestId) ?? null;
+		}
+		return null;
+	});
+
+	let allAgentRequests = $derived.by(() => {
+		if (!session || !event || !('agentName' in event)) return [];
+		return session.events.filter(
+			(e) => e.event.type === 'detailed_llm_proxy_request' && e.event.agentName === event.agentName
+		);
+	});
+
+	let agentLlmEvents = $derived.by(() => {
+		if (!session || !event || !('agentName' in event)) return [];
+		return session.events.filter(
+			(e) =>
+				(e.event.type === 'detailed_llm_proxy_request' ||
+					e.event.type === 'detailed_llm_proxy_response') &&
+				'agentName' in e.event &&
+				e.event.agentName === event.agentName
+		);
+	});
+
+	let currentRequestIndex = $derived.by(() => {
+		if (!event || allAgentRequests.length === 0) return -1;
+		const requestId = isRequest
+			? event.sessionEventId
+			: (event as DetailedResponse).originatingRequest;
+		return allAgentRequests.findIndex((e) => e.event.sessionEventId === requestId);
+	});
+
+	let currentEventIndex = $derived.by(() => {
+		if (!event || agentLlmEvents.length === 0) return -1;
+		return agentLlmEvents.findIndex((e) => e.event.sessionEventId === event.sessionEventId);
+	});
+
 	// Request body (openai | openrouter | raw)
-	let requestBody = $derived(isRequest && event ? (event as DetailedRequest).body : null);
+	let requestBody = $derived.by(() => {
+		if (isRequest && event) return (event as DetailedRequest).body;
+		if (isResponse && partnerEntry) return (partnerEntry.event as DetailedRequest).body;
+		return null;
+	});
 
 	// Underlying chat-completion-ish payload. For openai/openrouter this is `body.request`.
 	// For raw we look at `body.body` which is the upstream JSON sent to the provider.
@@ -240,22 +298,98 @@
 		return rest;
 	});
 
-	let responseBody = $derived(isResponse && event ? (event as DetailedResponse).body : null);
+	let responseBody = $derived(
+		isResponse ? (event as DetailedResponse).body : (partnerEntry?.event as DetailedResponse)?.body
+	);
+
+	let responsePayload = $derived.by<Record<string, unknown> | null>(() => {
+		if (!responseBody || typeof responseBody !== 'object') return null;
+		const innerBody = (responseBody as Record<string, unknown>).body;
+		if (innerBody && typeof innerBody === 'object') {
+			return innerBody as Record<string, unknown>;
+		}
+		return null;
+	});
+
+	let responseMessages = $derived.by<NormalizedMessage[]>(() => {
+		if (!responsePayload) return [];
+		const choices = responsePayload.choices;
+		if (Array.isArray(choices)) {
+			return choices
+				.map((c) => c.message)
+				.map(normalizeMessage)
+				.filter((m): m is NormalizedMessage => m !== null);
+		}
+		return [];
+	});
+
+	let messages = $derived.by<NormalizedMessage[]>(() => {
+		const raw = payload?.messages;
+		let msgs = Array.isArray(raw)
+			? raw.map(normalizeMessage).filter((m): m is NormalizedMessage => m !== null)
+			: [];
+
+		if (responseMessages.length > 0) {
+			msgs = [...msgs, ...responseMessages];
+		}
+		return msgs;
+	});
+
+	let tools = $derived.by<NormalizedTool[]>(() => {
+		const raw = payload?.tools;
+		if (!Array.isArray(raw)) return [];
+		return raw.map(normalizeTool).filter((t): t is NormalizedTool => t !== null);
+	});
+
+	// Hyperparameters: everything in the payload except messages/tools.
+	let hyperparameters = $derived.by(() => {
+		if (!payload) return null;
+		const rest: Record<string, unknown> = {};
+		for (const [k, v] of Object.entries(payload)) {
+			if (k === 'messages' || k === 'tools') continue;
+			rest[k] = v;
+		}
+		return rest;
+	});
 
 	// Normalized token usage from `event.usage` and the raw response body.
 	// Only populated for `detailed_llm_proxy_response`; `null` otherwise.
-	let usage = $derived(isResponse ? extractUsage(event) : null);
+	let usage = $derived(
+		isResponse
+			? extractUsage(event)
+			: partnerEntry
+				? extractUsage(partnerEntry.event)
+				: null
+	);
+
 	let promptPct = $derived(
 		usage && usage.promptRatio !== null ? Math.round(usage.promptRatio * 100) : 50
 	);
 
-	let hasMessages = $derived(isRequest && messages.length > 0);
-	let hasTools = $derived(isRequest && tools.length > 0);
+	let hasMessages = $derived(messages.length > 0);
+	let hasTools = $derived(tools.length > 0);
 	let hasHyperparameters = $derived(
-		isRequest && hyperparameters !== null && Object.keys(hyperparameters).length > 0
+		hyperparameters !== null && Object.keys(hyperparameters).length > 0
 	);
 
 	let defaultTab = $derived(hasMessages ? 'messages' : 'overview');
+
+	// UI state persistence across entry switches
+	const uiState = new Map<string, { tab: string }>();
+	let currentTab = $state('overview');
+
+	$effect(() => {
+		if (entry) {
+			const state = uiState.get(entry.event.sessionEventId);
+			currentTab = state?.tab ?? defaultTab;
+		}
+	});
+
+	$effect(() => {
+		if (entry) {
+			uiState.set(entry.event.sessionEventId, { tab: currentTab });
+		}
+	});
 
 	const roleStyles: Record<string, string> = {
 		system: 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
@@ -297,124 +431,175 @@
 		class="mx-auto flex h-[80%] max-h-[80%] w-full max-w-2xl min-w-[80%] flex-col overflow-hidden"
 	>
 		{#if event && (isRequest || isResponse)}
-			<Tabs.Root value={defaultTab} class="flex h-full min-h-0 flex-col gap-4">
+			<Tabs.Root bind:value={currentTab} class="flex h-full min-h-0 flex-col gap-4">
 				<Dialog.Header class="relative flex flex-col gap-2 pr-8">
-					<Dialog.Title class="flex items-center gap-2 font-[400]">
-						{#if isRequest}
-							<ArrowUp class="size-5 text-violet-500" />
-							LLM Request
-						{:else}
-							<ArrowDown class="size-5 text-violet-500" />
-							LLM Response
-						{/if}
-					</Dialog.Title>
-					{#if isResponse && usage}
-						<!--
-						  Right-aligned token usage strip. The compact summary in the
-						  header shows prompt/completion tokens and a ratio bar; the
-						  HoverCard reveals cached prompt tokens, reasoning tokens,
-						  and (when reported) cost. Sits to the right of the title,
-						  above the close button gutter so it never overlaps the `X`.
-						-->
-						<div class="absolute top-7 right-8 hidden sm:block">
-							<HoverCard.Root openDelay={120} closeDelay={80}>
-								<HoverCard.Trigger>
-									<div
-										class="flex cursor-default items-center gap-2 rounded-md border px-2 py-1 text-[11px]"
-									>
-										<span class="text-sky-600 dark:text-sky-400">
-											↑ <span class="font-mono">{formatTokens(usage.prompt)}</span>
-										</span>
-										<div class="bg-muted relative h-1.5 w-20 overflow-hidden rounded-full">
-											<div
-												class="absolute inset-y-0 left-0 bg-sky-500/70"
-												style="width: {promptPct}%;"
-											></div>
-											{#if usage.cachedRatio !== null}
-												<div
-													class="absolute inset-y-0 left-0 bg-sky-700/80"
-													style="width: {(promptPct * usage.cachedRatio).toFixed(2)}%;"
-												></div>
-											{/if}
-											<div
-												class="absolute inset-y-0 right-0 bg-violet-500/70"
-												style="width: {100 - promptPct}%;"
-											></div>
-										</div>
-										<span class="text-violet-600 dark:text-violet-400">
-											<span class="font-mono">{formatTokens(usage.completion)}</span> ↓
-										</span>
-										{#if usage.costUsd !== null}
-											<span class="text-muted-foreground font-mono">
-												· {formatCostUsd(usage.costUsd)}
+					<div class="flex flex-wrap items-center justify-between gap-4">
+						<Dialog.Title class="flex items-center gap-2 font-[400]">
+							{#if isRequest}
+								<ArrowUp class="size-5 text-violet-500" />
+								LLM Request
+							{:else}
+								<ArrowDown class="size-5 text-violet-500" />
+								LLM Response
+							{/if}
+						</Dialog.Title>
+
+						<div class="flex items-center gap-2">
+							<div class="bg-muted/50 flex items-center gap-1 rounded-md border p-0.5">
+								<Button
+									variant="ghost"
+									size="icon"
+									class="size-7"
+									disabled={currentRequestIndex <= 0}
+									onclick={() => onEntryChange?.(allAgentRequests[currentRequestIndex - 1])}
+									title="Previous request"
+								>
+									<ChevronsLeft class="size-4" />
+								</Button>
+								<Button
+									variant="ghost"
+									size="icon"
+									class="size-7"
+									disabled={currentEventIndex <= 0}
+									onclick={() => onEntryChange?.(agentLlmEvents[currentEventIndex - 1])}
+									title="Previous event"
+								>
+									<ChevronLeft class="size-4" />
+								</Button>
+
+								<div class="flex items-center gap-1 px-1.5 text-[11px] whitespace-nowrap">
+									<span class="font-bold">{currentRequestIndex + 1}</span>
+									<span class="text-muted-foreground">/</span>
+									<span class="text-muted-foreground">{allAgentRequests.length}</span>
+								</div>
+
+								<Button
+									variant="ghost"
+									size="icon"
+									class="size-7"
+									disabled={currentEventIndex >= agentLlmEvents.length - 1}
+									onclick={() => onEntryChange?.(agentLlmEvents[currentEventIndex + 1])}
+									title="Next event"
+								>
+									<ChevronRight class="size-4" />
+								</Button>
+								<Button
+									variant="ghost"
+									size="icon"
+									class="size-7"
+									disabled={currentRequestIndex >= allAgentRequests.length - 1}
+									onclick={() => onEntryChange?.(allAgentRequests[currentRequestIndex + 1])}
+									title="Next request"
+								>
+									<ChevronsRight class="size-4" />
+								</Button>
+							</div>
+
+							{#if usage}
+								<HoverCard.Root openDelay={120} closeDelay={80}>
+									<HoverCard.Trigger>
+										<div
+											class="flex cursor-default items-center gap-2 rounded-md border px-2 py-1 text-[11px]"
+										>
+											<span class="text-sky-600 dark:text-sky-400">
+												↑ <span class="font-mono">{formatTokens(usage.prompt)}</span>
 											</span>
-										{/if}
-									</div>
-								</HoverCard.Trigger>
-								<HoverCard.Content side="bottom" align="end" class="w-72 text-xs">
-									<div class="mb-2 text-sm font-semibold">Token usage</div>
-									<dl class="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1">
-										<dt class="text-sky-600 dark:text-sky-400">prompt</dt>
-										<dd class="text-right font-mono">{formatTokens(usage.prompt)}</dd>
-										{#if usage.cachedPrompt !== null}
-											<dt class="text-muted-foreground pl-3">↳ cached</dt>
-											<dd class="text-muted-foreground text-right font-mono">
-												{formatTokens(usage.cachedPrompt)}{#if usage.cachedRatio !== null}
-													<span class="ml-1">
-														({Math.round(usage.cachedRatio * 100)}%)
-													</span>
+											<div class="bg-muted relative h-1.5 w-16 overflow-hidden rounded-full sm:w-20">
+												<div
+													class="absolute inset-y-0 left-0 bg-sky-500/70"
+													style="width: {promptPct}%;"
+												></div>
+												{#if usage.cachedRatio !== null}
+													<div
+														class="absolute inset-y-0 left-0 bg-sky-700/80"
+														style="width: {(promptPct * usage.cachedRatio).toFixed(2)}%;"
+													></div>
 												{/if}
-											</dd>
-										{/if}
-										<dt class="text-violet-600 dark:text-violet-400">completion</dt>
-										<dd class="text-right font-mono">{formatTokens(usage.completion)}</dd>
-										{#if usage.reasoning !== null}
-											<dt class="text-muted-foreground pl-3">↳ reasoning</dt>
-											<dd class="text-muted-foreground text-right font-mono">
-												{formatTokens(usage.reasoning)}
-											</dd>
-										{/if}
-										{#if usage.total !== null}
-											<dt class="border-border/60 mt-1 border-t pt-1">total</dt>
-											<dd class="border-border/60 mt-1 border-t pt-1 text-right font-mono">
-												{formatTokens(usage.total)}
-											</dd>
-										{/if}
-										{#if usage.costUsd !== null}
-											<dt class="text-muted-foreground">cost</dt>
-											<dd class="text-right font-mono">{formatCostUsd(usage.costUsd)}</dd>
-										{/if}
-									</dl>
-								</HoverCard.Content>
-							</HoverCard.Root>
+												<div
+													class="absolute inset-y-0 right-0 bg-violet-500/70"
+													style="width: {100 - promptPct}%;"
+												></div>
+											</div>
+											<span class="text-violet-600 dark:text-violet-400">
+												<span class="font-mono">{formatTokens(usage.completion)}</span> ↓
+											</span>
+											{#if usage.costUsd !== null}
+												<span class="text-muted-foreground font-mono">
+													· {formatCostUsd(usage.costUsd)}
+												</span>
+											{/if}
+										</div>
+									</HoverCard.Trigger>
+									<HoverCard.Content side="bottom" align="end" class="w-72 text-xs">
+										<div class="mb-2 text-sm font-semibold">Token usage</div>
+										<dl class="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1">
+											<dt class="text-sky-600 dark:text-sky-400">prompt</dt>
+											<dd class="text-right font-mono">{formatTokens(usage.prompt)}</dd>
+											{#if usage.cachedPrompt !== null}
+												<dt class="text-muted-foreground pl-3">↳ cached</dt>
+												<dd class="text-muted-foreground text-right font-mono">
+													{formatTokens(usage.cachedPrompt)}{#if usage.cachedRatio !== null}
+														<span class="ml-1">
+															({Math.round(usage.cachedRatio * 100)}%)
+														</span>
+													{/if}
+												</dd>
+											{/if}
+											<dt class="text-violet-600 dark:text-violet-400">completion</dt>
+											<dd class="text-right font-mono">{formatTokens(usage.completion)}</dd>
+											{#if usage.reasoning !== null}
+												<dt class="text-muted-foreground pl-3">↳ reasoning</dt>
+												<dd class="text-muted-foreground text-right font-mono">
+													{formatTokens(usage.reasoning)}
+												</dd>
+											{/if}
+											{#if usage.total !== null}
+												<dt class="border-border/60 mt-1 border-t pt-1">total</dt>
+												<dd class="border-border/60 mt-1 border-t pt-1 text-right font-mono">
+													{formatTokens(usage.total)}
+												</dd>
+											{/if}
+											{#if usage.costUsd !== null}
+												<dt class="text-muted-foreground">cost</dt>
+												<dd class="text-right font-mono">{formatCostUsd(usage.costUsd)}</dd>
+											{/if}
+										</dl>
+									</HoverCard.Content>
+								</HoverCard.Root>
+							{/if}
 						</div>
-					{/if}
+					</div>
+
 					<span class="text-muted-foreground text-sm">
 						<span class="font-mono">#{entry?.seq}</span>
 						{#if 'agentName' in event}
 							· <span class="font-mono">{event.agentName}</span>
 						{/if}
-						{#if isRequest && 'modelName' in event}
-							· <span class="font-mono">{event.modelName}</span>
+						{#if (isRequest || (isResponse && partnerEntry)) && 'modelName' in (isRequest ? event : partnerEntry!.event)}
+							{@const modelName = isRequest
+								? (event as DetailedRequest).modelName
+								: (partnerEntry!.event as DetailedRequest).modelName}
+							· <span class="font-mono">{modelName}</span>
 						{/if}
 						{#if 'providerRequestName' in event}
 							· {event.providerRequestName}
 						{/if}
-						{#if isRequest && requestBody}
+						{#if requestBody}
 							· <span class="font-mono">{requestBody.format}</span>
 						{/if}
 						{#if isResponse && 'statusCode' in event}
 							· <span class="font-mono">HTTP {event.statusCode}</span>
 						{/if}
 					</span>
-					{#if isRequest}
-						<div class="absolute top-0 right-12 sm:hidden">
-							<!-- compact action mirror for narrow screens (parent reserves pr-8 for the X) -->
-						</div>
+
+					<div class="absolute top-0 right-12 sm:hidden">
+						<!-- compact action mirror for narrow screens (parent reserves pr-8 for the X) -->
+					</div>
+					{#if isRequest || partnerEntry}
 						<Button
 							variant="outline"
 							size="sm"
-							class="absolute top-3 right-12 hidden h-7 gap-1.5 text-xs sm:flex"
+							class="absolute top-12 right-12 hidden h-7 gap-1.5 text-xs sm:flex"
 							onclick={saveToMemories}
 						>
 							<BookmarkIcon class="size-3.5" /> Save to memories

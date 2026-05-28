@@ -35,6 +35,7 @@ export class CoralServer {
 	/** Unwrapped API Client. DO NOT use this without good reason - if the wrapped `api` is missing a method then add it there. **/
  public rawApi = $derived.by(() => {
                 const token = building ? '' : (page.url.searchParams.get('token') || page.url.searchParams.get('key'));
+								console.log("Creating client with token ", token)
                 return createClient<paths>({
                         baseUrl: `${(config.PUBLIC_API_PATH || base) ?? '/'}`,
                         headers: { Authorization: token ? `Bearer ${token}` : undefined },

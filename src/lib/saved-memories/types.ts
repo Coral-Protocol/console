@@ -66,6 +66,16 @@ export interface SavedMessage {
 		statusCode?: number;
 		raw?: unknown;
 	};
+	/**
+	 * Alternate sibling messages occupying the same slot in the conversation.
+	 *
+	 * Populated when the user re-runs "Make Request" on a memory that already
+	 * has a captured assistant response: instead of stacking responses at the
+	 * end, the previous response is demoted into `alternates` of the new one.
+	 * The "main" SavedMessage is the active alternate; switching simply
+	 * promotes a sibling. Excluded from serialised payloads.
+	 */
+	alternates?: SavedMessage[];
 }
 
 /** Hyperparameters surfaced as first-class editable fields. Unknown keys live

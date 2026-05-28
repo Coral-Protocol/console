@@ -135,7 +135,35 @@
 	}
 	function deleteMessage(i: number) {
 		if (!working) return;
-		working.messages.splice(i, 1);
+		const m = working.messages[i];
+		if (!m) return;
+		// If this message has alternate siblings (previous responses kept
+		// around at the same slot), promote the most recent one instead of
+		// removing the slot entirely. This matches the user expectation that
+		// alternates are preserved when the active one is discarded.
+		if (m.alternates && m.alternates.length > 0) {
+			const alts = m.alternates.slice();
+			const next = alts.pop()!;
+			next.alternates = alts.length > 0 ? alts : undefined;
+			working.messages[i] = next;
+		} else {
+			working.messages.splice(i, 1);
+		}
+		markDirty();
+	}
+	function switchAlternate(i: number, altIndex: number) {
+		if (!working) return;
+		const m = working.messages[i];
+		if (!m || !m.alternates || altIndex < 0 || altIndex >= m.alternates.length) return;
+		const alts = m.alternates.slice();
+		const chosen = alts.splice(altIndex, 1)[0]!;
+		// Demote the current main into the alternates pool, preserving order:
+		// the displaced active becomes the last entry so the "latest" semantics
+		// (newest = highest index) keep holding when a fresh response arrives.
+		const demoted: SavedMessage = { ...m, alternates: undefined };
+		alts.push(demoted);
+		chosen.alternates = alts;
+		working.messages[i] = chosen;
 		markDirty();
 	}
 	function moveMessage(i: number, delta: number) {
@@ -331,7 +359,22 @@
 				editOf: working.origin.originalEventId
 			});
 			const asMsg = responseToMessage(result.response);
-			working.messages.push(asMsg);
+			// If the last message in the conversation is itself a captured
+			// response (i.e. the user has already replayed once and we kept
+			// the assistant message), demote it into the new response's
+			// `alternates` instead of stacking responses at the tail. This
+			// preserves prior outputs and lets the user switch between them
+			// at the same slot; the latest is rendered by default.
+			const last = working.messages[working.messages.length - 1];
+			if (last && last.responseMeta) {
+				const prior = last.alternates ? last.alternates.slice() : [];
+				const demoted: SavedMessage = { ...last, alternates: undefined };
+				prior.push(demoted);
+				asMsg.alternates = prior;
+				working.messages[working.messages.length - 1] = asMsg;
+			} else {
+				working.messages.push(asMsg);
+			}
 			working.lastResponseAt = Date.now();
 			markDirty();
 			await save();
@@ -421,8 +464,9 @@
 								total={working.messages.length}
 								onChange={markDirty}
 								onDuplicate={duplicateMessage}
-								onDelete={deleteMessage}
+ 							onDelete={deleteMessage}
 								onMove={moveMessage}
+								onSwitchAlternate={switchAlternate}
 							/>
 						{/if}
 					{/each}

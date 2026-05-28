@@ -40,10 +40,20 @@
 		onDuplicate: (index: number) => void;
 		onDelete: (index: number) => void;
 		onMove: (index: number, delta: number) => void;
+		/** Promote one of `message.alternates` into the active slot. */
+		onSwitchAlternate?: (index: number, altIndex: number) => void;
 	}
 
-	let { message = $bindable(), index, total, onChange, onDuplicate, onDelete, onMove }: Props =
-		$props();
+	let {
+		message = $bindable(),
+		index,
+		total,
+		onChange,
+		onDuplicate,
+		onDelete,
+		onMove,
+		onSwitchAlternate
+	}: Props = $props();
 
 	const COMMON_ROLES = ['system', 'developer', 'user', 'assistant', 'tool'] as const;
 	const ROLE_STYLES: Record<string, string> = {
@@ -224,6 +234,28 @@
 				class="overflow-auto whitespace-pre-wrap"
 				language="json"
 			/>
+		{/if}
+
+		{#if message.alternates && message.alternates.length > 0 && onSwitchAlternate}
+			<Separator />
+			<div class="flex flex-wrap items-center gap-1 text-xs">
+				<span class="text-muted-foreground">
+					Responses ({message.alternates.length + 1})
+				</span>
+				{#each message.alternates as alt, ai (alt.id)}
+					<button
+						type="button"
+						class="hover:bg-accent text-muted-foreground rounded border px-2 py-0.5"
+						onclick={() => onSwitchAlternate?.(index, ai)}
+						title="Switch to this previous response"
+					>
+						#{ai + 1}
+					</button>
+				{/each}
+				<span class="bg-accent rounded border px-2 py-0.5">
+					#{message.alternates.length + 1} (latest)
+				</span>
+			</div>
 		{/if}
 
 		{#if message.responseMeta}
