@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.15](https://github.com/Coral-Protocol/console/compare/v0.3.14...v0.3.15) (2026-05-28)
+
+
+### Bug Fixes
+
+* remove hydration issues on workbench, improved look of agent ske… ([#164](https://github.com/Coral-Protocol/console/issues/164)) ([7919f5c](https://github.com/Coral-Protocol/console/commit/7919f5c1474e43d5bdc8b90324561a7470fa8176))
+
 ## [0.3.14](https://github.com/Coral-Protocol/console/compare/v0.3.13...v0.3.14) (2026-05-22)
 
 
