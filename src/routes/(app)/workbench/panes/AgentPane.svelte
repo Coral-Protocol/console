@@ -19,7 +19,7 @@
 	import { createSessionContext } from '../+page.svelte';
 	import { appContext } from '$lib/context';
 	import { agentIdOf, registryIdOf } from '$lib/CoralServer.svelte';
-	import { tick } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { Textarea } from '@coral-os/component-library/ui/textarea/index.js';
 
 	import { buttonVariants } from '@coral-os/component-library/components/ui/button/index.js';
@@ -109,7 +109,9 @@
 			>
 				<Form.Control>
 					{#snippet children({ props })}
-						<TooltipLabel tooltip={'Optional agent description'} class="m-0 max-w-1/4"
+						<TooltipLabel
+							tooltip={'Optional agent description shared with other agents'}
+							class="m-0 max-w-1/4"
 							>Description
 						</TooltipLabel>
 						<Textarea

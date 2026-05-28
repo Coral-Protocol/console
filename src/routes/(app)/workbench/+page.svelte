@@ -1,7 +1,7 @@
 <script lang="ts" module>
 	import { Context, Debounced } from 'runed';
 	import type { SuperForm, SuperFormData, SuperFormErrors } from 'sveltekit-superforms/client';
-	import type { FormSchema } from './schemas';
+	import type { FormSchema } from '$lib/sessionSchema';
 	import type z from 'zod';
 
 	// FIXME: why is this hardcoded
@@ -55,7 +55,7 @@
 	import { Pip, TwostepButton } from '@coral-os/component-library';
 
 	import SidebarTab from './SidebarTab.svelte';
-	import Graph from '$lib/components/AgentGraph.svelte';
+	import Graph from '$lib/components/Graph/Graph.svelte';
 
 	import { superForm, defaults } from 'sveltekit-superforms';
 	import { zod4 } from 'sveltekit-superforms/adapters';
@@ -71,9 +71,9 @@
 	import { appContext } from '$lib/context';
 	import { CoralServer, agentIdOf, type RegistryAgentIdentifier } from '$lib/CoralServer.svelte';
 
-	import { makeFormSchema, type CreateSessionRequest } from './schemas/types';
-	import { toPayload } from './schemas';
-	import { importFromPayload } from './schemas';
+	import { makeFormSchema, type CreateSessionRequest } from '../../../lib/sessionSchema/types';
+	import { toPayload } from '$lib/sessionSchema';
+	import { importFromPayload } from '$lib/sessionSchema';
 	import AgentPicker from './AgentPicker.svelte';
 	import TemplatePicker from './TemplatePicker.svelte';
 	import CodePane from './panes/CodePane.svelte';
@@ -88,6 +88,8 @@
 	import { cn } from '$lib/utils';
 	import MarketPane from './panes/MarketPane.svelte';
 	import { Skeleton } from '@coral-os/component-library/components/ui/skeleton/index.js';
+	import { SvelteFlowProvider } from '@xyflow/svelte';
+	import * as UnderlineTabs from '@coral-os/component-library/ui/underline-tabs/index.js';
 
 	function sourceToRegistryId(source: AgentSource): RegistryAgentIdentifier['registrySourceId'] {
 		switch (source) {
@@ -364,46 +366,55 @@
 		},
 
 		addAgent: async (name: string, source: any, version: string) => {
+			if (loadingAgent) {
+				throw new Error('Already adding an agent, please wait');
+			}
 			loadingAgent = true;
 
 			const existingCount = $formData.agents.filter((a) => a.id.name === name).length;
 			const registrySourceId = sourceToRegistryId(source as AgentSource);
 
-			const detailed = await ctx.server.lookupAgent({
-				name,
-				version,
-				registrySourceId
-			});
-
-			if (!detailed) {
-				throw new Error('Agent not found');
-			}
-
-			$formData.agents.push({
-				id: {
+			try {
+				const detailed = await ctx.server.lookupAgent({
 					name,
 					version,
 					registrySourceId
-				},
-				name: name + (existingCount > 0 ? `-${existingCount}` : ''),
-				description: detailed.registryAgent.info.description,
-				providerType: 'local',
-				provider: {
-					runtime: Object.keys(detailed.registryAgent.runtimes)[0] as any,
-					remote_request: {
-						maxCost: { type: 'micro_coral', amount: 1000 },
-						serverSource: { type: 'servers', servers: [] }
-					}
-				},
-				customToolAccess: new Set(),
-				blocking: false,
-				options: {}
-			});
+				});
 
-			sessCtx.detailedAgent = null;
-			$formData.agents = $formData.agents;
-			sessCtx.selectedAgent = $formData.agents.length - 1;
-			loadingAgent = false;
+				if (!detailed) {
+					loadingAgent = false;
+					throw new Error('Agent not found');
+				}
+
+				$formData.agents.push({
+					id: {
+						name,
+						version,
+						registrySourceId
+					},
+					name: name + (existingCount > 0 ? `-${existingCount}` : ''),
+					description: detailed.registryAgent.info.description,
+					providerType: 'local',
+					provider: {
+						runtime: Object.keys(detailed.registryAgent.runtimes)[0] as any,
+						remote_request: {
+							maxCost: { type: 'micro_coral', amount: 1000 },
+							serverSource: { type: 'servers', servers: [] }
+						}
+					},
+					customToolAccess: new Set(),
+					blocking: false,
+					options: {}
+				});
+
+				$formData.agents = $formData.agents;
+				sessCtx.selectedAgent = $formData.agents.length - 1;
+				loadingAgent = false;
+			} catch (error) {
+				throw error as Error;
+			} finally {
+				loadingAgent = false;
+			}
 		}
 	}) as SessionCreatorContext;
 
@@ -428,16 +439,16 @@
 	);
 
 	let curAgentId = $derived(curAgent ? agentIdOf(curAgent.id) : null);
+
 	$effect(() => {
 		const id = curAgentId;
+		sessCtx.selectedAgent; // track this so effect re-runs when same agent is added again
 		let active = true;
 		if (id) {
 			untrack(() => {
 				sessCtx.detailedAgent = null;
 				getDetailed(curAgent!.id).then((d) => {
-					if (active) {
-						sessCtx.detailedAgent = d;
-					}
+					if (active) sessCtx.detailedAgent = d;
 				});
 			});
 		} else {
@@ -459,16 +470,6 @@
 	const isMobile = new IsMobile();
 
 	let agentsListTabs: string = $state('table');
-
-	$effect(() => {
-		if ($formData.agents.length > 0) {
-			if (currentTab === 'groups' && settings.current.enableAgentGraphView) {
-				agentsListTabs = 'graph';
-			} else {
-				agentsListTabs = 'table';
-			}
-		}
-	});
 
 	type Settings = {
 		enableAgentGraphView: boolean;
@@ -533,98 +534,127 @@
 		<Resizable.Pane defaultSize={75} minSize={25}>
 			<Resizable.PaneGroup direction="vertical">
 				<Resizable.Pane minSize={25} defaultSize={50}>
-					<Card.Root class="h-full py-0">
-						<Card.Content class="flex h-full flex-col px-0">
-							<Menubar.Root class="bg-sidebar w-full border-0 border-b">
-								<Menubar.Menu>
-									<Menubar.Trigger class="gap-1">Session</Menubar.Trigger>
-									<Menubar.Content>
-										<Menubar.Item onSelect={clearSession}>Clear session</Menubar.Item>
-										<Menubar.Separator />
-										<Menubar.Item
-											onSelect={async () => {
-												sessCtx.importSession({
-													from: await navigator.clipboard.readText(),
-													success: 'Session updated from clipboard'
-												});
-											}}>Import JSON from clipboard</Menubar.Item
-										>
-										<Menubar.Item
-											disabled={!sessCtx.payload}
-											onSelect={() => (
-												navigator.clipboard.writeText(
-													sessCtx.payload ? JSON.stringify(sessCtx.payload, null, 4) : ''
-												),
-												toast.success('Session JSON copied to clipboard')
-											)}>Export JSON to clipboard</Menubar.Item
-										>
-									</Menubar.Content>
-								</Menubar.Menu>
-								<Menubar.Menu>
-									<Menubar.Trigger class="gap-1">View</Menubar.Trigger>
-									<Menubar.Content>
-										<Menubar.CheckboxItem bind:checked={settings.current.enableAgentGraphView}
-											>Enable graph in groups</Menubar.CheckboxItem
-										>
-										<Menubar.Separator />
-										<Menubar.Sub>
-											<Menubar.SubTrigger disabled class="opacity-50">Columns</Menubar.SubTrigger>
-											<Menubar.SubContent>
-												<Menubar.CheckboxItem>Name</Menubar.CheckboxItem>
-												<Menubar.CheckboxItem>Version</Menubar.CheckboxItem>
-												<Menubar.CheckboxItem>Registry Source</Menubar.CheckboxItem>
-												<Menubar.CheckboxItem>Agent</Menubar.CheckboxItem>
-											</Menubar.SubContent>
-										</Menubar.Sub>
-									</Menubar.Content>
-								</Menubar.Menu>
-								<Menubar.Menu>
-									<Menubar.Trigger class="gap-1">Templates</Menubar.Trigger>
-									<Menubar.Content>
-										<TemplatePicker
-											server={ctx.server}
-											onSelect={(template) => {
-												loadTemplate(template);
-											}}
-										/>
-									</Menubar.Content>
-								</Menubar.Menu>
-								<Menubar.Menu>
-									<div use:tourTarget={'add-agents'} class="ml-auto">
-										<Menubar.Trigger
-											class={cn(
-												buttonVariants({ size: 'sm' }),
-												'relative h-full gap-2 transition-all',
-												$formData.agents.length == 0 ? 'bg-sidebar' : ''
-											)}
-										>
-											<IconPlusCircle class="size-5" />
-											Add agents
-										</Menubar.Trigger>
-									</div>
-									<Menubar.Content>
-										<AgentPicker
-											server={ctx.server}
-											onSelect={(agent, catalogId) => {
-												toast.promise(
-													sessCtx.addAgent(agent.name, catalogId.type, agent.versions[0]!),
-													{
-														loading: 'Adding agent...',
-														success: 'Agent added successfully',
-														error: (err: any) => `Failed: ${err.message || err}`
-													}
-												);
-											}}
-										/>
-									</Menubar.Content>
-								</Menubar.Menu>
-							</Menubar.Root>
+					<Card.Root class="h-full gap-0 py-0">
+						<Card.Header class="flex gap-2 border-b p-1!">
+							<DropdownMenu.Root>
+								<DropdownMenu.Trigger>
+									{#snippet child({ props }: { props: any })}
+										<Button {...props} variant="secondary">
+											Session <IconCaretDown />
+										</Button>
+									{/snippet}
+								</DropdownMenu.Trigger>
 
-							<Tabs.Root
+								<DropdownMenu.Content class="w-56" align="start">
+									<DropdownMenu.Label>Session</DropdownMenu.Label>
+
+									<DropdownMenu.Item onSelect={clearSession}>Clear session</DropdownMenu.Item>
+
+									<DropdownMenu.Separator />
+
+									<DropdownMenu.Item
+										onSelect={async () => {
+											sessCtx.importSession({
+												from: await navigator.clipboard.readText(),
+												success: 'Session updated from clipboard'
+											});
+										}}
+									>
+										Import JSON from clipboard
+									</DropdownMenu.Item>
+
+									<DropdownMenu.Item
+										disabled={!sessCtx.payload}
+										onSelect={() => {
+											navigator.clipboard.writeText(
+												sessCtx.payload ? JSON.stringify(sessCtx.payload, null, 4) : ''
+											);
+											toast.success('Session JSON copied to clipboard');
+										}}
+									>
+										Export JSON to clipboard
+									</DropdownMenu.Item>
+								</DropdownMenu.Content>
+							</DropdownMenu.Root>
+
+							<DropdownMenu.Root>
+								<DropdownMenu.Trigger>
+									{#snippet child({ props }: { props: any })}
+										<Button {...props} variant="secondary">
+											View <IconCaretDown />
+										</Button>
+									{/snippet}
+								</DropdownMenu.Trigger>
+
+								<DropdownMenu.Content class="w-56" align="start">
+									<DropdownMenu.Label>View</DropdownMenu.Label>
+
+									<DropdownMenu.CheckboxItem bind:checked={settings.current.enableAgentGraphView}>
+										Enable graph in groups
+									</DropdownMenu.CheckboxItem>
+
+									<DropdownMenu.Separator />
+
+									<DropdownMenu.Sub>
+										<DropdownMenu.SubTrigger disabled class="opacity-50">
+											Columns
+										</DropdownMenu.SubTrigger>
+
+										<DropdownMenu.SubContent>
+											<DropdownMenu.CheckboxItem>Name</DropdownMenu.CheckboxItem>
+											<DropdownMenu.CheckboxItem>Version</DropdownMenu.CheckboxItem>
+											<DropdownMenu.CheckboxItem>Registry Source</DropdownMenu.CheckboxItem>
+											<DropdownMenu.CheckboxItem>Agent</DropdownMenu.CheckboxItem>
+										</DropdownMenu.SubContent>
+									</DropdownMenu.Sub>
+								</DropdownMenu.Content>
+							</DropdownMenu.Root>
+							<Popover.Root>
+								<Popover.Trigger
+									class={cn(
+										buttonVariants({ size: 'sm' }),
+										'relative ml-auto h-full gap-2 transition-all',
+										$formData.agents.length == 0 ? 'bg-card' : ''
+									)}
+									disabled={$formData.agents.length == 0}
+								>
+									<IconPlusCircle class="size-5" />
+									Add agents</Popover.Trigger
+								>
+								<Popover.Content
+									><AgentPicker
+										server={ctx.server}
+										onSelect={(agent, catalogId) => {
+											toast.promise(
+												sessCtx.addAgent(agent.name, catalogId.type, agent.versions[0]!),
+												{
+													loading: 'Adding agent...',
+													success: 'Agent added successfully',
+													error: (err: any) => `Failed: ${err.message || err}`
+												}
+											);
+										}}
+									/></Popover.Content
+								>
+							</Popover.Root>
+						</Card.Header>
+						<Card.Content class="flex h-full flex-col px-0">
+							<UnderlineTabs.Root
 								bind:value={agentsListTabs}
-								class="h-full min-h-0 flex-1 grow overflow-hidden"
+								class="h-full min-h-0 flex-1 grow gap-0 overflow-hidden border-b"
 							>
-								<Tabs.Content
+								<UnderlineTabs.List
+									class="bg-sidebar mt-1 flex w-full justify-start gap-2 rounded-none px-1 "
+								>
+									<UnderlineTabs.Trigger value="table" class="h-full grow-0"
+										>Table view</UnderlineTabs.Trigger
+									>
+
+									<UnderlineTabs.Trigger value="graph" class="h-full grow-0"
+										>Graph view</UnderlineTabs.Trigger
+									>
+								</UnderlineTabs.List>
+								<UnderlineTabs.Content
 									value="table"
 									class="relative flex h-full min-h-0 flex-1 grow flex-col overflow-hidden "
 								>
@@ -649,11 +679,6 @@
 														<Table.Cell>
 															<Checkbox disabled class="cursor-default!" />
 														</Table.Cell>
-														{#each { length: 5 }}
-															<Table.Cell>
-																<Skeleton class="h-6 w-18 animate-none!" />
-															</Table.Cell>
-														{/each}
 													</Table.Row>
 												{/each}
 											{:else}
@@ -702,15 +727,19 @@
 											{/if}
 										</Table.Body>
 									</Table.Root>
-								</Tabs.Content>
-								<Tabs.Content value="graph" class="flex min-h-0 flex-1 overflow-hidden ">
-									<Graph
-										agents={$formData.agents}
-										groups={$formData.groups}
-										bind:selectedAgent={sessCtx.selectedAgent}
-									/>
-								</Tabs.Content>
-							</Tabs.Root>
+								</UnderlineTabs.Content>
+								<UnderlineTabs.Content value="graph" class="flex min-h-0 flex-1 overflow-hidden ">
+									<SvelteFlowProvider>
+										<Graph
+											agents={$formData.agents}
+											groups={$formData.groups}
+											bind:selectedAgent={sessCtx.selectedAgent}
+											controls
+											fitDefault={false}
+										/>
+									</SvelteFlowProvider>
+								</UnderlineTabs.Content>
+							</UnderlineTabs.Root>
 						</Card.Content>
 					</Card.Root>
 				</Resizable.Pane>

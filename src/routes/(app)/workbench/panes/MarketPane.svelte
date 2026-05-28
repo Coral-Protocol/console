@@ -13,6 +13,7 @@
 
 	import IconCrane from 'phosphor-icons-svelte/IconCraneRegular.svelte';
 	import { appContext } from '$lib/context';
+	import { createSessionContext } from '../+page.svelte';
 	import IconMagnifyingGlassRegular from 'phosphor-icons-svelte/IconMagnifyingGlassRegular.svelte';
 	import { fade } from 'svelte/transition';
 	import { Badge } from '@coral-os/component-library/ui/badge/index.js';
@@ -23,6 +24,7 @@
 	import AgentMarketView from '$lib/components/dialogs/AgentMarketView.svelte';
 
 	let ctx = appContext.get();
+	let sessCtx = createSessionContext.get();
 
 	let search = $state('');
 	let loading = $state(true);
@@ -53,7 +55,7 @@
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Content class="bg-card h-full max-h-4/5 max-w-4/5! overflow-hidden" showClose={false}>
 		{#if selectedAgent}
-			<AgentMarketView agent={selectedAgent.agent} />
+			<AgentMarketView agent={selectedAgent.agent} {sessCtx} />
 		{/if}
 	</Dialog.Content>
 </Dialog.Root>

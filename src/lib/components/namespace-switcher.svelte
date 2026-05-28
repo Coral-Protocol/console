@@ -80,10 +80,10 @@
 <Popover.Root bind:open={sessionSearcherOpen}>
 	<section class="my-2 flex w-full gap-2">
 		<Popover.Trigger
-			class="bg-sidebar border-offset-background dark:aria-invalid:border-destructive/40 aria-invalid:border-destructive relative  w-full flex-1 grow justify-between truncate border-1 "
+			class="bg-sidebar border-offset-background relative  w-full flex-1 grow justify-between truncate border-1 "
 			aria-invalid={ctx.session !== null && !ctx.session.connected}
 		>
-			{#snippet child({ props })}
+			{#snippet child({ props }: any)}
 				<Button
 					variant="outline"
 					{...props}

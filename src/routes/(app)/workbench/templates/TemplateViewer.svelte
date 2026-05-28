@@ -5,7 +5,8 @@
 	import * as Tooltip from '@coral-os/component-library/ui/tooltip/index.js';
 	import * as Dialog from '@coral-os/component-library/ui/dialog/index.js';
 	import { Separator } from '@coral-os/component-library/ui/separator/index.js';
-	import AgentGraph from '$lib/components/AgentGraph.svelte';
+	import Graph from '$lib/components/Graph/Graph.svelte';
+
 	import { TwostepButton } from '@coral-os/component-library';
 	import { type Template } from './TemplateV1';
 	import { Highlight } from 'svelte-highlight';
@@ -15,6 +16,7 @@
 	import { appContext } from '$lib/context';
 	import { registryIdOf } from '$lib/CoralServer.svelte';
 	import { Badge } from '@coral-os/component-library/components/ui/badge/index.js';
+	import { SvelteFlowProvider } from '@xyflow/svelte';
 
 	let {
 		template = $bindable(''),
@@ -167,15 +169,12 @@
 
 				<section class="flex h-[400px] w-[800px] gap-2 overflow-hidden">
 					<div class="bg-sidebar w-[400px]">
-						<AgentGraph
-							agents={payload.agentGraphRequest?.agents || []}
-							groups={payload.agentGraphRequest?.groups || []}
-							options={{
-								nodeSubLabel: null,
-								disableDrag: true,
-								disableBrush: true
-							}}
-						/>
+						<SvelteFlowProvider>
+							<Graph
+								agents={payload.agentGraphRequest?.agents || []}
+								groups={payload.agentGraphRequest?.groups || []}
+							/>
+						</SvelteFlowProvider>
 					</div>
 
 					<Tabs.Root value="description" class="w-[400px]">
@@ -205,12 +204,16 @@
 			</Dialog.Description>
 
 			<Dialog.Footer class="flex gap-2">
-				<TwostepButton disabled={loading || editMode} onclick={() => removeTemplate(template)}>
+				<TwostepButton
+					variant="ghostDestructive"
+					disabled={loading || editMode}
+					onclick={() => removeTemplate(template)}
+				>
 					Delete
 				</TwostepButton>
 
 				<Button
-					variant="outline"
+					variant="ghost"
 					disabled={loading || editMode}
 					onclick={() => downloadTemplate(template)}
 				>
@@ -218,6 +221,7 @@
 				</Button>
 
 				<Button
+					variant="ghost"
 					onclick={() => {
 						if (editMode) {
 							saveTemplate();

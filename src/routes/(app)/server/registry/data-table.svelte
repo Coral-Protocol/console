@@ -17,6 +17,25 @@
 	import { Input } from '@coral-os/component-library/ui/input/index.js';
 	import * as Dialog from '@coral-os/component-library/ui/dialog/index.js';
 	import * as Accordion from '@coral-os/component-library/ui/accordion/index.js';
+	import { rankItem, type RankingInfo } from '@tanstack/match-sorter-utils';
+	import AgentMarketView from '$lib/components/dialogs/AgentMarketView.svelte';
+
+	const fuzzyFilter = (
+		row: { getValue: (arg0: any) => any },
+		columnId: any,
+		value: string,
+		addMeta: (arg0: { itemRank: RankingInfo }) => void
+	) => {
+		const raw = row.getValue(columnId);
+
+		const itemRank = rankItem(
+			String(raw ?? ''), // ← critical fix
+			value
+		);
+
+		addMeta({ itemRank });
+		return itemRank.passed;
+	};
 
 	type DataTableProps<TData, TValue> = {
 		columns: ColumnDef<TData, TValue>[];
@@ -35,33 +54,43 @@
 			return data;
 		},
 		columns,
+
+		filterFns: {
+			fuzzy: fuzzyFilter
+		},
+
+		globalFilterFn: fuzzyFilter,
+
 		getCoreRowModel: getCoreRowModel(),
 		getSortedRowModel: getSortedRowModel(),
 		getFilteredRowModel: getFilteredRowModel(),
 
 		onSortingChange: (updater) => {
-			if (typeof updater === 'function') {
-				sorting = updater(sorting);
-			} else {
-				sorting = updater;
-			}
+			sorting = typeof updater === 'function' ? updater(sorting) : updater;
 		},
+
 		onColumnFiltersChange: (updater) => {
-			if (typeof updater === 'function') {
-				columnFilters = updater(columnFilters);
-			} else {
-				columnFilters = updater;
-			}
+			columnFilters = typeof updater === 'function' ? updater(columnFilters) : updater;
 		},
+
+		onGlobalFilterChange: (updater) => {
+			globalFilter = typeof updater === 'function' ? updater(globalFilter) : updater;
+		},
+
 		state: {
 			get sorting() {
 				return sorting;
 			},
 			get columnFilters() {
 				return columnFilters;
+			},
+			get globalFilter() {
+				return globalFilter;
 			}
 		}
 	});
+
+	let globalFilter = $state('');
 
 	let dialogOpen = $state(false);
 
@@ -70,7 +99,7 @@
 		name: string;
 		developer?: string;
 		version?: string;
-		source?: string;
+		source?: 'linked' | 'local' | 'marketplace';
 		failed: boolean;
 		reason?: string;
 		raw: unknown;
@@ -84,7 +113,21 @@
 </script>
 
 <Dialog.Root bind:open={dialogOpen}>
-	<Dialog.Content class="flex max-h-[80dvh] max-w-3xl flex-col overflow-hidden">
+	<Dialog.Content class="bg-card h-full max-h-4/5 max-w-4/5! overflow-hidden" showClose={false}>
+		{#if selectedRow}
+			<AgentMarketView
+				agent={{
+					name: selectedRow.name,
+					versions: selectedRow.version ? [selectedRow.version] : [],
+					source: selectedRow.source ? selectedRow.source : 'marketplace'
+				}}
+			/>
+		{/if}
+	</Dialog.Content>
+</Dialog.Root>
+
+<!-- <Dialog.Root bind:open={dialogOpen}>
+	<Dialog.Content class="bg-card h-full max-h-4/5 max-w-4/5! overflow-hidden">
 		{#if selectedRow}
 			<Dialog.Header class="shrink-0">
 				<Dialog.Title>Agent Details</Dialog.Title>
@@ -98,7 +141,7 @@
 				{/if}
 			</Dialog.Header>
 
-			<div class="min-h-0 flex-1 overflow-auto">
+			<div class="min-h-0 flex-1 overflow-ellipsis">
 				<div class="border-muted/30 bg-muted/5 mb-4 grid gap-3 rounded-lg border p-4 text-sm">
 					<div class="grid grid-cols-2 gap-4">
 						<div>
@@ -138,23 +181,21 @@
 			</div>
 		{/if}
 	</Dialog.Content>
-</Dialog.Root>
+</Dialog.Root> -->
 
 <div class="flex items-center py-4">
 	<Input
-		placeholder="Filter by name..."
-		value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
-		onchange={(e: { currentTarget: { value: any } }) => {
-			table.getColumn('name')?.setFilterValue(e.currentTarget.value);
-		}}
-		oninput={(e: { currentTarget: { value: any } }) => {
-			table.getColumn('name')?.setFilterValue(e.currentTarget.value);
+		placeholder="Search all columns..."
+		value={globalFilter ?? ''}
+		oninput={(e: { currentTarget: { value: string } }) => {
+			globalFilter = e.currentTarget.value; // ← REQUIRED
+			table.setGlobalFilter(e.currentTarget.value);
 		}}
 		class="max-w-sm"
 	/>
 </div>
 
-<div class="h-full border">
+<div class="h-full overflow-y-scroll border">
 	<Table.Root class="w-full table-fixed">
 		<Table.Header>
 			{#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
@@ -194,11 +235,11 @@
 
 						dialogOpen = true;
 					}}
-					class="cursor-pointer overflow-ellipsis"
+					class="odd:bg-muted/30 cursor-pointer overflow-ellipsis"
 				>
 					{#each row.getVisibleCells() as cell (cell.id)}
 						<Table.Cell
-							class="overflow-auto overflow-ellipsis {agent.failed ? 'bg-destructive/10' : ''}"
+							class="overflow-hidden overflow-ellipsis {agent.failed ? 'bg-destructive/10' : ''}"
 						>
 							<FlexRender content={cell.column.columnDef.cell} context={cell.getContext()} />
 						</Table.Cell>
