@@ -1,10 +1,7 @@
 <script lang="ts">
-	// Svelte / Kit
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { tick } from 'svelte';
-
-	// UI
 	import * as Breadcrumb from '@coral-os/component-library/ui/breadcrumb/index.js';
 	import * as Tabs from '@coral-os/component-library/ui/tabs/index.js';
 	import * as UnderlineTabs from '@coral-os/component-library/ui/underline-tabs/index.js';
@@ -14,46 +11,30 @@
 	import * as Avatar from '@coral-os/component-library/ui/avatar/index.js';
 	import * as Card from '@coral-os/component-library/ui/card/index.js';
 	import * as Accordion from '@coral-os/component-library/ui/accordion/index.js';
-
+	import type { AppContext } from '$lib/context';
 	import { Separator } from '@coral-os/component-library/ui/separator/index.js';
 	import { Button } from '@coral-os/component-library/ui/button/index.js';
 	import { Input } from '@coral-os/component-library/ui/input/index.js';
 	import { Badge } from '@coral-os/component-library/ui/badge/index.js';
 	import { Skeleton } from '@coral-os/component-library/ui/skeleton/index.js';
 
-	// Icons
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
 
-	// Utils / libs
 	import { cn } from '$lib/utils.js';
 	import slugify from 'slugify';
 	import SvelteMarkdown from '@humanspeak/svelte-markdown';
 	import { appContext } from '$lib/context';
 	import * as Dialog from '@coral-os/component-library/components/ui/dialog/index.js';
 
-	import { createSessionContext } from '../../../routes/(app)/workbench/+page.svelte';
 	import { toast } from 'svelte-sonner';
-
-	const sessCtx = createSessionContext.get();
-
-	// API / types
-
-	// -----------------------
-	// STATE
-	// -----------------------
 
 	let loading = $state(true);
 	let error: string | null = $state(null);
-	// let agent: any = $state(null);
 
 	let open = $state(false);
 	let selectedVersion = $state('');
 	let triggerRef = $state<HTMLButtonElement>(null!);
-
-	// -----------------------
-	// VIEW MODEL
-	// -----------------------
 
 	interface agent {
 		name: string;
@@ -70,35 +51,6 @@
 		restrictions: any;
 		options: Record<string, any>;
 	}
-
-	// let view: AgentView | null = $derived.by(() => {
-	// 	if (!agent) return null;
-
-	// 	const pricing = agent.registryAgent.marketplace?.pricing ?? null;
-
-	// 	let priceRange: string | null = null;
-	// 	if (pricing) {
-	// 		const { min, max } = pricing.recommendations;
-	// 		priceRange =
-	// 			min === max ? `$${min} ${pricing.currency}` : `$${min} – $${max} ${pricing.currency}`;
-	// 	}
-
-	// 	return {
-	// 		name: agent.registryAgent.info.identifier.name,
-	// 		version: agent.registryAgent.info.identifier.version,
-	// 		iconUrl: agent.extension?.iconUrl,
-	// 		developer: agent.extension?.developer ?? 'Unknown',
-	// 		summary: agent.registryAgent.info.summary ?? '',
-	// 		readme: agent.registryAgent.info.readme ?? '',
-	// 		pricing,
-	// 		priceRange,
-	// 		versions: agent.extension?.versions ?? [],
-	// 		capabilities: agent.registryAgent.info.capabilities ?? [],
-	// 		keywords: agent.registryAgent.info.keywords ?? [],
-	// 		restrictions: agent.restrictions,
-	// 		options: agent.registryAgent.options ?? {}
-	// 	};
-	// });
 
 	function closeAndFocusTrigger() {
 		open = false;
@@ -119,14 +71,19 @@
 				};
 			});
 	}
-
-	let { agent }: { agent: { name: string; versions: string[] } } = $props();
-
 	let ctx = appContext.get();
+
+	let {
+		agent,
+		sessCtx
+	}: {
+		agent: { name: string; versions: string[]; source?: 'linked' | 'local' | 'marketplace' };
+		sessCtx?: any;
+	} = $props();
 </script>
 
 <section class="flex min-h-[calc(min(100vw,1616px)*9/16)] w-full flex-col overflow-hidden">
-	{#await ctx.server.lookupAgent( { name: agent.name, version: agent.versions[0]!, registrySourceId: { type: 'marketplace' } } )}
+	{#await ctx.server.lookupAgent( { name: agent.name, version: agent.versions[0]!, registrySourceId: agent.source === 'linked' ? { type: 'linked', linkedServerId: '' } : agent.source === 'local' ? { type: 'local' } : { type: 'marketplace' } } )}
 		<UnderlineTabs.Root
 			value="description"
 			class="mx-auto mb-8 flex h-full min-h-0 w-full grow flex-col gap-4 overflow-hidden"
@@ -144,9 +101,8 @@
 					</h1>
 				</span>
 				<span class="flex items-center gap-2">
-					<Button variant="secondary" target="_blank" size="lg" disabled>View on Market</Button>
-					<Button class="bg-brand-primary" target="_blank" size="lg" disabled>Use this agent</Button
-					>
+					<Button variant="secondary" target="_blank" size="lg" disabled></Button>
+					<Button class="bg-brand-primary" target="_blank" size="lg" disabled></Button>
 					<Dialog.Close><Button variant="outline" size="lg">Close</Button></Dialog.Close>
 				</span>
 			</section>
@@ -237,36 +193,40 @@
 					</h1>
 				</span>
 				<span class="flex items-center gap-2">
-					<Button
-						variant="secondary"
-						target="_blank"
-						size="lg"
-						href={`https://marketplace.coralprotocol.ai/agents/${details?.extension?.developer}/${details.registryAgent.info.identifier.name}`}
-						>View on Market</Button
-					>
-					<Dialog.Close>
+					{#if details.registryAgent.info.identifier.registrySourceId.type === 'marketplace'}
 						<Button
-							class="bg-brand-primary"
+							variant="secondary"
+							target="_blank"
 							size="lg"
-							onclick={() => {
-								toast.promise(
-									sessCtx.addAgent(
-										details.registryAgent.info.identifier.name,
-										details.registryAgent.info.identifier.registrySourceId.type,
-										selectedVersion || details.registryAgent.info.identifier.version
-									),
-									{
-										loading: 'Adding agent...',
-										success: 'Agent added successfully',
-										error: (err: any) => `Failed: ${err.message || err}`
-									}
-								);
-							}}
+							href={`https://marketplace.coralprotocol.ai/agents/${details?.extension?.developer}/${details.registryAgent.info.identifier.name}`}
+							>View on Market</Button
 						>
-							Use this agent
-							<iconify-icon icon="gridicons:external"></iconify-icon>
-						</Button>
-					</Dialog.Close>
+					{/if}
+					{#if sessCtx}
+						<Dialog.Close>
+							<Button
+								class="bg-brand-primary"
+								size="lg"
+								onclick={() => {
+									toast.promise(
+										sessCtx.addAgent(
+											details.registryAgent.info.identifier.name,
+											details.registryAgent.info.identifier.registrySourceId.type,
+											selectedVersion || details.registryAgent.info.identifier.version
+										),
+										{
+											loading: 'Adding agent...',
+											success: 'Agent added successfully',
+											error: (err: any) => `Failed: ${err.message || err}`
+										}
+									);
+								}}
+							>
+								Use this agent
+								<iconify-icon icon="gridicons:external"></iconify-icon>
+							</Button>
+						</Dialog.Close>
+					{/if}
 
 					<Dialog.Close><Button variant="outline" size="lg">Close</Button></Dialog.Close>
 				</span>

@@ -35,14 +35,15 @@ export const columns: ColumnDef<Agent>[] = [
 			renderComponent(DataTableNameButton, {
 				onclick: column.getToggleSortingHandler()
 			}),
-		accessorKey: 'registryAgent.info.identifier.name',
+
+		accessorFn: (agent) => {
+			if (agent.failed) return agent.name;
+			return agent.registryAgent?.info?.identifier?.name ?? '';
+		},
+
 		cell: ({ row }) => {
 			const agent = row.original;
-
-			if (agent.failed) {
-				return `${agent.name}`;
-			}
-
+			if (agent.failed) return agent.name;
 			return agent.registryAgent.info.identifier.name;
 		}
 	},
@@ -51,11 +52,15 @@ export const columns: ColumnDef<Agent>[] = [
 		id: 'summary',
 		header: 'summary',
 		maxSize: 10,
+
+		accessorFn: (agent) => {
+			if (agent.failed) return '';
+			return agent.registryAgent?.info?.summary ?? '';
+		},
+
 		cell: ({ row }) => {
 			const agent = row.original;
-
 			if (agent.failed) return '-';
-
 			return agent.registryAgent.info.summary ?? '-';
 		}
 	},
@@ -63,11 +68,15 @@ export const columns: ColumnDef<Agent>[] = [
 	{
 		id: 'version',
 		header: 'Version',
+
+		accessorFn: (agent) => {
+			if (agent.failed) return '';
+			return agent.registryAgent?.info?.identifier?.version ?? '';
+		},
+
 		cell: ({ row }) => {
 			const agent = row.original;
-
 			if (agent.failed) return '-';
-
 			return agent.registryAgent.info.identifier.version;
 		}
 	},
@@ -75,11 +84,15 @@ export const columns: ColumnDef<Agent>[] = [
 	{
 		id: 'source',
 		header: 'Source',
+
+		accessorFn: (agent) => {
+			if (agent.failed) return '';
+			return agent.registryAgent?.info?.identifier?.registrySourceId?.type ?? '';
+		},
+
 		cell: ({ row }) => {
 			const agent = row.original;
-
 			if (agent.failed) return '-';
-
 			return agent.registryAgent.info.identifier.registrySourceId.type;
 		}
 	},
@@ -87,17 +100,24 @@ export const columns: ColumnDef<Agent>[] = [
 	{
 		id: 'developer',
 		header: 'Developer',
+
+		accessorFn: (agent) => {
+			if (agent.failed) return '';
+			return agent.extension?.developer ?? '';
+		},
+
 		cell: ({ row }) => {
 			const agent = row.original;
-
 			if (agent.failed) return '-';
-
 			return agent.extension?.developer ?? '-';
 		}
 	},
 
 	{
 		id: 'actions',
+
+		enableGlobalFilter: false,
+
 		cell: ({ row }) => {
 			const agent = row.original;
 
