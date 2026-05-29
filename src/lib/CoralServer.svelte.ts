@@ -43,6 +43,20 @@ export class CoralServer {
                 });
         });
 
+	public async authenticate(token: string) {
+		const formData = new FormData();
+		formData.append('token', token);
+		let baseUrl = (config.PUBLIC_API_PATH || base) ?? '/';
+		if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+		const res = await fetch(`${baseUrl}/api/v1/auth/token`, {
+			method: 'POST',
+			body: formData
+		});
+		if (!res.ok) {
+			throw new Error(`Authentication failed: ${res.statusText}`);
+		}
+	}
+
 	public onNoAuth = () => {
 		console.warn('onNoAuth has not been set!');
 	};

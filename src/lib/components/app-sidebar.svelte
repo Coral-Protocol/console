@@ -260,7 +260,7 @@
 	let namespaces = $derived(ctx.server.namespaces.filter((ns) => ns !== 'default'));
 
 	watch([() => ctx.server.namespaces], () => {
-		if (!(ctx.server.namespace in ctx.server.sessions)) {
+		if (!ctx.server.namespaces.includes(ctx.server.namespace)) {
 			ctx.server.namespace = 'default';
 		}
 	});

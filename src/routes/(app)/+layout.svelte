@@ -48,18 +48,24 @@
 			return;
 		}
 
+		const urlToken = page.url.searchParams.get('token') || page.url.searchParams.get('key');
+		if (urlToken) {
+			try {
+				await ctx.server.authenticate(urlToken);
+			} catch (e) {
+				console.error('Failed to auto-authenticate with URL token', e);
+			}
+		}
+
 		await ctx.server.fetchAll();
 
 		const sessionId = page.url.searchParams.get('sessionId');
 		if (sessionId) {
-			const sessionData = ctx.server.sessions[sessionId];
-			if (sessionData) {
-				ctx.session = new Session({
-					server: ctx.server,
-					namespace: ctx.server.namespace,
-					sessionId: sessionId
-				});
-			}
+			ctx.session = new Session({
+				server: ctx.server,
+				namespace: page.url.searchParams.get('namespace') || ctx.server.namespace,
+				sessionId: sessionId
+			});
 		}
 	});
 
