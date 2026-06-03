@@ -120,7 +120,8 @@
 		() => ctx.server.alive,
 		(alive) => {
 			if (alive) {
-				toast.success('Connected to server.');
+				toast.dismiss('server-connected');
+				toast.success('Connected to server.', { id: 'server-connected' });
 				toast.dismiss('server-disconnected');
 				refreshConnection(false);
 			}
@@ -347,7 +348,7 @@
 					variant="ghost"
 					class="mx-1 size-7"
 					disabled={connecting}
-					onclick={() => refreshConnection()}
+					onclick={() => refreshConnection(true)}
 				>
 					<IconArrowsClockwise class={cn('size-4', connecting && 'animate-spin')} />
 				</Button>
