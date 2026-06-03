@@ -16,7 +16,6 @@
 
 	import OptionField from '../OptionField.svelte';
 
-	import { createSessionContext } from '../+page.svelte';
 	import { appContext } from '$lib/context';
 	import { agentIdOf, registryIdOf } from '$lib/CoralServer.svelte';
 	import { onMount, tick } from 'svelte';
@@ -29,10 +28,11 @@
 	import * as Alert from '@coral-os/component-library/components/ui/alert/index.js';
 	import TemplatePicker from '../TemplatePicker.svelte';
 	import { getSessionDataFromTemplateName } from '../templates/TemplateLib';
+	import { getSessionContext } from '$lib/sessionCreatorContext';
 
 	let appCtx = appContext.get();
 
-	let ctx = createSessionContext.get();
+	let ctx = getSessionContext();
 	let serverCtx = appContext.get();
 
 	let form = $derived(ctx.form);

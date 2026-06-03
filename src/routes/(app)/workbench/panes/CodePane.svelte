@@ -20,9 +20,9 @@
 	import { PersistedState } from 'runed';
 	import { fade } from 'svelte/transition';
 	import CodeSnippet from './CodeSnippet.svelte';
-	import { createSessionContext } from '../+page.svelte';
+	import { getSessionContext } from '$lib/sessionCreatorContext';
 
-	let ctx = createSessionContext.get();
+	let ctx = getSessionContext();
 
 	const editorTab = new PersistedState('sessionEditorTab', 'json');
 	let payloadJson = $derived(ctx.payload ? JSON.stringify(ctx.payload, null, 4) : '');

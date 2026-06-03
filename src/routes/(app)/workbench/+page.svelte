@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import { Context, Debounced } from 'runed';
+	import { Context, Debounced, useDebounce } from 'runed';
 	import type { SuperForm, SuperFormData, SuperFormErrors } from 'sveltekit-superforms/client';
 	import type { FormSchema } from '$lib/sessionSchema';
 	import type z from 'zod';
@@ -19,11 +19,11 @@
 		formData: SuperFormData<z.output<FormSchema>>;
 		errors: SuperFormErrors<z.output<FormSchema>>;
 	};
-
-	export const createSessionContext = new Context<SessionCreatorContext>('sessionCreator');
 </script>
 
 <script lang="ts">
+	import LoggedOutWarning from './LoggedOutWarning.svelte';
+
 	import Header from '$lib/components/header.svelte';
 
 	import * as Sidebar from '@coral-os/component-library/ui/sidebar/index.js';
@@ -36,6 +36,7 @@
 	import { Button, buttonVariants } from '@coral-os/component-library/ui/button/index.js';
 	import * as Tooltip from '@coral-os/component-library/ui/tooltip/index.js';
 	import * as DropdownMenu from '@coral-os/component-library/ui/dropdown-menu/index.js';
+	import * as AlertDialog from '@coral-os/component-library/ui/alert-dialog/index.js';
 
 	import * as Card from '@coral-os/component-library/ui/card/index.js';
 
@@ -71,7 +72,7 @@
 	import { appContext } from '$lib/context';
 	import { CoralServer, agentIdOf, type RegistryAgentIdentifier } from '$lib/CoralServer.svelte';
 
-	import { makeFormSchema, type CreateSessionRequest } from '../../../lib/sessionSchema/types';
+	import { makeFormSchema, type CreateSessionRequest } from '$lib/sessionSchema/types';
 	import { toPayload } from '$lib/sessionSchema';
 	import { importFromPayload } from '$lib/sessionSchema';
 	import AgentPicker from './AgentPicker.svelte';
@@ -90,6 +91,8 @@
 	import { Skeleton } from '@coral-os/component-library/components/ui/skeleton/index.js';
 	import { SvelteFlowProvider } from '@xyflow/svelte';
 	import * as UnderlineTabs from '@coral-os/component-library/ui/underline-tabs/index.js';
+	import { setSessionContext } from '$lib/sessionCreatorContext';
+	import config from '$lib/config';
 
 	function sourceToRegistryId(source: AgentSource): RegistryAgentIdentifier['registrySourceId'] {
 		switch (source) {
@@ -321,8 +324,9 @@
 			} catch (e) {
 				console.log(e);
 				toast.error(`Failed to create session: ${e}`, { duration: Infinity });
+			} finally {
+				sendingForm = false;
 			}
-			sendingForm = false;
 		}
 	});
 
@@ -418,7 +422,7 @@
 		}
 	}) as SessionCreatorContext;
 
-	createSessionContext.set(sessCtx);
+	setSessionContext(sessCtx);
 
 	$effect(() => {
 		ctx.server.namespace;
@@ -512,11 +516,35 @@
 		};
 		sessCtx.selectedAgent = null;
 	}
+
+	$effect(() => {
+		ctx.server.onNoAuth = onNoAuth;
+	});
+
+	let loggedOutDialog = $state(false);
+
+	const onNoAuth = useDebounce(() => {
+		switch (config.PUBLIC_LOGIN_BEHAVIOUR) {
+			case 'token':
+				loggedOutDialog = true;
+				break;
+
+			case 'reload':
+				break;
+			default:
+				loggedOutDialog = true;
+				break;
+		}
+	}, 500);
+
+
 </script>
 
 {#if sessCtx.payload}
 	<TemplateSaver bind:open={templateSaverDialogOpen} data={JSON.stringify(sessCtx.payload)} />
 {/if}
+
+<LoggedOutWarning bind:open={loggedOutDialog} />
 
 <Header />
 
