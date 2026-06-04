@@ -512,6 +512,13 @@
 			sessionRuntimeSettings: {
 				ttl: 50000
 			},
+			sessionBudgetSettings: {
+				budget: 100000,
+				exhaustionBehavior: {
+					type: 'kill_session',
+					minimum: 100000
+				}
+			},
 			agents: []
 		};
 		sessCtx.selectedAgent = null;
@@ -536,8 +543,6 @@
 				break;
 		}
 	}, 500);
-
-
 </script>
 
 {#if sessCtx.payload}
