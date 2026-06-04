@@ -377,6 +377,103 @@ const qotdVotePayload: CreateSessionRequest = {
 	}
 } as CreateSessionRequest;
 
+const taskmasterPayload: CreateSessionRequest = {
+	agentGraphRequest: {
+		agents: [
+			{
+				id: {
+					name: 'taskmaster',
+					version: '1.1.0',
+					registrySourceId: {
+						type: 'marketplace'
+					}
+				},
+				name: 'taskmaster',
+				description:
+					'Authorative agent.  This agent is responsible for providing tasks to other agents.',
+				provider: {
+					type: 'local',
+					runtime: 'prototype'
+				},
+				blocking: false,
+				customToolAccess: [],
+				plugins: [],
+				x402Budgets: [],
+				options: {
+					TASK: {
+						type: 'string',
+						value:
+							'you are in a session with another agent, called "echo" that will attempt to produce a certain amount of messages inside a thread, your job is to let me know if the agent generates exactly 10 messages, once you have noticed it has stopped generating messages, it is likely complete in its task, as it generates them in short intervals.\n\nonce this task is complete, and you have reported whether or not there were 10 messages, close the session in 5 minutes.'
+					}
+				}
+			},
+			{
+				id: {
+					name: 'seed',
+					version: '1.0.0',
+					registrySourceId: {
+						type: 'local'
+					}
+				},
+				name: 'seed',
+				description:
+					'Seeds a session with a configurable amount of threads and messages.  After all threads and messages were created and sent this agent will exit.',
+				provider: {
+					type: 'local',
+					runtime: 'function'
+				},
+				blocking: false,
+				customToolAccess: [],
+				plugins: [],
+				x402Budgets: [],
+				options: {
+					SEED_MESSAGE_COUNT: {
+						type: 'u32',
+						value: 9
+					},
+					START_DELAY: {
+						type: 'u32',
+						value: 1234
+					},
+					OPERATION_DELAY: {
+						type: 'u32',
+						value: 1000
+					},
+					MENTIONS: {
+						type: 'list[string]',
+						value: ['taskmaster']
+					},
+					PARTICIPANTS: {
+						type: 'list[string]',
+						value: ['taskmaster']
+					}
+				}
+			}
+		],
+		groups: [['seed', 'taskmaster']],
+		customTools: {}
+	},
+	namespaceProvider: {
+		type: 'create_if_not_exists',
+		namespaceRequest: {
+			name: 'default',
+			annotations: {},
+			deleteOnLastSessionExit: false
+		}
+	},
+	execution: {
+		mode: 'immediate',
+		runtimeSettings: {
+			extendedEndReport: true,
+			persistenceMode: {
+				mode: 'hold_after_exit',
+				duration: 1800000
+			},
+			ttl: 900000
+		}
+	}
+} as CreateSessionRequest;
+
 export const bundledTemplates: Template[] = [
 	{
 		name: 'qotd',
@@ -394,5 +491,14 @@ export const bundledTemplates: Template[] = [
 		updated: Date.now(),
 		trusted: true,
 		payload: { version: 1, data: JSON.stringify(qotdVotePayload) }
+	},
+	{
+		name: 'Taskmaster_Example',
+		description:
+			'Uses the taskmaster agent to check if a debug agent generates exactly 10 messages, regardless of whether or not it makes 10 messages, it will close the session after 5 minutes once it believes there are no more messages coming.',
+		version: 1,
+		updated: Date.now(),
+		trusted: true,
+		payload: { version: 1, data: JSON.stringify(taskmasterPayload) }
 	}
 ];
