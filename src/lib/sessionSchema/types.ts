@@ -197,6 +197,28 @@ const formSchema = z.object({
 	sessionRuntimeSettings: z.object({
 		ttl: z.number().min(10000).max(15778476000).default(900000)
 	}),
+	sessionBudgetSettings: z.object({
+		budget: z.number().min(10000).max(15778476000).default(100000000),
+		exhaustionBehavior: z
+			.discriminatedUnion('type', [
+				z.object({
+					type: z.literal('kill_agent'),
+					force: z.boolean().nonoptional(),
+					minimum: z.number().nonoptional()
+				}),
+				z.object({
+					type: z.literal('kill_session'),
+					minimum: z.number().nonoptional()
+				}),
+				z.object({
+					type: z.literal('warn')
+				})
+			])
+			.default({
+				type: 'kill_session',
+				minimum: 100000
+			})
+	}),
 	tools: z.record(z.string().nonempty(), CustomToolSchema),
 	agents: z.array(
 		z.object({

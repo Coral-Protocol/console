@@ -85,6 +85,13 @@ export const toPayload = async (server: CoralServer, data: z.output<FormSchema>)
 				},
 				ttl: data.sessionRuntimeSettings.ttl
 			}
+		},
+		budgetSettings: {
+			budget: data.sessionBudgetSettings.budget,
+			exhaustionBehavior:
+				typeof data.sessionBudgetSettings.exhaustionBehavior === 'string'
+					? { type: data.sessionBudgetSettings.exhaustionBehavior }
+					: data.sessionBudgetSettings.exhaustionBehavior
 		}
 	} satisfies CreateSessionRequest;
 };
@@ -142,6 +149,13 @@ export const importFromPayload = (json: string): z.output<FormSchema> => {
 			...(data.execution && data.execution.mode === 'immediate'
 				? data.execution.runtimeSettings
 				: {})
+		},
+		sessionBudgetSettings: {
+			budget: data.budgetSettings?.budget ?? 100000,
+			exhaustionBehavior: data.budgetSettings?.exhaustionBehavior ?? {
+				type: 'kill_session',
+				minimum: 100000
+			}
 		},
 		agents: data.agentGraphRequest.agents.map((agent) => ({
 			id: agent.id,
