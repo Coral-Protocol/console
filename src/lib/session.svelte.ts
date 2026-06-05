@@ -40,12 +40,18 @@ export class Session {
 		sessionId: string;
 		server: CoralServer;
 	}) {
+		console.log('subscribed session', {
+			namespace,
+			sessionId
+		});
+
 		let markInitialStateReady: (value?: any) => void;
 		const initialStateReady = new Promise((resolve) => {
 			markInitialStateReady = resolve;
 		});
 
 		const socket = createWebsocket(`/ws/v1/events/session/${namespace}/${sessionId}`, 'session');
+
 		if (!socket) throw new Error('cannot construct for SSR');
 		this.socket = socket;
 
@@ -54,6 +60,7 @@ export class Session {
 				params: { path: { namespace, sessionId: sessionId } }
 			})
 			.then((res) => {
+				console.log('extended fetch result:', res);
 				if (res.error || !res.data) {
 					this.connected = false;
 					toast.error(
@@ -62,6 +69,7 @@ export class Session {
 					this.socket.close();
 					return;
 				}
+				console.log('initial threads from fetch:', res.data.threads);
 				this.threads = Object.fromEntries(
 					res.data.threads.map((thread) => {
 						return [
@@ -105,6 +113,7 @@ export class Session {
 			this.connected = false;
 		};
 		this.socket.onmessage = async (ev) => {
+			console.log('raw ws message', ev.data);
 			// we don't process any events until initial state fetch,
 			// since events can give us only partial info on agents/threads
 			await initialStateReady;
@@ -224,13 +233,16 @@ export class Session {
 					if (!this.threads[data.threadId]) return;
 					this.threads[data.threadId]!.participants.delete(data.name);
 					break;
+				case 'llm_proxy_call':
+					// TODO: track proxy calls token spend stuff
+					break;
 				case undefined:
 				case null:
 					toast.error('WS with empty message type! Please report this to the team.');
 					console.error('ws type == null', { data });
 					break;
 				default:
-					console.warn('WS data type an expected value', { data });
+					console.warn('WS recieved an unknown message type', { data });
 					break;
 			}
 		};

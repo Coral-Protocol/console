@@ -154,7 +154,7 @@ export const importFromPayload = (json: string): z.output<FormSchema> => {
 			budget: data.budgetSettings?.budget ?? 100000,
 			exhaustionBehavior: data.budgetSettings?.exhaustionBehavior ?? {
 				type: 'kill_session',
-				minimum: 100000
+				minimum: 1000
 			}
 		},
 		agents: data.agentGraphRequest.agents.map((agent) => ({

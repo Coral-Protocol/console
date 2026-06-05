@@ -516,7 +516,7 @@
 				budget: 100000,
 				exhaustionBehavior: {
 					type: 'kill_session',
-					minimum: 100000
+					minimum: 100
 				}
 			},
 			agents: []

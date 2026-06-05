@@ -32,7 +32,7 @@
 			class="bg-sidebar border-offset-background dark:aria-invalid:border-destructive/40 aria-invalid:border-destructive relative  w-full flex-1 grow justify-between truncate border-1 "
 			aria-invalid={ctx.session !== null && !ctx.session.connected}
 		>
-			{#snippet child({ props })}
+			{#snippet child({ props }: {props: any})}
 				<Button
 					variant="outline"
 					{...props}

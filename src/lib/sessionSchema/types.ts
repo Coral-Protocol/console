@@ -216,7 +216,7 @@ const formSchema = z.object({
 			])
 			.default({
 				type: 'kill_session',
-				minimum: 100000
+				minimum: 1000
 			})
 	}),
 	tools: z.record(z.string().nonempty(), CustomToolSchema),

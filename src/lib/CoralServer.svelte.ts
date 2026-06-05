@@ -118,6 +118,7 @@ export class CoralServer {
 			this.fetchSessions(this.namespace);
 		});
 
+
 		const onmessage = (msg: MessageEvent) => {
 			let data;
 			try {
@@ -327,6 +328,10 @@ export class CoralServer {
 		puppetAgentName: string,
 		input: components['schemas']['CreateThreadInput']
 	): Promise<components['schemas']['CreateThreadOutput']> {
+		console.log('creating thread in', {
+			namespace: this.namespace,
+			sessionId
+		});
 		const res = await this.api.POST('/api/v1/puppet/{namespace}/{sessionId}/{agentName}/thread', {
 			params: {
 				path: { namespace: this.namespace, sessionId: sessionId, agentName: puppetAgentName }
