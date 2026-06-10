@@ -649,7 +649,6 @@
 										'relative ml-auto h-full gap-2 transition-all',
 										$formData.agents.length == 0 ? 'bg-card' : ''
 									)}
-									disabled={$formData.agents.length == 0}
 								>
 									<IconPlusCircle class="size-5" />
 									Add agents</Popover.Trigger
@@ -674,7 +673,7 @@
 						<Card.Content class="flex h-full flex-col px-0">
 							<UnderlineTabs.Root
 								bind:value={agentsListTabs}
-								class="h-full min-h-0 flex-1 grow gap-0 overflow-hidden border-b"
+								class="h-full min-h-0 flex-1 grow gap-0 overflow-hidden"
 							>
 								<UnderlineTabs.List
 									class="bg-sidebar mt-1 flex w-full justify-start gap-2 rounded-none px-1 "
