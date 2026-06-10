@@ -356,7 +356,7 @@
 
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
-					<SidebarLink url="{base}/" icon={IconHome} title="Home" />
+					<SidebarLink url="{base}/" icon={IconHome} title="Overview" />
 
 					<div use:tourTarget={'workbench'}>
 						<SidebarLink url="{base}/workbench" icon={IconCircuity} title="Workbench" />
