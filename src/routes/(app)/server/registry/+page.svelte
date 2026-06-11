@@ -22,6 +22,7 @@
 	import { columns, type Agent } from './columns.js';
 
 	import Header from '$lib/components/header.svelte';
+	import { Spinner } from '@coral-os/component-library/components/ui/spinner/index.js';
 
 	let ctx = appContext.get();
 
@@ -77,9 +78,9 @@
 
 <Header />
 
-<main class="main flex min-h-0 grow flex-col overflow-hidden p-2">
+<main class="main relative flex h-full min-h-0 w-full grow flex-col overflow-hidden p-2">
 	{#await AgentData}
-		Loading data
+		<Spinner class="absolute top-0 right-0 bottom-0 left-0 m-auto" />
 	{:then agents}
 		<DataTable data={agents} {columns} />
 	{:catch}
