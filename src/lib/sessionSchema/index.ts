@@ -28,6 +28,7 @@ export const toPayload = async (server: CoralServer, data: z.output<FormSchema>)
 				.map((id) => data.tools[id]?.name)
 				.filter(Boolean) as string[], // safe assertion because .filter(Boolean) removes null/undefined
 			plugins: agent.plugins ?? [],
+			budgetSettings: agent.budgetSettings ?? {},
 			x402Budgets: [],
 			options: Object.fromEntries(
 				Object.entries(agent.options ?? {})

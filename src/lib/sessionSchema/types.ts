@@ -191,6 +191,33 @@ export const CustomToolSchema = z.object({
 	outputSchema: ToolSchema
 });
 
+export const GraphAgentBudgetExhaustionBehaviorSchema = z
+	.discriminatedUnion('type', [
+		z.object({
+			type: z.literal('consume_session')
+		}),
+		z.object({
+			type: z.literal('kill'),
+			minimum: z.number(),
+			force: z.boolean()
+		})
+	])
+	.default({
+		type: 'consume_session'
+	});
+
+export type GraphAgentBudgetExhaustionBehavior = z.infer<
+	typeof GraphAgentBudgetExhaustionBehaviorSchema
+>;
+
+export const GraphAgentBudgetSettingsSchema = z.object({
+	budget: z.number().nonnegative().optional(),
+
+	exhaustionBehavior: GraphAgentBudgetExhaustionBehaviorSchema.optional()
+});
+
+export type GraphAgentBudgetSettings = z.infer<typeof GraphAgentBudgetSettingsSchema>;
+
 export type CustomTool = z.output<typeof CustomToolSchema>;
 
 const formSchema = z.object({
@@ -198,7 +225,7 @@ const formSchema = z.object({
 		ttl: z.number().min(10000).max(15778476000).default(900000)
 	}),
 	sessionBudgetSettings: z.object({
-		budget: z.number().min(10000).max(15778476000).default(100000000),
+		budget: z.number().min(10000).default(100000000),
 		exhaustionBehavior: z
 			.discriminatedUnion('type', [
 				z.object({
@@ -216,7 +243,7 @@ const formSchema = z.object({
 			])
 			.default({
 				type: 'kill_session',
-				minimum: 1000
+				minimum: 100000
 			})
 	}),
 	tools: z.record(z.string().nonempty(), CustomToolSchema),
@@ -239,6 +266,7 @@ const formSchema = z.object({
 			plugins: z.array(z.any()).optional(),
 			customToolAccess: z.set(z.string()),
 			blocking: z.boolean(),
+			budgetSettings: GraphAgentBudgetSettingsSchema.optional(),
 			options: z
 				.record(
 					z.string(),
