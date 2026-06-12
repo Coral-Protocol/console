@@ -16,7 +16,6 @@
 	import { formatDistanceToNow, format } from 'date-fns';
 	import { Badge } from '@coral-os/component-library/components/ui/badge/index.js';
 
-	import { activity } from '$lib/session.svelte';
 	import { fade } from 'svelte/transition';
 
 	let ctx = appContext.get();
@@ -153,7 +152,7 @@
 								</Table.Row>
 							</Table.Header>
 							<Table.Body>
-								{#each activity.current.events as event}
+								<!-- {#each activity.current.events as event}
 									<Table.Row class="odd:bg-muted/30">
 										<Table.Cell>
 											<Tooltip.Root>
@@ -182,7 +181,7 @@
 											No recent events.
 										</Table.Cell>
 									</Table.Row>
-								{/each}
+								{/each} -->
 							</Table.Body>
 						</Table.Root>
 					</Card.Content>
