@@ -148,6 +148,8 @@
 													</Card.Root>
 												</li>
 											</button>
+										{:catch err}
+											<!-- skip -->
 										{/await}
 									{/each}
 								</ol>

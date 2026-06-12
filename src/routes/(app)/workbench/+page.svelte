@@ -409,6 +409,10 @@
 					},
 					customToolAccess: new Set(),
 					blocking: false,
+					budgetSettings: {
+						budget: 0,
+						exhaustionBehavior: { type: 'consume_session' }
+					},
 					options: {}
 				});
 
@@ -740,12 +744,14 @@
 									>
 										<Table.Root class="relative w-full grow border-amber-100/50 text-sm">
 											<Table.Header>
-												<Table.Row>
+												<Table.Row class="*:text-muted-foreground">
 													<Table.Head class="w-12"><Checkbox /></Table.Head>
 													<Table.Head>Name</Table.Head>
-													<Table.Head>Version</Table.Head>
-													<Table.Head>Registry source</Table.Head>
 													<Table.Head>Agent</Table.Head>
+													<Table.Head>Version</Table.Head>
+													<Table.Head>Source</Table.Head>
+													<Table.Head>Budget</Table.Head>
+
 													<Table.Head class="w-24">Actions</Table.Head>
 												</Table.Row>
 											</Table.Header>
@@ -772,6 +778,9 @@
 															<Table.Cell onclick={() => (sessCtx.selectedAgent = i)}>
 																<p class="truncate font-medium">{agent.name}</p>
 															</Table.Cell>
+															<Table.Cell onclick={() => (sessCtx.selectedAgent = i)}>
+																<p class="truncate">{agent.id.name}</p>
+															</Table.Cell>
 
 															<Table.Cell onclick={() => (sessCtx.selectedAgent = i)}>
 																<p class="truncate">{agent.id.version}</p>
@@ -782,7 +791,13 @@
 															</Table.Cell>
 
 															<Table.Cell onclick={() => (sessCtx.selectedAgent = i)}>
-																<p class="truncate">{agent.id.name}</p>
+																<p class="truncate">
+																	{#if !agent.budgetSettings?.budget}
+																		default
+																	{:else}
+																		${agent.budgetSettings?.budget / 100000000}
+																	{/if}
+																</p>
 															</Table.Cell>
 
 															<Table.Cell class="flex gap-2">
@@ -811,7 +826,7 @@
 															<p class="truncate font-medium"><Checkbox /></p>
 														</Table.Cell>
 														<Table.Cell>
-															<p class="truncate font-medium"><Spinner /></p>
+															<p class="truncate font-medium"><Spinner class="h-9 w-9" /></p>
 														</Table.Cell>
 
 														<Table.Cell>

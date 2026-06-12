@@ -99,29 +99,6 @@
 				'Once the session budget is exhausted and claimed from, a warning will be produced. This behavior has a high risk of overclaiming.'
 		}
 	] as const;
-
-	const agentBudgetBuilder = (
-		agent: string,
-		type: 'kill_agent' | 'consume_session',
-		minimum = 0,
-		force = true
-	) => {
-		switch (type) {
-			case 'kill_agent':
-				return { type, force, minimum } as const;
-			case 'consume_session':
-				return { type } as const;
-		}
-	};
-
-	const agentBudgetDraft = $state({
-		agent: 'default',
-		type: '',
-		minimum: 0,
-		force: false
-	});
-
-	let agentBudgets;
 </script>
 
 {#if ctx && $formData}

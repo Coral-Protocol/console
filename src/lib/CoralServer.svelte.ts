@@ -118,7 +118,6 @@ export class CoralServer {
 			this.fetchSessions(this.namespace);
 		});
 
-
 		const onmessage = (msg: MessageEvent) => {
 			let data;
 			try {
