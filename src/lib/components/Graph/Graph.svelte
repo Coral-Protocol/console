@@ -17,6 +17,8 @@
 	import GraphCircleNode from './GraphCircleNode.svelte';
 
 	import * as d3Force from 'd3-force';
+	import type { SessionAgentState } from '$lib/session.svelte';
+	import { cn } from '$lib/utils';
 
 	import {
 		Button,
@@ -42,6 +44,7 @@
 	type DraggingNode = { id: string; position: { x: number; y: number } };
 
 	let {
+		class: className,
 		agents,
 		groups,
 		selectedAgent = $bindable(undefined),
@@ -51,7 +54,8 @@
 		viewOnly = false,
 		fitDefault = true
 	}: {
-		agents: z.infer<FormSchema>['agents'];
+		class?: string;
+		agents: z.infer<FormSchema>['agents'] | SessionAgentState[];
 		groups: z.infer<FormSchema>['groups'];
 		selectedAgent?: number | null;
 		onSelect?: (idx: number) => void;
@@ -258,7 +262,7 @@
 	bind:nodes
 	bind:edges
 	{nodeTypes}
-	class=" [&_.svelte-flow__edge-wrapper]:z-10!"
+	class={cn('[&_.svelte-flow__edge-wrapper]:z-10!', className)}
 	fitView
 	onnodedragstart={handleNodeDragStart}
 	onnodedrag={handleNodeDrag}
