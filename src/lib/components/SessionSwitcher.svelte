@@ -13,6 +13,8 @@
 
 	let ctx = appContext.get();
 
+	let { class: className }: { class?: string } = $props();
+
 	let sessionSearcherOpen = $state(false);
 	let triggerRef = $state<HTMLButtonElement>(null!);
 
@@ -27,12 +29,12 @@
 </script>
 
 <Popover.Root bind:open={sessionSearcherOpen}>
-	<section class="my-2 flex w-full gap-2">
+	<section class={cn('my-2 flex w-full gap-2', className)}>
 		<Popover.Trigger
 			class="bg-sidebar border-offset-background dark:aria-invalid:border-destructive/40 aria-invalid:border-destructive relative  w-full flex-1 grow justify-between truncate border-1 "
 			aria-invalid={ctx.session !== null && !ctx.session.connected}
 		>
-			{#snippet child({ props }: {props: any})}
+			{#snippet child({ props }: { props: any })}
 				<Button
 					variant="outline"
 					{...props}
