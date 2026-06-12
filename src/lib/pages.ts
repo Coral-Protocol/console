@@ -11,6 +11,12 @@ export const pageTree = {
 			registry: 'Registry'
 		}
 	},
+	session: {
+		label: 'Session',
+		pages: {
+			overview: 'Overview'
+		}
+	},
 	workbench: {
 		label: 'Workbench',
 		pages: {

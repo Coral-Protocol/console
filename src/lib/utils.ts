@@ -5,6 +5,15 @@ export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
 }
 
+export const dollarFmt = new Intl.NumberFormat(undefined, {
+	style: 'currency',
+	currency: 'usd',
+	currencyDisplay: 'narrowSymbol'
+});
+export const fmtMicrocents = (microcents: number): string => {
+	return dollarFmt.format(microcents / 100_000_000);
+};
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type WithoutChild<T> = T extends { child?: any } ? Omit<T, 'child'> : T;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

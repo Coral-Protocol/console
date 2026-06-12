@@ -418,6 +418,7 @@
 								>
 							</section>
 						{/if}
+						<SidebarLink url="{base}/session/overview" icon={IconPackage} title="Overview" />
 						<NavBundle
 							title="Threads"
 							icon={IconFileArchive}
