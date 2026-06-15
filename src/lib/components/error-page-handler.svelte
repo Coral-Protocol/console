@@ -13,13 +13,13 @@
 
 	let reload = $state(false);
 
-	let finalError = $derived(propError ?? page.error ?? 'error fetching error');
+	let finalError = $derived(propError ?? page.error ?? 'failed to fetch error');
 
 	let finalStatus = $derived(propStatus ?? page.status ?? 500);
 
 	let errorMessage = $derived(() => {
 		if (typeof finalError === 'string') return finalError;
-		return finalError?.message ?? 'error fetching error';
+		return finalError?.message ?? 'failed to fetch error';
 	});
 </script>
 

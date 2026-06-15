@@ -46,6 +46,7 @@ export class Session {
 		});
 
 		const socket = createWebsocket(`/ws/v1/events/session/${namespace}/${sessionId}`, 'session');
+
 		if (!socket) throw new Error('cannot construct for SSR');
 		this.socket = socket;
 
@@ -224,13 +225,16 @@ export class Session {
 					if (!this.threads[data.threadId]) return;
 					this.threads[data.threadId]!.participants.delete(data.name);
 					break;
+				case 'llm_proxy_call':
+					// TODO: track proxy calls token spend stuff
+					break;
 				case undefined:
 				case null:
 					toast.error('WS with empty message type! Please report this to the team.');
 					console.error('ws type == null', { data });
 					break;
 				default:
-					console.warn('WS data type an expected value', { data });
+					console.warn('WS recieved an unknown message type', { data });
 					break;
 			}
 		};

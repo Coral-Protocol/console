@@ -38,13 +38,9 @@
 				e.preventDefault();
 				(async () => {
 					ctx.server.namespace = newNamespace;
-					if (duplicate) {
-						toast.info(`Using existing namespace '${newNamespace}'.`);
-					} else {
-						toast.info(`Using namespace '${newNamespace}'.`);
-						await ctx.server.addNamespace(newNamespace);
-						ctx.server.namespace = newNamespace;
-					}
+					toast.info(`Switching to '${newNamespace}'.`);
+					await ctx.server.addNamespace(newNamespace);
+					ctx.server.namespace = newNamespace;
 					newNamespace = '';
 					createOpen = false;
 				})();

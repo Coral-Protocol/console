@@ -4,6 +4,13 @@
 	import * as Select from '@coral-os/component-library/ui/select/index.js';
 	import * as Popover from '@coral-os/component-library/ui/popover/index.js';
 	import AgentPanelIcon from '$lib/icons/agent-panel.svelte';
+	import * as ButtonGroup from '@coral-os/component-library/ui/button-group/index.js';
+	import * as InputGroup from '@coral-os/component-library/ui/input-group/index.js';
+	import * as ToggleGroup from '@coral-os/component-library/ui/toggle-group/index.js';
+	import * as Tooltip from '@coral-os/component-library/ui/tooltip/index.js';
+	import { Button } from '@coral-os/component-library/ui/button/index.js';
+
+	import * as Label from '@coral-os/component-library/ui/label/index.js';
 
 	import { Input } from '@coral-os/component-library/ui/input/index.js';
 	import { Spinner } from '@coral-os/component-library/ui/spinner/index.js';
@@ -16,7 +23,6 @@
 
 	import OptionField from '../OptionField.svelte';
 
-	import { createSessionContext } from '../+page.svelte';
 	import { appContext } from '$lib/context';
 	import { agentIdOf, registryIdOf } from '$lib/CoralServer.svelte';
 	import { onMount, tick } from 'svelte';
@@ -29,10 +35,12 @@
 	import * as Alert from '@coral-os/component-library/components/ui/alert/index.js';
 	import TemplatePicker from '../TemplatePicker.svelte';
 	import { getSessionDataFromTemplateName } from '../templates/TemplateLib';
+	import { getSessionContext } from '$lib/sessionCreatorContext';
+	import { cn } from '$lib/utils';
 
 	let appCtx = appContext.get();
 
-	let ctx = createSessionContext.get();
+	let ctx = getSessionContext();
 	let serverCtx = appContext.get();
 
 	let form = $derived(ctx.form);
@@ -81,6 +89,17 @@
 			return acc;
 		}, {});
 	});
+
+	// Type-safe helpers for exhaustion behavior
+	function getAgentExhaustionBehavior(agentIdx: number) {
+		return $formData.agents[agentIdx]?.budgetSettings?.exhaustionBehavior;
+	}
+
+	function isKillBehavior(
+		behavior: ReturnType<typeof getAgentExhaustionBehavior>
+	): behavior is { type: 'kill'; force: boolean; minimum: number } {
+		return behavior?.type === 'kill';
+	}
 </script>
 
 {#if ctx.selectedAgent !== null && curAgent && curCatalog}
@@ -149,11 +168,6 @@
 								$formData.agents[ctx.selectedAgent!]!.id.version = value;
 								$formData.agents = $formData.agents;
 								tick().then(() => {
-									// for (const name in $formData.agents[ctx.selectedAgent!]!.options) {
-									// 	if (!(name in availableOptions)) {
-									// 		delete $formData.agents[ctx.selectedAgent!]!.options[name];
-									// 	}
-									// }
 									$formData.agents = $formData.agents;
 								});
 							}}
@@ -239,6 +253,251 @@
 			</Form.ElementField>
 		</header>
 		<ol class="border-t">
+			<li>
+				<Accordion.Root type="multiple" value="budget">
+					<Accordion.Item value="budget">
+						<Accordion.Trigger variant="compact">Agent budget</Accordion.Trigger>
+
+						<Accordion.Content class="flex flex-col gap-2 p-0">
+							<Form.ElementField
+								{form}
+								name="agents[{ctx.selectedAgent!}].budgetSettings.budget"
+								class="flex items-center gap-2 "
+							>
+								<Form.Control>
+									{#snippet children({ props })}
+										<TooltipLabel
+											title="Session budget"
+											tooltip="This budget is shared across all agents in the session and can be used by any agent configured to consume the shared budget."
+											extra={{
+												required: true,
+												type: 'integer'
+											}}
+											class="max-w-1/4 min-w-1/4  "
+										>
+											Agent budget
+										</TooltipLabel>
+										<ButtonGroup.Root class="grow">
+											<ButtonGroup.Text>
+												<Label.Root>$</Label.Root>
+											</ButtonGroup.Text>
+											<InputGroup.Root>
+												<InputGroup.Input
+													{...props}
+													value={($formData.agents[ctx.selectedAgent!]?.budgetSettings?.budget ??
+														0) / 100000000}
+													oninput={(e: { currentTarget: { valueAsNumber: any } }) => {
+														const dollars = e.currentTarget.valueAsNumber;
+														$formData.agents[ctx.selectedAgent!]!.budgetSettings!.budget =
+															Number.isNaN(dollars) ? 0 : Math.round(dollars * 100000000);
+													}}
+													type="number"
+													step="0.01"
+													placeholder="0.00"
+												/>
+											</InputGroup.Root>
+										</ButtonGroup.Root>
+									{/snippet}
+								</Form.Control>
+							</Form.ElementField>
+
+							<Form.ElementField
+								{form}
+								name="agents[{ctx.selectedAgent!}].budgetSettings.exhaustionBehavior.type"
+								class="flex w-full items-center gap-2 "
+							>
+								<Form.Control>
+									{#snippet children()}
+										{@const agentIdx = ctx.selectedAgent!}
+										{@const exhaustionBehavior = getAgentExhaustionBehavior(agentIdx)}
+										<TooltipLabel
+											title="Exhaustion Behavior"
+											tooltip="What happens once the budget has been drained"
+											extra={{
+												required: true
+											}}
+											class="max-w-1/4 min-w-1/4"
+										>
+											Exhaustion Behavior
+										</TooltipLabel>
+										<ToggleGroup.Root
+											type="single"
+											class="w-full grow"
+											variant="outline"
+											value={exhaustionBehavior?.type}
+										>
+											<Tooltip.Root delayDuration={400}>
+												<Tooltip.Trigger>
+													{#snippet child({ props }: { props: any })}
+														<ToggleGroup.Item
+															{...props}
+															onclick={() => {
+																if (
+																	$formData.agents[agentIdx]!.budgetSettings!.exhaustionBehavior!
+																		.type !== 'kill'
+																) {
+																	$formData.agents[agentIdx]!.budgetSettings!.exhaustionBehavior = {
+																		type: 'kill',
+																		minimum: 0,
+																		force: false
+																	};
+																}
+															}}
+															class={exhaustionBehavior?.type === 'kill' ? 'bg-accent' : ''}
+														>
+															Kill
+														</ToggleGroup.Item>
+													{/snippet}
+												</Tooltip.Trigger>
+												<Tooltip.Content class="flex w-fit max-w-64 flex-col gap-2 wrap-break-word">
+													<p>
+														Once the agent's budget is less than the specified minimum amount, the
+														agent will be killed. The higher the minimum is the lower the chance of
+														overclaiming. This behavior will stop the agent claiming from the
+														session's budget
+													</p>
+												</Tooltip.Content>
+											</Tooltip.Root>
+											<Tooltip.Root delayDuration={400}>
+												<Tooltip.Trigger>
+													{#snippet child({ props }: { props: any })}
+														<ToggleGroup.Item
+															{...props}
+															onclick={() => {
+																$formData.agents[agentIdx]!.budgetSettings!.exhaustionBehavior = {
+																	type: 'consume_session',
+																	minimum: 0
+																} as any;
+															}}
+															class={exhaustionBehavior?.type === 'consume_session'
+																? 'bg-accent'
+																: ''}
+														>
+															Consume session
+														</ToggleGroup.Item>
+													{/snippet}
+												</Tooltip.Trigger>
+												<Tooltip.Content class="flex w-fit max-w-64 flex-col gap-2 wrap-break-word">
+													<p>
+														Once's the agent's budget is exhausted, it will consume the session's
+														budget. If the session's budget is also exhausted, the session's
+														exhaustion behavior will be applied. If a claim is made that cannot be
+														fully fulfilled by the agent's budget, the remainder will be taken from
+														the session's budget.
+													</p>
+												</Tooltip.Content>
+											</Tooltip.Root>
+										</ToggleGroup.Root>
+									{/snippet}
+								</Form.Control>
+							</Form.ElementField>
+							{#if isKillBehavior(getAgentExhaustionBehavior(ctx.selectedAgent!))}
+								{@const agentIdx = ctx.selectedAgent!}
+								{@const killBehavior = getAgentExhaustionBehavior(agentIdx) as {
+									type: 'kill';
+									force: boolean;
+									minimum: number;
+								}}
+								<Form.ElementField
+									{form}
+									name="agents[{agentIdx}].budgetSettings.exhaustionBehavior.force"
+									class="flex w-full items-center gap-2 "
+								>
+									<Form.Control>
+										{#snippet children({ props })}
+											<TooltipLabel
+												title="Force kill agent"
+												tooltip="If this is true, the agent will be killed immediately. If this is false, the agent will only be killed if the claim requests for automatic closing."
+												extra={{
+													required: true,
+													type: 'boolean'
+												}}
+												class="max-w-1/4 min-w-1/4 "
+											>
+												Force kill agent
+											</TooltipLabel>
+											<ButtonGroup.Root {...props} class="m-0 justify-start">
+												<Button
+													class={cn(
+														killBehavior.force !== true ? 'bg-accent text-accent-foreground' : ''
+													)}
+													onclick={() => {
+														const behavior =
+															$formData.agents[agentIdx]?.budgetSettings?.exhaustionBehavior;
+														if (behavior?.type === 'kill') {
+															behavior.force = true;
+															$formData.agents = $formData.agents;
+														}
+													}}>True</Button
+												>
+												<Button
+													class={cn(
+														killBehavior.force !== false ? 'bg-accent text-accent-foreground' : ''
+													)}
+													onclick={() => {
+														const behavior =
+															$formData.agents[agentIdx]?.budgetSettings?.exhaustionBehavior;
+														if (behavior?.type === 'kill') {
+															behavior.force = false;
+															$formData.agents = $formData.agents;
+														}
+													}}>False</Button
+												>
+											</ButtonGroup.Root>
+										{/snippet}
+									</Form.Control>
+								</Form.ElementField>
+								<Form.ElementField
+									{form}
+									name="agents[{agentIdx}].budgetSettings.exhaustionBehavior.minimum"
+									class="flex items-center gap-2 "
+								>
+									<Form.Control>
+										{#snippet children({ props })}
+											<TooltipLabel
+												title="Minimum threshold"
+												tooltip="If the session budget drops below this, it will trigger the exhaustion behavior. This is used to prevent overclaiming."
+												extra={{
+													required: true,
+													type: 'integer'
+												}}
+												class="max-w-1/4 min-w-1/4 "
+											>
+												Minimum
+											</TooltipLabel>
+											<ButtonGroup.Root class="grow">
+												<ButtonGroup.Text>
+													<Label.Root>$</Label.Root>
+												</ButtonGroup.Text>
+												<InputGroup.Root>
+													<InputGroup.Input
+														{...props}
+														value={(killBehavior.minimum ?? 0) / 100000000}
+														oninput={(e: { currentTarget: { valueAsNumber: any } }) => {
+															const dollars = e.currentTarget.valueAsNumber;
+															const behavior =
+																$formData.agents[agentIdx]?.budgetSettings?.exhaustionBehavior;
+															if (behavior?.type === 'kill') {
+																behavior.minimum = Number.isNaN(dollars)
+																	? 0
+																	: Math.round(dollars * 100000000);
+																$formData.agents = $formData.agents;
+															}
+														}}
+														type="number"
+														step="0.01"
+														placeholder="0.00"
+													/>
+												</InputGroup.Root>
+											</ButtonGroup.Root>
+										{/snippet}
+									</Form.Control>
+								</Form.ElementField>
+							{/if}
+						</Accordion.Content>
+					</Accordion.Item>
+				</Accordion.Root>
+			</li>
 			{#each Object.entries(groupedOptions) as [group, entries]}
 				<li>
 					{#if group !== '__ungrouped'}
@@ -273,45 +532,7 @@
 		class="text-muted-foreground m-auto flex w-3/4 grow flex-col items-center justify-center gap-6 text-center"
 	>
 		<AgentPanelIcon class="w-4/5 py-8 " />
-		<span class="flex flex-col gap-2">
-			<h2 class="text-foreground text-xl">Start a new session</h2>
-			<p>
-				Get started creating a new session by <span class="font-medium">adding an agent</span> or
-				choosing a <span class="font-medium">template</span>.
-			</p>
-		</span>
-		<div class="flex flex-col gap-2">
-			<Popover.Root>
-				<Popover.Trigger class="{buttonVariants()}, w-42">
-					<IconPlusCircle /> Add agent</Popover.Trigger
-				>
-				<Popover.Content class="p-1">
-					<AgentPicker
-						server={serverCtx.server}
-						onSelect={(agent, catalogId) => {
-							toast.promise(ctx.addAgent(agent.name, catalogId.type, agent.versions[0]!), {
-								loading: 'Adding agent...',
-								success: 'Agent added successfully',
-								error: (err: any) => `Failed: ${err.message || err}`
-							});
-						}}
-					/>
-				</Popover.Content>
-			</Popover.Root>
-			<Popover.Root>
-				<Popover.Trigger class="{buttonVariants({ variant: 'outline' })}, w-42"
-					><IconFileText /> Load template</Popover.Trigger
-				>
-				<Popover.Content class="p-1">
-					<TemplatePicker
-						server={serverCtx.server}
-						onSelect={(template) => {
-							loadTemplate(template);
-						}}
-					/>
-				</Popover.Content>
-			</Popover.Root>
-		</div>
+
 		<Alert.Root class="text-left">
 			<IconInfo />
 			<Alert.Title>Tip</Alert.Title>

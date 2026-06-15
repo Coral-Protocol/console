@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import { Context, Debounced } from 'runed';
+	import { Context, Debounced, useDebounce } from 'runed';
 	import type { SuperForm, SuperFormData, SuperFormErrors } from 'sveltekit-superforms/client';
 	import type { FormSchema } from '$lib/sessionSchema';
 	import type z from 'zod';
@@ -19,11 +19,11 @@
 		formData: SuperFormData<z.output<FormSchema>>;
 		errors: SuperFormErrors<z.output<FormSchema>>;
 	};
-
-	export const createSessionContext = new Context<SessionCreatorContext>('sessionCreator');
 </script>
 
 <script lang="ts">
+	import LoggedOutWarning from './LoggedOutWarning.svelte';
+
 	import Header from '$lib/components/header.svelte';
 
 	import * as Sidebar from '@coral-os/component-library/ui/sidebar/index.js';
@@ -36,6 +36,7 @@
 	import { Button, buttonVariants } from '@coral-os/component-library/ui/button/index.js';
 	import * as Tooltip from '@coral-os/component-library/ui/tooltip/index.js';
 	import * as DropdownMenu from '@coral-os/component-library/ui/dropdown-menu/index.js';
+	import * as AlertDialog from '@coral-os/component-library/ui/alert-dialog/index.js';
 
 	import * as Card from '@coral-os/component-library/ui/card/index.js';
 
@@ -46,6 +47,7 @@
 	import IconPlusCircle from 'phosphor-icons-svelte/IconPlusCircleRegular.svelte';
 	import IconTrashRegular from 'phosphor-icons-svelte/IconTrashRegular.svelte';
 	import IconStorefront from 'phosphor-icons-svelte/IconStorefrontRegular.svelte';
+	import IconFileText from 'phosphor-icons-svelte/IconFileTextRegular.svelte';
 
 	import { Checkbox } from '@coral-os/component-library/ui/checkbox/index.js';
 	import { Label } from '@coral-os/component-library/ui/label/index.js';
@@ -71,7 +73,7 @@
 	import { appContext } from '$lib/context';
 	import { CoralServer, agentIdOf, type RegistryAgentIdentifier } from '$lib/CoralServer.svelte';
 
-	import { makeFormSchema, type CreateSessionRequest } from '../../../lib/sessionSchema/types';
+	import { makeFormSchema, type CreateSessionRequest } from '$lib/sessionSchema/types';
 	import { toPayload } from '$lib/sessionSchema';
 	import { importFromPayload } from '$lib/sessionSchema';
 	import AgentPicker from './AgentPicker.svelte';
@@ -79,6 +81,7 @@
 	import CodePane from './panes/CodePane.svelte';
 	import ToolsPane from './panes/ToolsPane.svelte';
 	import GroupsPane from './panes/GroupsPane.svelte';
+	import BudgetPane from './panes/BudgetPane.svelte';
 	import SessionPane from './panes/SessionPane.svelte';
 	import AgentPane from './panes/AgentPane.svelte';
 	import TemplateSaver from './TemplateSaver.svelte';
@@ -90,6 +93,8 @@
 	import { Skeleton } from '@coral-os/component-library/components/ui/skeleton/index.js';
 	import { SvelteFlowProvider } from '@xyflow/svelte';
 	import * as UnderlineTabs from '@coral-os/component-library/ui/underline-tabs/index.js';
+	import { setSessionContext } from '$lib/sessionCreatorContext';
+	import config from '$lib/config';
 
 	function sourceToRegistryId(source: AgentSource): RegistryAgentIdentifier['registrySourceId'] {
 		switch (source) {
@@ -321,8 +326,9 @@
 			} catch (e) {
 				console.log(e);
 				toast.error(`Failed to create session: ${e}`, { duration: Infinity });
+			} finally {
+				sendingForm = false;
 			}
-			sendingForm = false;
 		}
 	});
 
@@ -370,7 +376,6 @@
 				throw new Error('Already adding an agent, please wait');
 			}
 			loadingAgent = true;
-
 			const existingCount = $formData.agents.filter((a) => a.id.name === name).length;
 			const registrySourceId = sourceToRegistryId(source as AgentSource);
 
@@ -404,6 +409,10 @@
 					},
 					customToolAccess: new Set(),
 					blocking: false,
+					budgetSettings: {
+						budget: 0,
+						exhaustionBehavior: { type: 'consume_session' }
+					},
 					options: {}
 				});
 
@@ -418,7 +427,7 @@
 		}
 	}) as SessionCreatorContext;
 
-	createSessionContext.set(sessCtx);
+	setSessionContext(sessCtx);
 
 	$effect(() => {
 		ctx.server.namespace;
@@ -508,377 +517,550 @@
 			sessionRuntimeSettings: {
 				ttl: 50000
 			},
+			sessionBudgetSettings: {
+				budget: 100000,
+				exhaustionBehavior: {
+					type: 'kill_session',
+					minimum: 100
+				}
+			},
 			agents: []
 		};
 		sessCtx.selectedAgent = null;
 	}
+
+	$effect(() => {
+		ctx.server.onNoAuth = onNoAuth;
+	});
+
+	let loggedOutDialog = $state(false);
+
+	const onNoAuth = useDebounce(() => {
+		switch (config.PUBLIC_LOGIN_BEHAVIOUR) {
+			case 'token':
+				loggedOutDialog = true;
+				break;
+
+			case 'reload':
+				break;
+			default:
+				loggedOutDialog = true;
+				break;
+		}
+	}, 500);
+
+	let view = $state('workbench');
+
+	let emptySession = $derived(!loadingAgent && $formData.agents.length === 0);
 </script>
 
 {#if sessCtx.payload}
 	<TemplateSaver bind:open={templateSaverDialogOpen} data={JSON.stringify(sessCtx.payload)} />
 {/if}
 
-<Header />
+<LoggedOutWarning bind:open={loggedOutDialog} />
+
+<Header>
+	<Menubar.Root class="bg-sidebar m-0 w-full border-0 p-0 shadow-none">
+		<Menubar.Menu>
+			<Menubar.Trigger class="gap-1">File</Menubar.Trigger>
+			<Menubar.Content>
+				<Menubar.Item onSelect={clearSession}>Clear session</Menubar.Item>
+				<Menubar.Separator />
+				<Menubar.Item
+					onSelect={async () => {
+						sessCtx.importSession({
+							from: await navigator.clipboard.readText(),
+							success: 'Session updated from clipboard'
+						});
+					}}>Import JSON from clipboard</Menubar.Item
+				>
+				<Menubar.Item
+					disabled={!sessCtx.payload}
+					onSelect={() => (
+						navigator.clipboard.writeText(
+							sessCtx.payload ? JSON.stringify(sessCtx.payload, null, 4) : ''
+						),
+						toast.success('Session JSON copied to clipboard')
+					)}>Export JSON to clipboard</Menubar.Item
+				>
+			</Menubar.Content>
+		</Menubar.Menu>
+		<Menubar.Menu>
+			<Menubar.Trigger class="gap-1">View</Menubar.Trigger>
+			<Menubar.Content>
+				<Menubar.CheckboxItem bind:checked={settings.current.enableAgentGraphView}
+					>Enable graph in groups</Menubar.CheckboxItem
+				>
+				<Menubar.Separator />
+				<Menubar.Sub>
+					<Menubar.SubTrigger disabled class="opacity-50">Columns</Menubar.SubTrigger>
+					<Menubar.SubContent>
+						<Menubar.CheckboxItem>Name</Menubar.CheckboxItem>
+						<Menubar.CheckboxItem>Version</Menubar.CheckboxItem>
+						<Menubar.CheckboxItem>Registry Source</Menubar.CheckboxItem>
+						<Menubar.CheckboxItem>Agent</Menubar.CheckboxItem>
+					</Menubar.SubContent>
+				</Menubar.Sub>
+			</Menubar.Content>
+		</Menubar.Menu>
+		<Menubar.Menu>
+			<Menubar.Trigger class="gap-1">Templates</Menubar.Trigger>
+			<Menubar.Content>
+				<Menubar.Item onSelect={() => (templateSaverDialogOpen = true)} disabled={sendingForm}
+					>Save as template</Menubar.Item
+				>
+				<Menubar.Sub>
+					<Menubar.SubTrigger>Load template...</Menubar.SubTrigger>
+					<Menubar.SubContent>
+						<TemplatePicker
+							server={ctx.server}
+							onSelect={(template) => {
+								loadTemplate(template);
+							}}
+						/>
+					</Menubar.SubContent>
+				</Menubar.Sub>
+			</Menubar.Content>
+		</Menubar.Menu>
+	</Menubar.Root>
+</Header>
 
 <form
 	method="POST"
 	use:enhance
-	class="flex h-full flex-col overflow-hidden"
+	class="flex h-full flex-col gap-2 overflow-hidden p-2 pt-0"
 	enctype="multipart/form-data"
 	autocomplete="off"
 >
-	<Resizable.PaneGroup
-		direction={isMobile.current ? 'vertical' : 'horizontal'}
-		class="min-h-0 flex-1 flex-row-reverse overflow-hidden p-2 pt-0"
-	>
-		<Resizable.Pane defaultSize={75} minSize={25}>
-			<Resizable.PaneGroup direction="vertical">
-				<Resizable.Pane minSize={25} defaultSize={50}>
-					<Card.Root class="h-full gap-0 py-0">
-						<Card.Header class="flex gap-2 border-b p-1!">
-							<DropdownMenu.Root>
-								<DropdownMenu.Trigger>
-									{#snippet child({ props }: { props: any })}
-										<Button {...props} variant="secondary">
-											Session <IconCaretDown />
-										</Button>
-									{/snippet}
-								</DropdownMenu.Trigger>
-
-								<DropdownMenu.Content class="w-56" align="start">
-									<DropdownMenu.Label>Session</DropdownMenu.Label>
-
-									<DropdownMenu.Item onSelect={clearSession}>Clear session</DropdownMenu.Item>
-
-									<DropdownMenu.Separator />
-
-									<DropdownMenu.Item
-										onSelect={async () => {
-											sessCtx.importSession({
-												from: await navigator.clipboard.readText(),
-												success: 'Session updated from clipboard'
-											});
-										}}
-									>
-										Import JSON from clipboard
-									</DropdownMenu.Item>
-
-									<DropdownMenu.Item
-										disabled={!sessCtx.payload}
-										onSelect={() => {
-											navigator.clipboard.writeText(
-												sessCtx.payload ? JSON.stringify(sessCtx.payload, null, 4) : ''
-											);
-											toast.success('Session JSON copied to clipboard');
-										}}
-									>
-										Export JSON to clipboard
-									</DropdownMenu.Item>
-								</DropdownMenu.Content>
-							</DropdownMenu.Root>
-
-							<DropdownMenu.Root>
-								<DropdownMenu.Trigger>
-									{#snippet child({ props }: { props: any })}
-										<Button {...props} variant="secondary">
-											View <IconCaretDown />
-										</Button>
-									{/snippet}
-								</DropdownMenu.Trigger>
-
-								<DropdownMenu.Content class="w-56" align="start">
-									<DropdownMenu.Label>View</DropdownMenu.Label>
-
-									<DropdownMenu.CheckboxItem bind:checked={settings.current.enableAgentGraphView}>
-										Enable graph in groups
-									</DropdownMenu.CheckboxItem>
-
-									<DropdownMenu.Separator />
-
-									<DropdownMenu.Sub>
-										<DropdownMenu.SubTrigger disabled class="opacity-50">
-											Columns
-										</DropdownMenu.SubTrigger>
-
-										<DropdownMenu.SubContent>
-											<DropdownMenu.CheckboxItem>Name</DropdownMenu.CheckboxItem>
-											<DropdownMenu.CheckboxItem>Version</DropdownMenu.CheckboxItem>
-											<DropdownMenu.CheckboxItem>Registry Source</DropdownMenu.CheckboxItem>
-											<DropdownMenu.CheckboxItem>Agent</DropdownMenu.CheckboxItem>
-										</DropdownMenu.SubContent>
-									</DropdownMenu.Sub>
-								</DropdownMenu.Content>
-							</DropdownMenu.Root>
-							<Popover.Root>
-								<Popover.Trigger
-									class={cn(
-										buttonVariants({ size: 'sm' }),
-										'relative ml-auto h-full gap-2 transition-all',
-										$formData.agents.length == 0 ? 'bg-card' : ''
-									)}
-									disabled={$formData.agents.length == 0}
-								>
-									<IconPlusCircle class="size-5" />
-									Add agents</Popover.Trigger
-								>
-								<Popover.Content
-									><AgentPicker
-										server={ctx.server}
-										onSelect={(agent, catalogId) => {
-											toast.promise(
-												sessCtx.addAgent(agent.name, catalogId.type, agent.versions[0]!),
-												{
-													loading: 'Adding agent...',
-													success: 'Agent added successfully',
-													error: (err: any) => `Failed: ${err.message || err}`
-												}
-											);
-										}}
-									/></Popover.Content
-								>
-							</Popover.Root>
-						</Card.Header>
-						<Card.Content class="flex h-full flex-col px-0">
-							<UnderlineTabs.Root
-								bind:value={agentsListTabs}
-								class="h-full min-h-0 flex-1 grow gap-0 overflow-hidden border-b"
+	{#if view === 'workbench'}
+		<Resizable.PaneGroup
+			direction={isMobile.current ? 'vertical' : 'horizontal'}
+			class="min-h-0 flex-1 flex-row-reverse overflow-hidden "
+		>
+			<Resizable.Pane defaultSize={75} minSize={25}>
+				<Resizable.PaneGroup direction="vertical">
+					<Resizable.Pane minSize={25} defaultSize={70} class="relative">
+						{#if emptySession}
+							<div
+								class="absolute z-10 m-auto flex h-full w-full flex-col items-center justify-center gap-2"
 							>
-								<UnderlineTabs.List
-									class="bg-sidebar mt-1 flex w-full justify-start gap-2 rounded-none px-1 "
+								<Card.Root>
+									<Card.Header>
+										<Card.Title>Start a new session</Card.Title>
+										<Card.Description>
+											Get started creating a new session by <span class="font-medium"
+												>adding an agent</span
+											>
+											or choosing a <span class="font-medium">template</span>.
+										</Card.Description>
+									</Card.Header>
+									<Card.Content>
+										<Popover.Root>
+											<Popover.Trigger class="{buttonVariants({ variant: 'outline' })}, w-42"
+												><IconFileText /> Load template</Popover.Trigger
+											>
+											<Popover.Content class="p-1">
+												<TemplatePicker
+													server={ctx.server}
+													onSelect={(template) => {
+														loadTemplate(template);
+													}}
+												/>
+											</Popover.Content>
+										</Popover.Root>
+										<Popover.Root>
+											<Popover.Trigger class="{buttonVariants()}, w-42">
+												<IconPlusCircle /> Add agent</Popover.Trigger
+											>
+											<Popover.Content class="p-1">
+												<AgentPicker
+													server={ctx.server}
+													onSelect={(agent, catalogId) => {
+														toast.promise(
+															sessCtx.addAgent(agent.name, catalogId.type, agent.versions[0]!),
+															{
+																loading: 'Adding agent...',
+																success: 'Agent added successfully',
+																error: (err: any) => `Failed: ${err.message || err}`
+															}
+														);
+													}}
+												/>
+											</Popover.Content>
+										</Popover.Root>
+									</Card.Content>
+								</Card.Root>
+							</div>
+						{/if}
+						<Card.Root class="h-full gap-0 py-0">
+							<Card.Content class=" flex h-full flex-col px-0">
+								<UnderlineTabs.Root
+									bind:value={agentsListTabs}
+									class="h-full min-h-0 flex-1 grow gap-0 overflow-hidden"
 								>
-									<UnderlineTabs.Trigger value="table" class="h-full grow-0"
-										>Table view</UnderlineTabs.Trigger
+									<UnderlineTabs.List
+										class="bg-sidebar mt-1 flex w-full justify-start gap-2 rounded-none px-1 "
 									>
+										<UnderlineTabs.Trigger value="table" class="h-full grow-0"
+											>Table view</UnderlineTabs.Trigger
+										>
 
-									<UnderlineTabs.Trigger value="graph" class="h-full grow-0"
-										>Graph view</UnderlineTabs.Trigger
+										<UnderlineTabs.Trigger value="graph" class="h-full grow-0"
+											>Graph view</UnderlineTabs.Trigger
+										>
+										<Popover.Root>
+											<Popover.Trigger
+												class={cn(
+													buttonVariants({ size: 'sm' }),
+													'relative  -mt-1.5 ml-auto gap-2 transition-all',
+													emptySession ? 'bg-card text-card-foreground' : ''
+												)}
+											>
+												<IconPlusCircle class="size-5" />
+												Add agents</Popover.Trigger
+											>
+											<Popover.Content
+												><AgentPicker
+													server={ctx.server}
+													onSelect={(agent, catalogId) => {
+														toast.promise(
+															sessCtx.addAgent(agent.name, catalogId.type, agent.versions[0]!),
+															{
+																loading: 'Adding agent...',
+																success: 'Agent added successfully',
+																error: (err: any) => `Failed: ${err.message || err}`
+															}
+														);
+													}}
+												/></Popover.Content
+											>
+										</Popover.Root>
+									</UnderlineTabs.List>
+
+									<UnderlineTabs.Content
+										value="table"
+										class="relative flex h-full min-h-0 flex-1 grow flex-col overflow-hidden "
 									>
-								</UnderlineTabs.List>
-								<UnderlineTabs.Content
-									value="table"
-									class="relative flex h-full min-h-0 flex-1 grow flex-col overflow-hidden "
-								>
-									<Table.Root class="w-full grow border-amber-100/50 text-sm ">
-										<Table.Header>
-											<Table.Row>
-												<Table.Head class="w-12"><Checkbox /></Table.Head>
-												<Table.Head>Name</Table.Head>
-												<Table.Head>Version</Table.Head>
-												<Table.Head>Registry source</Table.Head>
-												<Table.Head>Agent</Table.Head>
-												<Table.Head class="w-24">Actions</Table.Head>
-											</Table.Row>
-										</Table.Header>
-										<Table.Body>
-											{#if $formData.agents.length == 0}
-												{#each { length: 10 }, i}
-													<Table.Row
-														class="hover:bg-transparent"
-														style={`opacity: ${1 - i * 0.1}; border-color: color-mix(in oklab, var(--color-border) ${100 - i * 10}%, transparent);`}
-													>
-														<Table.Cell>
-															<Checkbox disabled class="cursor-default!" />
-														</Table.Cell>
-													</Table.Row>
-												{/each}
-											{:else}
-												{#each $formData.agents as agent, i}
-													<Table.Row
-														class="cursor-pointer {i === sessCtx.selectedAgent ? 'bg-muted' : ''}"
-													>
+										<Table.Root class="relative w-full grow border-amber-100/50 text-sm">
+											<Table.Header>
+												<Table.Row class="*:text-muted-foreground">
+													<Table.Head class="w-12"><Checkbox /></Table.Head>
+													<Table.Head>Name</Table.Head>
+													<Table.Head>Agent</Table.Head>
+													<Table.Head>Version</Table.Head>
+													<Table.Head>Source</Table.Head>
+													<Table.Head>Budget</Table.Head>
+
+													<Table.Head class="w-24">Actions</Table.Head>
+												</Table.Row>
+											</Table.Header>
+											<Table.Body>
+												{#if emptySession}
+													{#each { length: 10 }, i}
+														<Table.Row
+															class="hover:bg-transparent"
+															style={`opacity: ${1 - i * 0.1}; border-color: color-mix(in oklab, var(--color-border) ${100 - i * 10}%, transparent);`}
+														>
+															<Table.Cell>
+																<Checkbox disabled class="cursor-default!" />
+															</Table.Cell>
+														</Table.Row>
+													{/each}
+												{:else}
+													{#each $formData.agents as agent, i}
+														<Table.Row
+															class="cursor-pointer {i === sessCtx.selectedAgent ? 'bg-muted' : ''}"
+														>
+															<Table.Cell>
+																<p class="truncate font-medium"><Checkbox /></p>
+															</Table.Cell>
+															<Table.Cell onclick={() => (sessCtx.selectedAgent = i)}>
+																<p class="truncate font-medium">{agent.name}</p>
+															</Table.Cell>
+															<Table.Cell onclick={() => (sessCtx.selectedAgent = i)}>
+																<p class="truncate">{agent.id.name}</p>
+															</Table.Cell>
+
+															<Table.Cell onclick={() => (sessCtx.selectedAgent = i)}>
+																<p class="truncate">{agent.id.version}</p>
+															</Table.Cell>
+
+															<Table.Cell onclick={() => (sessCtx.selectedAgent = i)}>
+																<p class="truncate">{agent.id.registrySourceId.type}</p>
+															</Table.Cell>
+
+															<Table.Cell onclick={() => (sessCtx.selectedAgent = i)}>
+																<p class="truncate">
+																	{#if !agent.budgetSettings?.budget}
+																		default
+																	{:else}
+																		${agent.budgetSettings?.budget / 100000000}
+																	{/if}
+																</p>
+															</Table.Cell>
+
+															<Table.Cell class="flex gap-2">
+																<Tooltip.Provider>
+																	<Tooltip.Root>
+																		<Tooltip.Trigger>
+																			<TwostepButton
+																				disabled={sessCtx.selectedAgent === null}
+																				class="m-auto"
+																				variant="ghost"
+																				onclick={() => removeAgent(i)}
+																				><span class="sr-only">remove agent</span><IconTrashRegular
+																				></IconTrashRegular></TwostepButton
+																			>
+																		</Tooltip.Trigger>
+																		<Tooltip.Content>Remove agent</Tooltip.Content>
+																	</Tooltip.Root>
+																</Tooltip.Provider>
+															</Table.Cell>
+														</Table.Row>
+													{/each}
+												{/if}
+												{#if loadingAgent}
+													<Table.Row>
 														<Table.Cell>
 															<p class="truncate font-medium"><Checkbox /></p>
 														</Table.Cell>
-														<Table.Cell onclick={() => (sessCtx.selectedAgent = i)}>
-															<p class="truncate font-medium">{agent.name}</p>
+														<Table.Cell>
+															<p class="truncate font-medium"><Spinner class="h-9 w-9" /></p>
 														</Table.Cell>
 
-														<Table.Cell onclick={() => (sessCtx.selectedAgent = i)}>
-															<p class="truncate">{agent.id.version}</p>
+														<Table.Cell>
+															<p class="truncate"></p>
 														</Table.Cell>
 
-														<Table.Cell onclick={() => (sessCtx.selectedAgent = i)}>
-															<p class="truncate">{agent.id.registrySourceId.type}</p>
+														<Table.Cell>
+															<p class="truncate"></p>
 														</Table.Cell>
 
-														<Table.Cell onclick={() => (sessCtx.selectedAgent = i)}>
-															<p class="truncate">{agent.id.name}</p>
-														</Table.Cell>
-
-														<Table.Cell class="flex gap-2">
-															<Tooltip.Provider>
-																<Tooltip.Root>
-																	<Tooltip.Trigger>
-																		<TwostepButton
-																			disabled={sessCtx.selectedAgent === null}
-																			class="m-auto"
-																			variant="ghost"
-																			onclick={() => removeAgent(i)}
-																			><span class="sr-only">remove agent</span><IconTrashRegular
-																			></IconTrashRegular></TwostepButton
-																		>
-																	</Tooltip.Trigger>
-																	<Tooltip.Content>Remove agent</Tooltip.Content>
-																</Tooltip.Root>
-															</Tooltip.Provider>
+														<Table.Cell>
+															<p class="truncate"></p>
 														</Table.Cell>
 													</Table.Row>
-												{/each}
-											{/if}
-										</Table.Body>
-									</Table.Root>
-								</UnderlineTabs.Content>
-								<UnderlineTabs.Content value="graph" class="flex min-h-0 flex-1 overflow-hidden ">
-									<SvelteFlowProvider>
-										<Graph
-											agents={$formData.agents}
-											groups={$formData.groups}
-											bind:selectedAgent={sessCtx.selectedAgent}
-											controls
-											fitDefault={false}
-										/>
-									</SvelteFlowProvider>
-								</UnderlineTabs.Content>
-							</UnderlineTabs.Root>
-						</Card.Content>
-					</Card.Root>
-				</Resizable.Pane>
-				<Resizable.Handle class="bg-background !h-2" />
-				<Resizable.Pane minSize={25} defaultSize={50}>
-					<Card.Root class=" h-full py-0">
-						<Card.Content class="flex h-full min-h-0 flex-col px-0">
-							<Tabs.Root value="editor" class="grow gap-0 overflow-hidden">
-								<Tabs.List class="bg-sidebar flex w-full justify-start rounded-none border-b ">
-									<Tabs.Trigger value="editor" class="grow-0">Session editor</Tabs.Trigger>
-									<Tabs.Trigger value="session" class="grow-0">Session options</Tabs.Trigger>
-								</Tabs.List>
-								<Tabs.Content value="editor" class="relative overflow-hidden">
-									<CodePane />
-								</Tabs.Content>
-								<Tabs.Content value="session" class="relative overflow-hidden">
-									<SessionPane />
-								</Tabs.Content>
-							</Tabs.Root>
-						</Card.Content>
-					</Card.Root>
-				</Resizable.Pane>
-			</Resizable.PaneGroup>
-		</Resizable.Pane>
-		<Resizable.Handle class="bg-background !w-2" />
-
-		<Resizable.Pane defaultSize={50} minSize={25} class="bg-background flex min-h-0 flex-col gap-2">
-			<Card.Root class="min-h-0 grow py-0">
-				<Card.Content class="min-h-0 grow px-0">
-					<Tabs.Root bind:value={currentTab} class="h-full overflow-hidden">
-						<Tabs.List class="bg-sidebar flex w-full justify-start rounded-none border-b ">
-							<SidebarTab
-								value="agent"
-								icon={IconRobotRegular}
-								invalid={Object.values($errors?.agents ?? {}).length > 0}>Agent</SidebarTab
-							>
-							<SidebarTab
-								value="groups"
-								icon={IconUsersThreeRegular}
-								invalid={Object.values($errors?.groups ?? {}).length > 0}>Groups</SidebarTab
-							>
-							<SidebarTab
-								value="tools"
-								icon={IconWrenchRegular}
-								invalid={Object.values($errors?.sessionRuntimeSettings ?? {}).length > 0}
-								>Tools</SidebarTab
-							>
-							<SidebarTab value="marketplace" icon={IconStorefront}>Market</SidebarTab>
-						</Tabs.List>
-						{#key sessCtx.selectedAgent}
-							<Tabs.Content
-								value="agent"
-								class="flex h-full min-h-0 flex-col gap-2 overflow-y-auto"
-							>
-								<AgentPane />
-							</Tabs.Content>
-						{/key}
-						<Tabs.Content value="tools" class="flex h-full min-h-0 flex-col overflow-y-auto ">
-							<ToolsPane />
-						</Tabs.Content>
-						<Tabs.Content value="groups" class="flex h-full min-h-0 flex-col overflow-y-auto">
-							<GroupsPane />
-						</Tabs.Content>
-						<Tabs.Content value="marketplace" class="flex h-full min-h-0 flex-col overflow-y-auto">
-							<MarketPane />
-						</Tabs.Content>
-					</Tabs.Root>
-				</Card.Content>
-			</Card.Root>
-			<Card.Root>
-				<Card.Content class="items-right flex gap-4">
-					<Tooltip.Provider>
-						<div class="my-auto mr-auto flex items-center">
-							<Tooltip.Root>
-								<Tooltip.Trigger class="my-auto">
-									{#snippet child()}
-										<div class=" flex h-full items-center gap-2">
-											<Checkbox
-												id="close-last-session"
-												bind:checked={lastSession.current.closeLastSession}
+												{/if}
+											</Table.Body>
+										</Table.Root>
+									</UnderlineTabs.Content>
+									<UnderlineTabs.Content value="graph" class="flex min-h-0 flex-1 overflow-hidden ">
+										<SvelteFlowProvider>
+											<Graph
+												agents={$formData.agents}
+												groups={$formData.groups}
+												bind:selectedAgent={sessCtx.selectedAgent}
+												controls
+												fitDefault={false}
 											/>
-											<Label
-												for="close-last-session"
-												class="cursor-pointer text-left text-sm leading-none font-medium"
-												>Terminate previous session</Label
-											>
-										</div>
-									{/snippet}
-								</Tooltip.Trigger>
-								<Tooltip.Content>
-									<p>
-										Closes the last session made in Console, if it is still open. This will kill
-										each of its agents.
-									</p>
-									{#if lastSession.current.sessionId !== ''}
-										<p>Session id: {lastSession.current.sessionId ?? ''}</p>
-									{/if}
-								</Tooltip.Content>
-							</Tooltip.Root>
-						</div>
+										</SvelteFlowProvider>
+									</UnderlineTabs.Content>
+								</UnderlineTabs.Root>
+							</Card.Content>
+						</Card.Root>
+					</Resizable.Pane>
+					<Resizable.Handle class="bg-background !h-2" />
+					<Resizable.Pane minSize={25} defaultSize={30}>
+						<Card.Root class=" h-full py-0">
+							<Card.Content class="flex h-full min-h-0 flex-col px-0">
+								<Tabs.Root value="budget" class="grow gap-0 overflow-hidden">
+									<Tabs.List class="bg-sidebar flex w-full justify-start rounded-none border-b ">
+										<Tabs.Trigger value="budget" class="grow-0">Budget settings</Tabs.Trigger>
+										<Tabs.Trigger value="session" class="grow-0">Session settings</Tabs.Trigger>
+									</Tabs.List>
+									<Tabs.Content
+										value="budget"
+										class="{emptySession
+											? '**:text-muted-foreground! text-muted-foreground!'
+											: ''}  relative overflow-hidden transition-colors"
+									>
+										<BudgetPane />
+									</Tabs.Content>
+									<Tabs.Content value="session" class="relative overflow-hidden">
+										<SessionPane />
+									</Tabs.Content>
+								</Tabs.Root>
+							</Card.Content>
+						</Card.Root>
+					</Resizable.Pane>
+				</Resizable.PaneGroup>
+			</Resizable.Pane>
+			<Resizable.Handle class="bg-background !w-2" />
 
+			<Resizable.Pane
+				defaultSize={50}
+				minSize={25}
+				class="bg-background flex min-h-0 flex-col gap-2"
+			>
+				<Card.Root class="min-h-0 grow py-0">
+					<Card.Content class="min-h-0 grow px-0">
+						<Tabs.Root bind:value={currentTab} class="h-full overflow-hidden">
+							<Tabs.List class="bg-sidebar flex w-full justify-start rounded-none border-b ">
+								<SidebarTab
+									value="agent"
+									icon={IconRobotRegular}
+									invalid={Object.values($errors?.agents ?? {}).length > 0}>Agent</SidebarTab
+								>
+								<SidebarTab
+									value="groups"
+									icon={IconUsersThreeRegular}
+									invalid={Object.values($errors?.groups ?? {}).length > 0}>Groups</SidebarTab
+								>
+								<SidebarTab
+									value="tools"
+									icon={IconWrenchRegular}
+									invalid={Object.values($errors?.sessionRuntimeSettings ?? {}).length > 0}
+									>Tools</SidebarTab
+								>
+								<SidebarTab value="marketplace" icon={IconStorefront}>Market</SidebarTab>
+							</Tabs.List>
+							{#key sessCtx.selectedAgent}
+								<Tabs.Content
+									value="agent"
+									class="flex h-full min-h-0 flex-col gap-2 overflow-y-auto"
+								>
+									<AgentPane />
+								</Tabs.Content>
+							{/key}
+							<Tabs.Content value="tools" class="flex h-full min-h-0 flex-col overflow-y-auto ">
+								<ToolsPane />
+							</Tabs.Content>
+							<Tabs.Content value="groups" class="flex h-full min-h-0 flex-col overflow-y-auto">
+								<GroupsPane />
+							</Tabs.Content>
+							<Tabs.Content
+								value="marketplace"
+								class="flex h-full min-h-0 flex-col overflow-y-auto"
+							>
+								<MarketPane />
+							</Tabs.Content>
+						</Tabs.Root>
+					</Card.Content>
+				</Card.Root>
+				<Card.Root>
+					<Card.Content class="items-right flex gap-4">
+						<Tooltip.Provider>
+							<div class="my-auto mr-auto flex items-center">
+								<Tooltip.Root>
+									<Tooltip.Trigger class="my-auto">
+										{#snippet child()}
+											<div class=" flex h-full items-center gap-2">
+												<Checkbox
+													id="close-last-session"
+													bind:checked={lastSession.current.closeLastSession}
+												/>
+												<Label
+													for="close-last-session"
+													class="cursor-pointer text-left text-sm leading-none font-medium"
+													>Terminate previous session</Label
+												>
+											</div>
+										{/snippet}
+									</Tooltip.Trigger>
+									<Tooltip.Content>
+										<p>
+											Closes the last session made in Console, if it is still open. This will kill
+											each of its agents.
+										</p>
+										{#if lastSession.current.sessionId !== ''}
+											<p>Session id: {lastSession.current.sessionId ?? ''}</p>
+										{/if}
+									</Tooltip.Content>
+								</Tooltip.Root>
+							</div>
+
+							<Button variant="outline" onclick={() => (view = 'raw')}>Edit as JSON</Button>
+
+							<span class="flex gap-1">
+								<Tooltip.Root delayDuration={30}>
+									<Tooltip.Trigger class="flex">
+										{#snippet child()}
+											<Form.Button disabled={sendingForm || emptySession}>
+												{#if sendingForm}
+													<Spinner />
+												{/if}Create session</Form.Button
+											>
+										{/snippet}
+									</Tooltip.Trigger>
+									<Tooltip.Content>
+										<p>
+											{emptySession
+												? 'Cannot create a session without any agents'
+												: ' Create a session in the active namespace'}
+										</p>
+									</Tooltip.Content>
+								</Tooltip.Root>
+							</span>
+						</Tooltip.Provider>
+					</Card.Content>
+				</Card.Root>
+			</Resizable.Pane>
+		</Resizable.PaneGroup>
+	{:else}
+		<Card.Root class="h-full w-full p-0">
+			<Card.Content class="h-full w-full p-0">
+				<CodePane />
+			</Card.Content>
+		</Card.Root>
+		<Card.Root
+			class="absolute right-4 bottom-4 w-fit py-4 opacity-75 transition-opacity hover:opacity-100"
+		>
+			<Card.Content class="items-right flex gap-4 px-4">
+				<Tooltip.Provider>
+					<div class="my-auto mr-auto flex items-center">
 						<Tooltip.Root>
-							<Tooltip.Trigger class="flex gap-2">
+							<Tooltip.Trigger class="my-auto">
 								{#snippet child()}
-									<Button
-										onclick={() => (templateSaverDialogOpen = true)}
-										disabled={sendingForm || $formData.agents.length === 0}
-										class={sendingForm ? '' : 'bg-accent/80'}>Save template</Button
+									<div class=" flex h-full items-center gap-2">
+										<Checkbox
+											id="close-last-session"
+											bind:checked={lastSession.current.closeLastSession}
+										/>
+										<Label
+											for="close-last-session"
+											class="cursor-pointer text-left text-sm leading-none font-medium"
+											>Terminate previous session</Label
+										>
+									</div>
+								{/snippet}
+							</Tooltip.Trigger>
+							<Tooltip.Content>
+								<p>
+									Closes the last session made in Console, if it is still open. This will kill each
+									of its agents.
+								</p>
+								{#if lastSession.current.sessionId !== ''}
+									<p>Session id: {lastSession.current.sessionId ?? ''}</p>
+								{/if}
+							</Tooltip.Content>
+						</Tooltip.Root>
+					</div>
+
+					<Button variant="outline" onclick={() => (view = 'workbench')}>Return to editor</Button>
+
+					<span class="flex gap-1">
+						<Tooltip.Root delayDuration={30}>
+							<Tooltip.Trigger class="flex">
+								{#snippet child()}
+									<Form.Button disabled={sendingForm || emptySession}>
+										{#if sendingForm}
+											<Spinner />
+										{/if}Create session</Form.Button
 									>
 								{/snippet}
 							</Tooltip.Trigger>
 							<Tooltip.Content>
-								<p>Save to templates for quick reuse</p>
+								<p>
+									{emptySession
+										? 'Cannot create a session without any agents'
+										: ' Create a session in the active namespace'}
+								</p>
 							</Tooltip.Content>
 						</Tooltip.Root>
-
-						<span class="flex gap-1">
-							<Tooltip.Root delayDuration={30}>
-								<Tooltip.Trigger class="flex">
-									{#snippet child()}
-										<Form.Button disabled={sendingForm || $formData.agents.length === 0}>
-											{#if sendingForm}
-												<Spinner />
-											{/if}Create session</Form.Button
-										>
-									{/snippet}
-								</Tooltip.Trigger>
-								<Tooltip.Content>
-									<p>
-										{$formData.agents.length === 0
-											? 'Cannot create a session without any agents'
-											: ' Create a session in the active namespace'}
-									</p>
-								</Tooltip.Content>
-							</Tooltip.Root>
-						</span>
-					</Tooltip.Provider>
-				</Card.Content>
-			</Card.Root>
-		</Resizable.Pane>
-	</Resizable.PaneGroup>
+					</span>
+				</Tooltip.Provider>
+			</Card.Content>
+		</Card.Root>
+	{/if}
 </form>

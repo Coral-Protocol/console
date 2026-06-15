@@ -15,9 +15,9 @@
 	import ToolInput from './ToolInput.svelte';
 
 	import { randomAdjective, randomAnimal } from '$lib/words';
-	import { createSessionContext } from '../+page.svelte';
+	import { getSessionContext } from '$lib/sessionCreatorContext';
 
-	let ctx = createSessionContext.get();
+	let ctx = getSessionContext();
 	let form = $derived(ctx.form);
 	let errors = $derived(ctx.errors);
 	let formData = $derived(ctx.formData);

@@ -28,6 +28,7 @@ export const toPayload = async (server: CoralServer, data: z.output<FormSchema>)
 				.map((id) => data.tools[id]?.name)
 				.filter(Boolean) as string[], // safe assertion because .filter(Boolean) removes null/undefined
 			plugins: agent.plugins ?? [],
+			budgetSettings: agent.budgetSettings ?? {},
 			x402Budgets: [],
 			options: Object.fromEntries(
 				Object.entries(agent.options ?? {})
@@ -85,6 +86,13 @@ export const toPayload = async (server: CoralServer, data: z.output<FormSchema>)
 				},
 				ttl: data.sessionRuntimeSettings.ttl
 			}
+		},
+		budgetSettings: {
+			budget: data.sessionBudgetSettings.budget,
+			exhaustionBehavior:
+				typeof data.sessionBudgetSettings.exhaustionBehavior === 'string'
+					? { type: data.sessionBudgetSettings.exhaustionBehavior }
+					: data.sessionBudgetSettings.exhaustionBehavior
 		}
 	} satisfies CreateSessionRequest;
 };
@@ -142,6 +150,13 @@ export const importFromPayload = (json: string): z.output<FormSchema> => {
 			...(data.execution && data.execution.mode === 'immediate'
 				? data.execution.runtimeSettings
 				: {})
+		},
+		sessionBudgetSettings: {
+			budget: data.budgetSettings?.budget ?? 100000,
+			exhaustionBehavior: data.budgetSettings?.exhaustionBehavior ?? {
+				type: 'kill_session',
+				minimum: 1000
+			}
 		},
 		agents: data.agentGraphRequest.agents.map((agent) => ({
 			id: agent.id,

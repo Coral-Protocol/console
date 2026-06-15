@@ -5,9 +5,9 @@
 
 	import { Button } from '@coral-os/component-library/ui/button/index.js';
 
-	import { createSessionContext } from '../+page.svelte';
+	import { getSessionContext } from '$lib/sessionCreatorContext';
 
-	let ctx = createSessionContext.get();
+	let ctx = getSessionContext();
 	let formData = $derived(ctx.formData);
 </script>
 

@@ -1769,6 +1769,40 @@
           "properties" : {
             "type" : {
               "type" : "string",
+              "enum" : [ "agent_budget_claim" ],
+              "title" : "String"
+            },
+            "timestamp" : {
+              "type" : "string",
+              "title" : "UTC timestamp ISO-8601"
+            },
+            "agent" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "requestedAmount" : {
+              "type" : "integer",
+              "title" : "AgentBudgetUnit"
+            },
+            "claimedAmount" : {
+              "type" : "integer",
+              "title" : "AgentBudgetUnit"
+            },
+            "remainingBudget" : {
+              "type" : "integer",
+              "title" : "AgentBudgetUnit"
+            },
+            "budgetSource" : {
+              "$ref" : "#/components/schemas/AgentBudgetSource"
+            }
+          },
+          "required" : [ "agent", "budgetSource", "claimedAmount", "remainingBudget", "requestedAmount", "timestamp", "type" ],
+          "title" : "agent_budget_claim"
+        }, {
+          "type" : "object",
+          "properties" : {
+            "type" : {
+              "type" : "string",
               "enum" : [ "agent_connected" ],
               "title" : "String"
             },
@@ -2140,6 +2174,11 @@
           "propertyName" : "type"
         },
         "title" : "SessionEvent"
+      },
+      "AgentBudgetSource" : {
+        "type" : "string",
+        "enum" : [ "session", "agent" ],
+        "title" : "AgentBudgetSource"
       },
       "SessionThreadMessage" : {
         "type" : "object",
@@ -4433,6 +4472,10 @@
             "description" : "A map where the key is the name of the proxy request and the value is the configuration and model that should be selected.",
             "title" : "LinkedHashMap<String,GraphAgentProxyRequest>"
           },
+          "budgetSettings" : {
+            "$ref" : "#/components/schemas/GraphAgentBudgetSettings",
+            "description" : "Budget settings for this agent.  By default the agent has no budget of its own, and can only claim from the sessions budget."
+          },
           "annotations" : {
             "type" : "object",
             "additionalProperties" : {
@@ -4623,6 +4666,59 @@
         },
         "required" : [ "configurationName", "modelName" ],
         "title" : "GraphAgentProxyRequest"
+      },
+      "GraphAgentBudgetSettings" : {
+        "type" : "object",
+        "properties" : {
+          "budget" : {
+            "type" : "integer",
+            "description" : "The budget for this specific agent.  The value is specified in micro cents. $1.00 is 100000000 and $0.01 is 1000000.",
+            "title" : "AgentBudgetUnit"
+          },
+          "exhaustionBehavior" : {
+            "anyOf" : [ {
+              "type" : "object",
+              "description" : "Once's the agent's budget is exhausted, it will consume the session's budget.  If the session's budget is also exhausted, the session's exhaustion behavior will be applied.  If a claim is made that cannot be fully fulfilled by the agent's budget, the remainder will be taken from the session's budget.",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "consume_session" ],
+                  "title" : "String"
+                }
+              },
+              "required" : [ "type" ],
+              "title" : "consume_session"
+            }, {
+              "type" : "object",
+              "description" : "Once the agent's budget is less than the specified minimum amount, the agent will be killed.  The higher the minimum is the lower the chance of overclaiming. This behavior will stop the agent claiming from the session's budget",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "kill" ],
+                  "title" : "String"
+                },
+                "minimum" : {
+                  "type" : "integer",
+                  "description" : "The minimum value, specified in micro cents. $1.00 is 100000000 and $0.01 is 1000000.",
+                  "title" : "AgentBudgetUnit"
+                },
+                "force" : {
+                  "type" : "boolean",
+                  "description" : "If this is true, the agent will be killed immediately.  If this is false, the agent will only be killed if the claim requests for automatic closing.",
+                  "title" : "Boolean"
+                }
+              },
+              "required" : [ "force", "minimum", "type" ],
+              "title" : "kill"
+            } ],
+            "description" : "The behavior of agent budget exhaustion, defaults to consuming session budget.",
+            "discriminator" : {
+              "propertyName" : "type"
+            },
+            "title" : "AgentBudgetExhaustionBehavior"
+          }
+        },
+        "title" : "GraphAgentBudgetSettings"
       },
       "GraphAgentTool" : {
         "type" : "object",
@@ -4861,6 +4957,77 @@
         "required" : [ "url" ],
         "title" : "SessionEndWebhook"
       },
+      "SessionBudgetSettings" : {
+        "type" : "object",
+        "description" : "Budgets settings for this session.  Budgets are consumed by agents in the session.",
+        "properties" : {
+          "budget" : {
+            "type" : "integer",
+            "description" : "\n        This budget is shared across all agents in the session and can be used by any agent configured to consume the shared budget.\n        \n        The value is specified in micro cents. $1.00 is 100000000 and $0.01 is 1000000.\")    \n        ",
+            "title" : "AgentBudgetUnit"
+          },
+          "exhaustionBehavior" : {
+            "anyOf" : [ {
+              "type" : "object",
+              "description" : "Once the session budget drops below the specified minimum, agents that claim for it will be killed.  The higher the minimum is the lower the chance of overclaiming.",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "kill_agent" ],
+                  "title" : "String"
+                },
+                "minimum" : {
+                  "type" : "integer",
+                  "description" : "The minimum value, specified in micro cents. $1.00 is 100000000 and $0.01 is 1000000.",
+                  "title" : "AgentBudgetUnit"
+                },
+                "force" : {
+                  "type" : "boolean",
+                  "description" : "If this is true, when an agent claims from the session budget that is below the minimum, the agent will be killed immediately.  If this is false, the agent will only be killed if the agent requests for automatic closing.",
+                  "title" : "Boolean"
+                }
+              },
+              "required" : [ "force", "minimum", "type" ],
+              "title" : "kill_agent"
+            }, {
+              "type" : "object",
+              "description" : "Once the session budget drops below the specified minimum, agents that claim for it will trigger the session to be killed.  The higher the minimum is the lower the chance of overclaiming.",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "kill_session" ],
+                  "title" : "String"
+                },
+                "minimum" : {
+                  "type" : "integer",
+                  "description" : "The minimum value, specified in micro cents. $1.00 is 100000000 and $0.01 is 1000000.",
+                  "title" : "AgentBudgetUnit"
+                }
+              },
+              "required" : [ "minimum", "type" ],
+              "title" : "kill_session"
+            }, {
+              "type" : "object",
+              "description" : "Once the session budget is exhausted and claimed from, a warning will be produced.  This behavior has a high risk of overclaiming.",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "warn" ],
+                  "title" : "String"
+                }
+              },
+              "required" : [ "type" ],
+              "title" : "warn"
+            } ],
+            "description" : "\n        The behavior for agents consuming from this budget after it has been exhausted.  Note that this behavior\n        only applies to agents that consume from the session budgets. Agents that have their own budget will first \n        perform behaviors described by the agent's own budget settings.\n        ",
+            "discriminator" : {
+              "propertyName" : "type"
+            },
+            "title" : "SessionBudgetExhaustionBehavior"
+          }
+        },
+        "title" : "SessionBudgetSettings"
+      },
       "SessionRequest" : {
         "type" : "object",
         "properties" : {
@@ -4940,6 +5107,10 @@
               "propertyName" : "mode"
             },
             "title" : "SessionRequestExecution"
+          },
+          "budgetSettings" : {
+            "$ref" : "#/components/schemas/SessionBudgetSettings",
+            "description" : "Budget settings for this session.  See SessionBudgetSettings for more information"
           },
           "annotations" : {
             "type" : "object",

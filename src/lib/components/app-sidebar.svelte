@@ -69,9 +69,12 @@
 	let error: string | null = $state(null);
 
 	const onNoAuth = useDebounce(() => {
+		if (toast.getActiveToasts().some((t) => t.id === 'server-disconnected')) {
+			return;
+		}
 		switch (config.PUBLIC_LOGIN_BEHAVIOUR) {
 			case 'token':
-				toast('You have been logged out. Please log in again.', {
+				toast('You are logged out, please log in to continue.', {
 					duration: Infinity,
 					dismissable: false,
 					richColors: true,
@@ -84,7 +87,9 @@
 						}
 					}
 				});
+				toast.dismiss('refresh-connection-error');
 				break;
+
 			case 'reload':
 				toast('You have been logged out. Please log in again.', {
 					duration: Infinity,
@@ -115,21 +120,24 @@
 		() => ctx.server.alive,
 		(alive) => {
 			if (alive) {
-				toast.success('Connected to server.');
+				toast.dismiss('server-connected');
+				toast.success('Connected to server.', { id: 'server-connected' });
 				toast.dismiss('server-disconnected');
-				refreshAgents(false);
+				refreshConnection(false);
 			}
 		}
 	);
 
 	let loginOpen = $state(false);
 
-	const refreshAgents = async (notify?: boolean) => {
+	const refreshConnection = async (notify?: boolean) => {
 		try {
 			connecting = true;
 			error = null;
 
 			await ctx.server.fetchAll();
+			// this attempts to fetch all agents and sessions which is good enough for to check for connection to server !
+
 			ctx.server.alive = true;
 			connecting = false;
 			if (notify) {
@@ -138,7 +146,11 @@
 		} catch (e) {
 			connecting = false;
 			error = `${e}`;
-			toast.error('Failed to refresh connection. ' + error);
+			if (notify) {
+				toast.error('Failed to refresh connection. ' + error, {
+					id: 'refresh-connection-error'
+				});
+			}
 			throw e;
 		}
 	};
@@ -195,7 +207,7 @@
 				return;
 			}
 			if (k === 'r') {
-				toast.promise(refreshAgents(), {
+				toast.promise(refreshConnection(), {
 					loading: `Refreshing agent configuration...`,
 					success: `Agent configuration refreshed`,
 					error: (err) => `Failed to refresh agent configuration, Error: ${err || err}`
@@ -221,16 +233,7 @@
 	}
 
 	let tourOpen = $state(false);
-
 	let threadCreateOpen = $state(false);
-
-	let namespaces = $derived(ctx.server.namespaces.filter((ns) => ns !== 'default'));
-
-	let dialogOpen = $state(false);
-
-	let newNamespace = $state('Untitled Namespace');
-	let duplicate = $derived(newNamespace === 'default' || newNamespace in ctx.server.namespaces);
-
 	let { ref = $bindable(null) }: WithElementRef<{}, HTMLButtonElement> = $props();
 </script>
 
@@ -316,7 +319,7 @@
 			</Sidebar.GroupContent>
 		</Sidebar.Group>
 	</Sidebar.Header>
-	<Sidebar.Content class="gap-0 overflow-hidden">
+	<Sidebar.Content class="gap-0 overflow-hidden *:list-none">
 		<Sidebar.Group>
 			<Sidebar.GroupLabel class="pr-0">
 				<span
@@ -345,7 +348,7 @@
 					variant="ghost"
 					class="mx-1 size-7"
 					disabled={connecting}
-					onclick={() => refreshAgents()}
+					onclick={() => refreshConnection(true)}
 				>
 					<IconArrowsClockwise class={cn('size-4', connecting && 'animate-spin')} />
 				</Button>
@@ -353,7 +356,7 @@
 
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
-					<SidebarLink url="{base}/" icon={IconHome} title="Home" disabled />
+					<SidebarLink url="{base}/" icon={IconHome} title="Overview" />
 
 					<div use:tourTarget={'workbench'}>
 						<SidebarLink url="{base}/workbench" icon={IconCircuity} title="Workbench" />

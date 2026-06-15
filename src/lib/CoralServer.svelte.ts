@@ -51,7 +51,13 @@ export class CoralServer {
 	public api: { GET: APIClient['GET']; POST: APIClient['POST']; DELETE: APIClient['DELETE'] } = {
 		GET: async (url, ...init) => {
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const res = await this.rawApi.GET(url, ...(init as any));
+			let res;
+			try {
+				res = await this.rawApi.GET(url, ...(init as any));
+			} catch (e) {
+				this.alive = false;
+				throw new Error(`Could not reach server`);
+			}
 			switch (res.response.status) {
 				case 401: {
 					this.alive = false;
@@ -321,6 +327,10 @@ export class CoralServer {
 		puppetAgentName: string,
 		input: components['schemas']['CreateThreadInput']
 	): Promise<components['schemas']['CreateThreadOutput']> {
+		console.log('creating thread in', {
+			namespace: this.namespace,
+			sessionId
+		});
 		const res = await this.api.POST('/api/v1/puppet/{namespace}/{sessionId}/{agentName}/thread', {
 			params: {
 				path: { namespace: this.namespace, sessionId: sessionId, agentName: puppetAgentName }

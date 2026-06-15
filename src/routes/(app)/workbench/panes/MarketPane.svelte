@@ -13,7 +13,6 @@
 
 	import IconCrane from 'phosphor-icons-svelte/IconCraneRegular.svelte';
 	import { appContext } from '$lib/context';
-	import { createSessionContext } from '../+page.svelte';
 	import IconMagnifyingGlassRegular from 'phosphor-icons-svelte/IconMagnifyingGlassRegular.svelte';
 	import { fade } from 'svelte/transition';
 	import { Badge } from '@coral-os/component-library/ui/badge/index.js';
@@ -22,9 +21,10 @@
 
 	import Header from '$lib/components/header.svelte';
 	import AgentMarketView from '$lib/components/dialogs/AgentMarketView.svelte';
+	import { getSessionContext } from '$lib/sessionCreatorContext';
 
 	let ctx = appContext.get();
-	let sessCtx = createSessionContext.get();
+	let sessCtx = getSessionContext();
 
 	let search = $state('');
 	let loading = $state(true);
@@ -148,6 +148,8 @@
 													</Card.Root>
 												</li>
 											</button>
+										{:catch err}
+											<!-- skip -->
 										{/await}
 									{/each}
 								</ol>
