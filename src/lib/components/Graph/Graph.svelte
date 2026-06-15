@@ -18,6 +18,16 @@
 
 	import * as d3Force from 'd3-force';
 
+	import {
+		Button,
+		buttonVariants
+	} from '@coral-os/component-library/components/ui/button/index.js';
+	import * as Tooltip from '@coral-os/component-library/components/ui/tooltip/index.js';
+
+	import IconSelection from 'phosphor-icons-svelte/IconSelectionFill.svelte';
+	import IconPlay from 'phosphor-icons-svelte/IconPlayFill.svelte';
+	import IconPause from 'phosphor-icons-svelte/IconPauseFill.svelte';
+
 	const nodeTypes = {
 		circleNode: GraphCircleNode
 	};
@@ -271,20 +281,26 @@
 >
 	{#if controls && nodes.length > 0}
 		<Panel position="top-right" class="flex gap-4">
-			<button
-				onclick={() => fitView()}
-				type="button"
-				class="text-muted-foreground opacity-20 transition-opacity hover:opacity-100"
-			>
-				Home
-			</button>
-			<button
-				onclick={toggleLayout}
-				type="button"
-				class="text-muted-foreground opacity-20 transition-opacity hover:opacity-100"
-			>
-				{running ? 'Stop' : 'Start'} simulation
-			</button>
+			<Tooltip.Root>
+				<Tooltip.Trigger
+					onclick={() => fitView()}
+					class={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}
+					><IconSelection /></Tooltip.Trigger
+				>
+				<Tooltip.Content>
+					<p>Fit all in view</p>
+				</Tooltip.Content>
+			</Tooltip.Root>
+			<Tooltip.Root>
+				<Tooltip.Trigger
+					onclick={toggleLayout}
+					class={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}
+					>{#if running}<IconPause />{:else}<IconPlay />{/if}</Tooltip.Trigger
+				>
+				<Tooltip.Content>
+					<p>{running ? 'Stop simulating' : 'Start simulating'}</p>
+				</Tooltip.Content>
+			</Tooltip.Root>
 		</Panel>
 	{/if}
 	<Background {id} />
