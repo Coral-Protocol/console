@@ -1,8 +1,12 @@
-import { type FormSchema } from '$lib/sessionSchema/types';
 import { PersistedState } from 'runed';
 import type z from 'zod';
+import {
+	makeFormSchema,
+	type CreateSessionRequest,
+	type FormSchema
+} from '$lib/sessionSchema/types';
 
-export const sessionDraft = new PersistedState<z.output<FormSchema> | null>(
+export const sessionDraft = new PersistedState<CreateSessionRequest | null>(
 	'sessionDraftData',
 	null
 );
