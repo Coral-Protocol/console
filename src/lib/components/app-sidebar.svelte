@@ -35,6 +35,7 @@
 	import IconEnvelopeOpen from 'phosphor-icons-svelte/IconEnvelopeOpenRegular.svelte';
 	import IconDotsThree from 'phosphor-icons-svelte/IconDotsThreeRegular.svelte';
 	import IconCheckRegular from 'phosphor-icons-svelte/IconCheckRegular.svelte';
+	import { sessionDraft, recentSession } from '$lib/sessionDraftData';
 
 	import * as Popover from '@coral-os/component-library/ui/popover/index.js';
 
@@ -358,8 +359,14 @@
 				<Sidebar.Menu>
 					<SidebarLink url="{base}/" icon={IconHome} title="Overview" />
 
-					<div use:tourTarget={'workbench'}>
+					<div use:tourTarget={'workbench'} class="relative w-full">
 						<SidebarLink url="{base}/workbench" icon={IconCircuity} title="Workbench" />
+						{#if sessionDraft.current && sessionDraft.current.agents.length > 0}
+							<Badge
+								class="text-muted-foreground absolute top-1 right-1 bottom-1 my-auto"
+								variant="outline">draft</Badge
+							>
+						{/if}
 					</div>
 					<Sidebar.MenuSub>
 						<div use:tourTarget={'templates'}>
