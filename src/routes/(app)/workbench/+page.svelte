@@ -1,26 +1,3 @@
-<script lang="ts" module>
-	import { Context, Debounced, useDebounce } from 'runed';
-	import type { SuperForm, SuperFormData, SuperFormErrors } from 'sveltekit-superforms/client';
-	import type { FormSchema } from '$lib/sessionSchema';
-	import type z from 'zod';
-
-	// FIXME: why is this hardcoded
-	export type AgentSource = 'marketplace' | 'linked' | 'local';
-
-	export type SessionCreatorContext = {
-		payload: CreateSessionRequest | null;
-		importSession: (options: { success?: string; from: string }) => boolean;
-		addAgent: (name: string, source: AgentSource, version: string) => Promise<void>;
-
-		selectedAgent: number | null;
-		detailedAgent: Awaited<ReturnType<CoralServer['lookupAgent']>> | null;
-
-		form: SuperForm<z.output<FormSchema>>;
-		formData: SuperFormData<z.output<FormSchema>>;
-		errors: SuperFormErrors<z.output<FormSchema>>;
-	};
-</script>
-
 <script lang="ts">
 	// ─── UI Component Library ─────────────────────────────────────────────────
 	import * as Sidebar from '@coral-os/component-library/ui/sidebar/index.js';
@@ -81,6 +58,8 @@
 	import { PersistedState } from 'runed';
 	import { toast } from 'svelte-sonner';
 	import { string } from 'zod';
+	import { z } from 'zod';
+	import { Context, Debounced, useDebounce } from 'runed';
 
 	// ─── Svelte / SvelteKit ───────────────────────────────────────────────────
 	import { page } from '$app/state';
@@ -91,10 +70,18 @@
 	import { CoralServer, agentIdOf, type RegistryAgentIdentifier } from '$lib/CoralServer.svelte';
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
 	import { Session } from '$lib/session.svelte';
-	import { makeFormSchema, type CreateSessionRequest } from '$lib/sessionSchema/types';
+	import {
+		makeFormSchema,
+		type CreateSessionRequest,
+		type FormSchema
+	} from '$lib/sessionSchema/types';
 	import { toPayload, importFromPayload } from '$lib/sessionSchema';
 	import { sessionDraft, recentSession } from '$lib/sessionDraftData';
-	import { setSessionContext } from '$lib/sessionCreatorContext';
+	import {
+		setSessionContext,
+		type SessionCreatorContext,
+		type AgentSource
+	} from '$lib/sessionCreatorContext';
 	import { getSessionDataFromTemplateName } from './templates/TemplateLib';
 	import { tourTarget } from '$lib/components/tour/tourTarget';
 	import { cn } from '$lib/utils';
@@ -277,10 +264,6 @@
 
 	let { form: formData, errors, enhance } = $derived(form);
 
-	const loadFromData = (data: z.output<FormSchema>) => {
-		if (data) $formData = data;
-	};
-
 	// ─── Session Context ──────────────────────────────────────────────────────
 
 	let sessCtx = $state({
@@ -318,7 +301,6 @@
 
 			const existingCount = $formData.agents.filter((a) => a.id.name === name).length;
 			const registrySourceId = sourceToRegistryId(source as AgentSource);
-			recentSession.current = true;
 
 			try {
 				const detailed = await ctx.server.lookupAgent({ name, version, registrySourceId });
@@ -461,13 +443,20 @@
 		sessCtx.selectedAgent = null;
 	}
 
-	// Persist form draft on every change
+	let debouncedFormData = new Debounced(() => $formData, 100);
+
 	$effect(() => {
-		const snapshot = structuredClone($formData);
-		untrack(() => {
-			if (!initialised) return;
-			sessionDraft.current = snapshot;
-		});
+		const data = debouncedFormData.current;
+		if (!initialised || !data) return;
+
+		toPayload(ctx.server, data)
+			.then((payload) => {
+				untrack(() => {
+					sessCtx.payload = payload;
+					sessionDraft.current = payload;
+				});
+			})
+			.catch(console.error);
 	});
 
 	let emptySession = $derived(!loadingAgent && $formData.agents.length === 0);
@@ -475,7 +464,11 @@
 	// ─── Template Handling ────────────────────────────────────────────────────
 
 	const loadTemplate = (template: string, override?: boolean) => {
-		if (sessionDraft.current && sessionDraft.current?.agents.length > 0 && !override) {
+		if (
+			sessionDraft.current &&
+			sessionDraft.current.agentGraphRequest?.agents.length > 0 &&
+			!override
+		) {
 			overwriteDraft = { template, override: true };
 		} else {
 			if (template) {
@@ -520,8 +513,12 @@
 	// ─── Mount ────────────────────────────────────────────────────────────────
 
 	onMount(async () => {
-		if (sessionDraft.current && sessionDraft.current.agents.length >= 0) {
-			loadFromData(sessionDraft.current);
+		if (sessionDraft.current && sessionDraft.current.agentGraphRequest.agents.length >= 0) {
+			// ensure required 'from' property is present for importSession
+			sessCtx.importSession({
+				from: JSON.stringify(sessionDraft.current),
+				success: 'Loaded previous workbench draft'
+			});
 		}
 
 		const agentsQuery = page.url.searchParams.get('agents');
@@ -1021,7 +1018,7 @@
 		</Resizable.PaneGroup>
 	{:else}
 		<Card.Root class="h-full w-full p-0">
-			<Card.Content class="h-full w-full p-0">
+			<Card.Content class="relative h-full w-full p-0">
 				<CodePane />
 			</Card.Content>
 		</Card.Root>
