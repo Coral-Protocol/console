@@ -361,10 +361,10 @@
 
 					<div use:tourTarget={'workbench'} class="relative w-full">
 						<SidebarLink url="{base}/workbench" icon={IconCircuity} title="Workbench" />
-						{#if sessionDraft.current && sessionDraft.current.agents.length > 0}
+						{#if sessionDraft.current && sessionDraft.current.agentGraphRequest.agents.length > 0}
 							<Badge
-								class="text-muted-foreground absolute top-1 right-1 bottom-1 my-auto"
-								variant="outline">draft</Badge
+								class="text-muted-foreground pointer-events-none absolute top-1 right-1 bottom-1 my-auto italic"
+								variant="secondary">draft</Badge
 							>
 						{/if}
 					</div>
