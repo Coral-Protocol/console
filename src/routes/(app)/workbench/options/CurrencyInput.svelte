@@ -2,6 +2,7 @@
 	import * as ButtonGroup from '@coral-os/component-library/ui/button-group/index.js';
 	import * as InputGroup from '@coral-os/component-library/ui/input-group/index.js';
 	import * as Label from '@coral-os/component-library/ui/label/index.js';
+	import { tick } from 'svelte';
 
 	const MICRODOLLARS_PER_DOLLAR = 100_000_000;
 
@@ -42,9 +43,14 @@
 
 	const dollars = $derived(toDollars(value ?? 0));
 
-	function onFocus(e: FocusEvent & { currentTarget: HTMLInputElement }) {
+	async function onFocus(e: FocusEvent & { currentTarget: HTMLInputElement }) {
 		isEditing = true;
 		editingValue = isNaN(dollars) ? '' : dollars.toFixed(10).replace(/\.?0+$/, '');
+
+		await tick();
+		e.currentTarget.select();
+
+		// TODO: without the await tick it doesnt select! :)
 	}
 
 	function onBlur(e: FocusEvent & { currentTarget: HTMLInputElement }) {
