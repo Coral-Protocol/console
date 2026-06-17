@@ -22,6 +22,8 @@
 
 	import * as Label from '@coral-os/component-library/ui/label/index.js';
 
+	import CurrencyInput from '../options/CurrencyInput.svelte';
+
 	import { Context } from 'runed';
 
 	import { TooltipLabel, TwostepButton } from '@coral-os/component-library';
@@ -99,6 +101,13 @@
 				'Once the session budget is exhausted and claimed from, a warning will be produced. This behavior has a high risk of overclaiming.'
 		}
 	] as const;
+
+	const MICRODOLLARS_PER_DOLLAR = 100_000_000;
+
+	const toDollars = (micro: number) => micro / MICRODOLLARS_PER_DOLLAR;
+	const toMicro = (dollars: number) => Math.round(dollars * MICRODOLLARS_PER_DOLLAR);
+
+	const isWarnOnly = $derived($formData.sessionBudgetSettings.exhaustionBehavior.type === 'warn');
 </script>
 
 {#if ctx && $formData}
@@ -123,27 +132,12 @@
 					>
 						Session budget
 					</TooltipLabel>
-					<ButtonGroup.Root class="grow">
-						<ButtonGroup.Text>
-							<Label.Root>$</Label.Root>
-						</ButtonGroup.Text>
-						<InputGroup.Root>
-							<InputGroup.Input
-								{...props}
-								value={($formData.sessionBudgetSettings.budget ?? 0) / 100000000}
-								oninput={(e: { currentTarget: { valueAsNumber: any } }) => {
-									const dollars = e.currentTarget.valueAsNumber;
-
-									$formData.sessionBudgetSettings.budget = Number.isNaN(dollars)
-										? 0
-										: Math.round(dollars * 100000000);
-								}}
-								type="number"
-								step="0.01"
-								placeholder="0.00"
-							/>
-						</InputGroup.Root>
-					</ButtonGroup.Root>
+					<CurrencyInput
+						value={$formData.sessionBudgetSettings.budget ?? 0}
+						onchange={(micro) => {
+							$formData.sessionBudgetSettings.budget = micro;
+						}}
+					/>
 				{/snippet}
 			</Form.Control>
 		</Form.ElementField>
@@ -281,32 +275,15 @@
 							>
 								Minimum
 							</TooltipLabel>
-							<ButtonGroup.Root class="grow">
-								<ButtonGroup.Text>
-									<Label.Root>$</Label.Root>
-								</ButtonGroup.Text>
-								<InputGroup.Root>
-									<InputGroup.Input
-										{...props}
-										value={($formData.sessionBudgetSettings.exhaustionBehavior.minimum ?? 0) /
-											100000000}
-										oninput={(e: { currentTarget: { valueAsNumber: any } }) => {
-											if ($formData.sessionBudgetSettings.exhaustionBehavior.type !== 'warn') {
-												const dollars = e.currentTarget.valueAsNumber;
-
-												$formData.sessionBudgetSettings.exhaustionBehavior.minimum = Number.isNaN(
-													dollars
-												)
-													? 0
-													: Math.round(dollars * 100000000);
-											}
-										}}
-										type="number"
-										step="0.01"
-										placeholder="0.00"
-									/>
-								</InputGroup.Root>
-							</ButtonGroup.Root>
+							<CurrencyInput
+								value={$formData.sessionBudgetSettings.exhaustionBehavior.minimum ?? 0}
+								disabled={isWarnOnly}
+								onchange={(micro) => {
+									if ($formData.sessionBudgetSettings.exhaustionBehavior.type !== 'warn') {
+										$formData.sessionBudgetSettings.exhaustionBehavior.minimum = micro;
+									}
+								}}
+							/>
 						{/if}
 					{/snippet}
 				</Form.Control>
@@ -359,98 +336,5 @@
 				</p>
 			</Alert.Description>
 		</Alert.Root>
-
-		<!-- <h1 class="font-semibold">Agent budgets</h1>
-
-				<DropdownMenu.Root>
-					<DropdownMenu.Trigger class={cn(buttonVariants({}), 'w-fit')}
-						>Add budget for...</DropdownMenu.Trigger
-					>
-					<DropdownMenu.Content>
-						{#each $formData.agents.filter((a) => a.budgetSettings?.budget == null) as agent (agent.name)}
-							<DropdownMenu.Item
-								onclick={() => {
-									$formData.agents = $formData.agents.map((a) =>
-										a.name === agent.name
-											? {
-													...a,
-													budgetSettings: {
-														budget: 100,
-														exhaustionBehavior: {
-															type: 'consume_session'
-														}
-													}
-												}
-											: a
-									);
-								}}
-							>
-								{agent.name}
-							</DropdownMenu.Item>
-						{:else}
-							No available agents
-						{/each}
-					</DropdownMenu.Content>
-				</DropdownMenu.Root>
-				<Accordion.Root type="multiple" class="border">
-					{#each $formData.agents as agent, index (agent.name)}
-						{#if agent.budgetSettings?.budget != null}
-							<Accordion.Item>
-								<Accordion.Trigger variant="compact" class="text-md">{agent.name}</Accordion.Trigger
-								>
-								<Accordion.Content class="pt-4">
-									<Button
-										class="w-fit"
-										onclick={() => {
-											$formData.agents = $formData.agents.map((a) =>
-												a.name === agent.name
-													? {
-															...a,
-															budgetSettings: undefined
-														}
-													: a
-											);
-										}}>remove budget</Button
-									>
-									<Form.ElementField
-										{form}
-										name={`agents.${index}.budgetSettings.budget`}
-										class="flex items-center gap-2"
-									>
-										<Form.Control>
-											{#snippet children({ props })}
-												<TooltipLabel
-													title="Agent budget"
-													tooltip="Budget applied only to this agent."
-													extra={{
-														required: false,
-														type: 'integer'
-													}}
-													class="max-w-1/4 min-w-1/4"
-												>
-													Agent budget
-												</TooltipLabel>
-
-												<Input
-													{...props}
-													bind:value={$formData.agents[index]!.budgetSettings!.budget}
-													placeholder="amount in microcents"
-													type="number"
-													class="grow"
-												/>
-											{/snippet}
-										</Form.Control>
-									</Form.ElementField>
-
-									{#if agent.budgetSettings?.exhaustionBehavior}
-										<div>
-											Behavior: {agent.budgetSettings.exhaustionBehavior.type}
-										</div>
-									{/if}
-								</Accordion.Content>
-							</Accordion.Item>
-						{/if}
-					{/each}
-				</Accordion.Root> -->
 	</section>
 {/if}
