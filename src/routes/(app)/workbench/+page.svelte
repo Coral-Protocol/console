@@ -514,7 +514,6 @@
 
 	onMount(async () => {
 		if (sessionDraft.current && sessionDraft.current.agentGraphRequest.agents.length >= 0) {
-			// ensure required 'from' property is present for importSession
 			sessCtx.importSession({
 				from: JSON.stringify(sessionDraft.current),
 				success: 'Loaded previous workbench draft'

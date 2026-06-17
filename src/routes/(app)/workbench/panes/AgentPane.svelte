@@ -37,6 +37,7 @@
 	import { getSessionDataFromTemplateName } from '../templates/TemplateLib';
 	import { getSessionContext } from '$lib/sessionCreatorContext';
 	import { cn } from '$lib/utils';
+	import CurrencyInput from '../options/CurrencyInput.svelte';
 
 	let appCtx = appContext.get();
 
@@ -95,11 +96,9 @@
 		return $formData.agents[agentIdx]?.budgetSettings?.exhaustionBehavior;
 	}
 
-	function isKillBehavior(
-		behavior: ReturnType<typeof getAgentExhaustionBehavior>
-	): behavior is { type: 'kill'; force: boolean; minimum: number } {
-		return behavior?.type === 'kill';
-	}
+	const agentBehavior = $derived(
+		$formData.agents[ctx.selectedAgent!]?.budgetSettings?.exhaustionBehavior
+	);
 </script>
 
 {#if ctx.selectedAgent !== null && curAgent && curCatalog}
@@ -254,14 +253,15 @@
 		</header>
 		<ol class="border-t">
 			<li>
-				<Accordion.Root type="multiple" value="budget">
+				<Accordion.Root type="multiple" value={['budget']}>
 					<Accordion.Item value="budget">
 						<Accordion.Trigger variant="compact">Agent budget</Accordion.Trigger>
 
 						<Accordion.Content class="flex flex-col gap-2 p-0">
+							{@const agentIdx = ctx.selectedAgent!}
 							<Form.ElementField
 								{form}
-								name="agents[{ctx.selectedAgent!}].budgetSettings.budget"
+								name="agents[{agentIdx}].budgetSettings.budget"
 								class="flex items-center gap-2 "
 							>
 								<Form.Control>
@@ -273,42 +273,35 @@
 												required: true,
 												type: 'integer'
 											}}
-											class="max-w-1/4 min-w-1/4  "
+											class="max-w-1/4 min-w-1/4"
 										>
 											Agent budget
 										</TooltipLabel>
-										<ButtonGroup.Root class="grow">
-											<ButtonGroup.Text>
-												<Label.Root>$</Label.Root>
-											</ButtonGroup.Text>
-											<InputGroup.Root>
-												<InputGroup.Input
-													{...props}
-													value={($formData.agents[ctx.selectedAgent!]?.budgetSettings?.budget ??
-														0) / 100000000}
-													oninput={(e: { currentTarget: { valueAsNumber: any } }) => {
-														const dollars = e.currentTarget.valueAsNumber;
-														$formData.agents[ctx.selectedAgent!]!.budgetSettings!.budget =
-															Number.isNaN(dollars) ? 0 : Math.round(dollars * 100000000);
-													}}
-													type="number"
-													step="0.01"
-													placeholder="0.00"
-												/>
-											</InputGroup.Root>
-										</ButtonGroup.Root>
+
+										<CurrencyInput
+											value={$formData.agents[agentIdx]?.budgetSettings?.budget ?? 0}
+											onchange={(micro) => {
+												const agent = $formData.agents[agentIdx];
+												if (!agent) return;
+
+												agent.budgetSettings ??= {};
+
+												agent.budgetSettings.budget = micro;
+
+												$formData.agents = $formData.agents;
+											}}
+										/>
 									{/snippet}
 								</Form.Control>
 							</Form.ElementField>
 
 							<Form.ElementField
 								{form}
-								name="agents[{ctx.selectedAgent!}].budgetSettings.exhaustionBehavior.type"
+								name="agents[{agentIdx}].budgetSettings.exhaustionBehavior.type"
 								class="flex w-full items-center gap-2 "
 							>
 								<Form.Control>
 									{#snippet children()}
-										{@const agentIdx = ctx.selectedAgent!}
 										{@const exhaustionBehavior = getAgentExhaustionBehavior(agentIdx)}
 										<TooltipLabel
 											title="Exhaustion Behavior"
@@ -391,13 +384,9 @@
 									{/snippet}
 								</Form.Control>
 							</Form.ElementField>
-							{#if isKillBehavior(getAgentExhaustionBehavior(ctx.selectedAgent!))}
-								{@const agentIdx = ctx.selectedAgent!}
-								{@const killBehavior = getAgentExhaustionBehavior(agentIdx) as {
-									type: 'kill';
-									force: boolean;
-									minimum: number;
-								}}
+							{#if agentBehavior?.type !== 'consume_session' && agentBehavior}
+								{@const killBehavior = getAgentExhaustionBehavior(agentIdx)}
+								{@const force = killBehavior?.type === 'kill' ? killBehavior.force : false}
 								<Form.ElementField
 									{form}
 									name="agents[{agentIdx}].budgetSettings.exhaustionBehavior.force"
@@ -412,87 +401,86 @@
 													required: true,
 													type: 'boolean'
 												}}
-												class="max-w-1/4 min-w-1/4 "
+												class="max-w-1/4 min-w-1/4"
 											>
 												Force kill agent
 											</TooltipLabel>
 											<ButtonGroup.Root {...props} class="m-0 justify-start">
 												<Button
-													class={cn(
-														killBehavior.force !== true ? 'bg-accent text-accent-foreground' : ''
-													)}
+													class={cn(force !== true ? 'bg-accent text-accent-foreground' : '')}
 													onclick={() => {
-														const behavior =
-															$formData.agents[agentIdx]?.budgetSettings?.exhaustionBehavior;
-														if (behavior?.type === 'kill') {
-															behavior.force = true;
-															$formData.agents = $formData.agents;
-														}
-													}}>True</Button
+														const agent = $formData.agents[agentIdx];
+														if (!agent) return;
+
+														agent.budgetSettings ??= {};
+
+														const existing = agent.budgetSettings.exhaustionBehavior;
+
+														agent.budgetSettings.exhaustionBehavior = {
+															type: 'kill',
+															force: true,
+															minimum: existing?.type === 'kill' ? existing.minimum : 0
+														};
+
+														$formData.agents = $formData.agents;
+													}}
 												>
+													True
+												</Button>
 												<Button
-													class={cn(
-														killBehavior.force !== false ? 'bg-accent text-accent-foreground' : ''
-													)}
+													class={cn(force === true ? 'bg-accent text-accent-foreground' : '')}
 													onclick={() => {
-														const behavior =
-															$formData.agents[agentIdx]?.budgetSettings?.exhaustionBehavior;
-														if (behavior?.type === 'kill') {
-															behavior.force = false;
-															$formData.agents = $formData.agents;
-														}
-													}}>False</Button
+														const agent = $formData.agents[agentIdx];
+														if (!agent) return;
+
+														agent.budgetSettings ??= {};
+
+														const existing = agent.budgetSettings.exhaustionBehavior;
+
+														agent.budgetSettings.exhaustionBehavior = {
+															type: 'kill',
+															force: false,
+															minimum: existing?.type === 'kill' ? existing.minimum : 0
+														};
+														$formData.agents = $formData.agents;
+													}}
 												>
+													False
+												</Button>
 											</ButtonGroup.Root>
 										{/snippet}
 									</Form.Control>
 								</Form.ElementField>
-								<Form.ElementField
-									{form}
-									name="agents[{agentIdx}].budgetSettings.exhaustionBehavior.minimum"
-									class="flex items-center gap-2 "
-								>
-									<Form.Control>
-										{#snippet children({ props })}
-											<TooltipLabel
-												title="Minimum threshold"
-												tooltip="If the session budget drops below this, it will trigger the exhaustion behavior. This is used to prevent overclaiming."
-												extra={{
-													required: true,
-													type: 'integer'
-												}}
-												class="max-w-1/4 min-w-1/4 "
-											>
-												Minimum
-											</TooltipLabel>
-											<ButtonGroup.Root class="grow">
-												<ButtonGroup.Text>
-													<Label.Root>$</Label.Root>
-												</ButtonGroup.Text>
-												<InputGroup.Root>
-													<InputGroup.Input
-														{...props}
-														value={(killBehavior.minimum ?? 0) / 100000000}
-														oninput={(e: { currentTarget: { valueAsNumber: any } }) => {
-															const dollars = e.currentTarget.valueAsNumber;
-															const behavior =
-																$formData.agents[agentIdx]?.budgetSettings?.exhaustionBehavior;
-															if (behavior?.type === 'kill') {
-																behavior.minimum = Number.isNaN(dollars)
-																	? 0
-																	: Math.round(dollars * 100000000);
-																$formData.agents = $formData.agents;
-															}
-														}}
-														type="number"
-														step="0.01"
-														placeholder="0.00"
-													/>
-												</InputGroup.Root>
-											</ButtonGroup.Root>
-										{/snippet}
-									</Form.Control>
-								</Form.ElementField>
+								{#if killBehavior?.type === 'kill'}
+									<Form.ElementField
+										{form}
+										name="agents[{agentIdx}].budgetSettings.exhaustionBehavior.minimum"
+										class="flex items-center gap-2 "
+									>
+										<Form.Control>
+											{#snippet children({ props })}
+												<TooltipLabel
+													title="Minimum threshold"
+													tooltip="If the session budget drops below this, it will trigger the exhaustion behavior. This is used to prevent overclaiming."
+													extra={{
+														required: true,
+														type: 'integer'
+													}}
+													class="max-w-1/4 min-w-1/4"
+												>
+													Minimum
+												</TooltipLabel>
+												<CurrencyInput
+													value={killBehavior.minimum ?? 0}
+													onchange={(micro) => {
+														killBehavior.minimum = micro;
+														$formData.agents = $formData.agents;
+													}}
+												/>
+											{/snippet}
+										</Form.Control>
+									</Form.ElementField>
+								{/if}
 							{/if}
 						</Accordion.Content>
 					</Accordion.Item>
