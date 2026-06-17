@@ -1274,30 +1274,19 @@
         } ]
       }
     },
-    "/api/v1/agent-rpc/rental-claim" : {
+    "/api/v1/agent-rpc/claim" : {
       "post" : {
         "tags" : [ "agent-rpc" ],
-        "summary" : "Submit rental agent claim",
-        "description" : "Requests a certain amount of money to be paid for a work done by a rental agent",
-        "operationId" : "submitRentalClaim",
-        "parameters" : [ {
-          "name" : "remoteSessionId",
-          "in" : "path",
-          "description" : "The remote session ID",
-          "required" : true,
-          "deprecated" : false,
-          "explode" : false,
-          "schema" : {
-            "type" : "string",
-            "title" : "String"
-          }
-        } ],
+        "summary" : "Submit an agent claim",
+        "description" : "Submits a claim for work performed",
+        "operationId" : "submitClaim",
+        "parameters" : [ ],
         "requestBody" : {
           "description" : "A description of the work done and the payment required",
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/AgentPaymentClaimRequest"
+                "$ref" : "#/components/schemas/AgentClaimRequest"
               }
             }
           },
@@ -1310,24 +1299,13 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/AgentRemainingBudget"
+                  "$ref" : "#/components/schemas/AgentClaimResponse"
                 }
               }
             }
           },
-          "404" : {
-            "description" : "Remote session not found",
-            "headers" : { },
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RouteException"
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "No payment associated with the session",
+          "401" : {
+            "description" : "Bad agent secret provided",
             "headers" : { },
             "content" : {
               "application/json" : {
@@ -3198,9 +3176,13 @@
               "$ref" : "#/components/schemas/SessionThread"
             },
             "title" : "ArrayList<SessionThread>"
+          },
+          "runningBudget" : {
+            "$ref" : "#/components/schemas/SessionRunningBudget",
+            "description" : "A counter for the session's running budget.  See SessionRunningBudget for more information"
           }
         },
-        "required" : [ "agents", "base", "threads" ],
+        "required" : [ "agents", "base", "runningBudget", "threads" ],
         "title" : "SessionStateExtended"
       },
       "SessionAgentState" : {
@@ -3359,6 +3341,10 @@
             "title" : "LinkedHashSet<String>",
             "uniqueItems" : true
           },
+          "runningBudget" : {
+            "$ref" : "#/components/schemas/SessionRunningBudget",
+            "description" : "A counter for the agent's running budget.  See SessionRunningBudget for more information"
+          },
           "annotations" : {
             "type" : "object",
             "additionalProperties" : {
@@ -3366,17 +3352,9 @@
               "title" : "String"
             },
             "title" : "LinkedHashMap<String,String>"
-          },
-          "tokensByModel" : {
-            "type" : "object",
-            "additionalProperties" : {
-              "$ref" : "#/components/schemas/TokenUsage"
-            },
-            "description" : "Token usage broken down by provider/model (e.g. 'openai/gpt-4.1')",
-            "title" : "LinkedHashMap<String,TokenUsage>"
           }
         },
-        "required" : [ "annotations", "links", "name", "registryAgentIdentifier", "status", "tokensByModel" ],
+        "required" : [ "annotations", "links", "name", "registryAgentIdentifier", "runningBudget", "status" ],
         "title" : "SessionAgentState"
       },
       "RegistryAgentIdentifier" : {
@@ -3441,22 +3419,54 @@
         "required" : [ "name", "registrySourceId", "version" ],
         "title" : "RegistryAgentIdentifier"
       },
-      "TokenUsage" : {
+      "SessionRunningBudget" : {
         "type" : "object",
         "properties" : {
-          "inputTokens" : {
+          "startBudget" : {
             "type" : "integer",
-            "format" : "int64",
-            "title" : "Long"
+            "title" : "AgentBudgetUnit"
           },
-          "outputTokens" : {
+          "clamp" : {
+            "type" : "boolean",
+            "title" : "Boolean"
+          },
+          "remaining" : {
             "type" : "integer",
-            "format" : "int64",
-            "title" : "Long"
+            "title" : "AgentBudgetUnit"
+          },
+          "overclaim" : {
+            "type" : "integer",
+            "title" : "AgentBudgetUnit"
+          },
+          "claims" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SessionBudgetClaim"
+            },
+            "title" : "ArrayList<SessionBudgetClaim>"
           }
         },
-        "required" : [ "inputTokens", "outputTokens" ],
-        "title" : "TokenUsage"
+        "required" : [ "claims", "clamp", "overclaim", "remaining", "startBudget" ],
+        "title" : "SessionRunningBudget"
+      },
+      "SessionBudgetClaim" : {
+        "type" : "object",
+        "properties" : {
+          "amount" : {
+            "type" : "integer",
+            "title" : "AgentBudgetUnit"
+          },
+          "description" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "title" : "UTC timestamp ISO-8601"
+          }
+        },
+        "required" : [ "amount", "description", "timestamp" ],
+        "title" : "SessionBudgetClaim"
       },
       "SessionAgentUsageReport" : {
         "type" : "object",
@@ -4706,6 +4716,11 @@
                   "type" : "boolean",
                   "description" : "If this is true, the agent will be killed immediately.  If this is false, the agent will only be killed if the claim requests for automatic closing.",
                   "title" : "Boolean"
+                },
+                "forceDelay" : {
+                  "type" : "string",
+                  "description" : "If force killing is enabled, it will be delayed by this amount before the agent is killed.  If this delay is too low the agent may be killed before it handles to response to a claim",
+                  "title" : "Duration"
                 }
               },
               "required" : [ "force", "minimum", "type" ],
@@ -4985,6 +5000,11 @@
                   "type" : "boolean",
                   "description" : "If this is true, when an agent claims from the session budget that is below the minimum, the agent will be killed immediately.  If this is false, the agent will only be killed if the agent requests for automatic closing.",
                   "title" : "Boolean"
+                },
+                "forceDelay" : {
+                  "type" : "string",
+                  "description" : "If force killing is enabled, it will be delayed by this amount before the agent is killed.  If this delay is too low the agent may be killed before it handles to response to a claim",
+                  "title" : "Duration"
                 }
               },
               "required" : [ "force", "minimum", "type" ],
@@ -5002,6 +5022,11 @@
                   "type" : "integer",
                   "description" : "The minimum value, specified in micro cents. $1.00 is 100000000 and $0.01 is 1000000.",
                   "title" : "AgentBudgetUnit"
+                },
+                "delay" : {
+                  "type" : "string",
+                  "description" : "The delay before the session is killed.  If this delay is too low, the agent whose claim triggered this may be killed before it receives the response to that claim",
+                  "title" : "Duration"
                 }
               },
               "required" : [ "minimum", "type" ],
@@ -7783,88 +7808,55 @@
         "required" : [ "participantName", "threadId" ],
         "title" : "RemoveParticipantInput"
       },
-      "AgentPaymentClaimRequest" : {
+      "AgentClaimRequest" : {
         "type" : "object",
         "properties" : {
           "amount" : {
-            "anyOf" : [ {
-              "type" : "object",
-              "properties" : {
-                "type" : {
-                  "type" : "string",
-                  "enum" : [ "coral" ],
-                  "title" : "String"
-                },
-                "amount" : {
-                  "type" : "number",
-                  "format" : "double",
-                  "title" : "Double"
-                }
-              },
-              "required" : [ "amount", "type" ],
-              "title" : "coral"
-            }, {
-              "type" : "object",
-              "properties" : {
-                "type" : {
-                  "type" : "string",
-                  "enum" : [ "micro_coral" ],
-                  "title" : "String"
-                },
-                "amount" : {
-                  "type" : "integer",
-                  "format" : "int64",
-                  "title" : "Long"
-                }
-              },
-              "required" : [ "amount", "type" ],
-              "title" : "micro_coral"
-            }, {
-              "type" : "object",
-              "properties" : {
-                "type" : {
-                  "type" : "string",
-                  "enum" : [ "usd" ],
-                  "title" : "String"
-                },
-                "amount" : {
-                  "type" : "number",
-                  "format" : "double",
-                  "title" : "Double"
-                }
-              },
-              "required" : [ "amount", "type" ],
-              "title" : "usd"
-            } ],
-            "description" : "The amount to claim.  This will be converted to Coral when received",
-            "discriminator" : {
-              "propertyName" : "type"
-            },
-            "title" : "AgentClaimAmount"
-          }
-        },
-        "required" : [ "amount" ],
-        "title" : "AgentPaymentClaimRequest"
-      },
-      "AgentRemainingBudget" : {
-        "type" : "object",
-        "description" : "\n    This object is returned by the agent claim endpoint and represents the remaining budget for the agent.  The agent \n    should use this respond to decide whether whether it can continue providing services with the remaining budget.\n    \n    This object attaches a USD price for a Coral to it so that agents do not have to make multiple calls to the pricing \n    endpoint to determine the price of a Coral.  This field is an 'estimate', it can be based off cached data and may not \n    be accurate, so this should only be used if the agent represented it's rates in USD.\n    \n    If better accuracy is required agent-side, the budget should only use micro-corals.\n",
-        "properties" : {
-          "remainingBudget" : {
             "type" : "integer",
-            "format" : "int64",
-            "description" : "The remaining budget for the agent, represented in micro-corals",
-            "title" : "Long"
+            "description" : "The claim amount, specified in micro cents. $1.00 is 100000000 and $0.01 is 1000000.",
+            "title" : "AgentBudgetUnit"
           },
-          "coralUsdPrice" : {
-            "type" : "number",
-            "format" : "double",
-            "description" : "Current USD price for one whole Coral",
-            "title" : "Double"
+          "description" : {
+            "type" : "string",
+            "description" : "A description of the claim, must be at most 256 characters long",
+            "title" : "String"
+          },
+          "autoKill" : {
+            "type" : "boolean",
+            "description" : "Set this to false if the agent wants to handle budget exhaustion itself. Budget settings may kill agents on budget exhaustion even if this is set to false",
+            "title" : "Boolean"
           }
         },
-        "required" : [ "coralUsdPrice", "remainingBudget" ],
-        "title" : "AgentRemainingBudget"
+        "required" : [ "amount", "autoKill", "description" ],
+        "title" : "AgentClaimRequest"
+      },
+      "AgentClaimResponse" : {
+        "type" : "object",
+        "description" : "A response to a claim request.",
+        "properties" : {
+          "requestedAmount" : {
+            "type" : "integer",
+            "description" : "The amount requested, echoed back to the agent",
+            "title" : "AgentBudgetUnit"
+          },
+          "fulfilledAmount" : {
+            "type" : "integer",
+            "description" : "The amount of the budget that could be fulfilled. If this is not equal to the requested amount, the budget was exhausted.",
+            "title" : "AgentBudgetUnit"
+          },
+          "remainingAmount" : {
+            "type" : "integer",
+            "description" : "\n        The remaining budget available to the agent. This includes the agent budget and the session budget, if the agent is configured to use it. \n        \n        NOTE: It is possible that the budgets are configured to warn when empty, which will allow claims to exceed the defined budgets. It is possible that the remaining amount reaches zero but claiming is still possible.\n        ",
+            "title" : "AgentBudgetUnit"
+          },
+          "shouldExit" : {
+            "type" : "boolean",
+            "description" : "If this is true, the claim resulted in a budget exhaustion that should cause the agent to exit.",
+            "title" : "Boolean"
+          }
+        },
+        "required" : [ "fulfilledAmount", "remainingAmount", "requestedAmount", "shouldExit" ],
+        "title" : "AgentClaimResponse"
       },
       "X402ProxyRequest" : {
         "type" : "object",

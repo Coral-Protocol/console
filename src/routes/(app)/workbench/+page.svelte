@@ -1,31 +1,5 @@
-<script lang="ts" module>
-	import { Context, Debounced, useDebounce } from 'runed';
-	import type { SuperForm, SuperFormData, SuperFormErrors } from 'sveltekit-superforms/client';
-	import type { FormSchema } from '$lib/sessionSchema';
-	import type z from 'zod';
-
-	// FIXME: why is this hardcoded
-	export type AgentSource = 'marketplace' | 'linked' | 'local';
-
-	export type SessionCreatorContext = {
-		payload: CreateSessionRequest | null;
-		importSession: (options: { success?: string; from: string }) => boolean;
-		addAgent: (name: string, source: AgentSource, version: string) => Promise<void>;
-
-		selectedAgent: number | null;
-		detailedAgent: Awaited<ReturnType<CoralServer['lookupAgent']>> | null;
-
-		form: SuperForm<z.output<FormSchema>>;
-		formData: SuperFormData<z.output<FormSchema>>;
-		errors: SuperFormErrors<z.output<FormSchema>>;
-	};
-</script>
-
 <script lang="ts">
-	import LoggedOutWarning from './LoggedOutWarning.svelte';
-
-	import Header from '$lib/components/header.svelte';
-
+	// ─── UI Component Library ─────────────────────────────────────────────────
 	import * as Sidebar from '@coral-os/component-library/ui/sidebar/index.js';
 	import * as Resizable from '@coral-os/component-library/ui/resizable/index.js';
 	import * as Tabs from '@coral-os/component-library/ui/tabs/index.js';
@@ -33,13 +7,21 @@
 	import * as Table from '@coral-os/component-library/ui/table/index.js';
 	import * as Form from '@coral-os/component-library/ui/form/index.js';
 	import * as Popover from '@coral-os/component-library/ui/popover/index.js';
-	import { Button, buttonVariants } from '@coral-os/component-library/ui/button/index.js';
 	import * as Tooltip from '@coral-os/component-library/ui/tooltip/index.js';
 	import * as DropdownMenu from '@coral-os/component-library/ui/dropdown-menu/index.js';
 	import * as AlertDialog from '@coral-os/component-library/ui/alert-dialog/index.js';
-
+	import * as Dialog from '@coral-os/component-library/ui/dialog/index.js';
 	import * as Card from '@coral-os/component-library/ui/card/index.js';
+	import * as UnderlineTabs from '@coral-os/component-library/ui/underline-tabs/index.js';
+	import { Button, buttonVariants } from '@coral-os/component-library/ui/button/index.js';
+	import { Checkbox } from '@coral-os/component-library/ui/checkbox/index.js';
+	import { Label } from '@coral-os/component-library/ui/label/index.js';
+	import { Separator } from '@coral-os/component-library/ui/separator/index.js';
+	import { Spinner } from '@coral-os/component-library/ui/spinner/index.js';
+	import { Pip, TwostepButton } from '@coral-os/component-library';
+	import { Skeleton } from '@coral-os/component-library/components/ui/skeleton/index.js';
 
+	// ─── Icons ────────────────────────────────────────────────────────────────
 	import IconWrenchRegular from 'phosphor-icons-svelte/IconWrenchRegular.svelte';
 	import IconUsersThreeRegular from 'phosphor-icons-svelte/IconUsersThreeRegular.svelte';
 	import IconRobotRegular from '$lib/icons/robot.svelte';
@@ -49,103 +31,64 @@
 	import IconStorefront from 'phosphor-icons-svelte/IconStorefrontRegular.svelte';
 	import IconFileText from 'phosphor-icons-svelte/IconFileTextRegular.svelte';
 
-	import { Checkbox } from '@coral-os/component-library/ui/checkbox/index.js';
-	import { Label } from '@coral-os/component-library/ui/label/index.js';
-	import { Separator } from '@coral-os/component-library/ui/separator/index.js';
-
-	import { Spinner } from '@coral-os/component-library/ui/spinner/index.js';
-	import { Pip, TwostepButton } from '@coral-os/component-library';
-
-	import SidebarTab from './SidebarTab.svelte';
+	// ─── Local Components ─────────────────────────────────────────────────────
+	import Header from '$lib/components/header.svelte';
+	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
 	import Graph from '$lib/components/Graph/Graph.svelte';
-
-	import { superForm, defaults } from 'sveltekit-superforms';
-	import { zod4 } from 'sveltekit-superforms/adapters';
-
-	import { page } from '$app/state';
-	import { onMount, untrack } from 'svelte';
-
-	import { toast } from 'svelte-sonner';
-	import { PersistedState } from 'runed';
-
-	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
-	import { Session } from '$lib/session.svelte';
-	import { appContext } from '$lib/context';
-	import { CoralServer, agentIdOf, type RegistryAgentIdentifier } from '$lib/CoralServer.svelte';
-
-	import { makeFormSchema, type CreateSessionRequest } from '$lib/sessionSchema/types';
-	import { toPayload } from '$lib/sessionSchema';
-	import { importFromPayload } from '$lib/sessionSchema';
+	import LoggedOutWarning from './LoggedOutWarning.svelte';
+	import SidebarTab from './SidebarTab.svelte';
 	import AgentPicker from './AgentPicker.svelte';
 	import TemplatePicker from './TemplatePicker.svelte';
+	import TemplateSaver from './TemplateSaver.svelte';
+	import Bool from './options/Bool.svelte';
+
+	// ─── Panes ────────────────────────────────────────────────────────────────
 	import CodePane from './panes/CodePane.svelte';
 	import ToolsPane from './panes/ToolsPane.svelte';
 	import GroupsPane from './panes/GroupsPane.svelte';
 	import BudgetPane from './panes/BudgetPane.svelte';
 	import SessionPane from './panes/SessionPane.svelte';
 	import AgentPane from './panes/AgentPane.svelte';
-	import TemplateSaver from './TemplateSaver.svelte';
+	import MarketPane from './panes/MarketPane.svelte';
+
+	// ─── Third-party Libraries ────────────────────────────────────────────────
+	import { superForm, defaults } from 'sveltekit-superforms';
+	import { zod4 } from 'sveltekit-superforms/adapters';
+	import { SvelteFlowProvider } from '@xyflow/svelte';
+	import { PersistedState } from 'runed';
+	import { toast } from 'svelte-sonner';
+	import { string } from 'zod';
+	import { z } from 'zod';
+	import { Context, Debounced, useDebounce } from 'runed';
+
+	// ─── Svelte / SvelteKit ───────────────────────────────────────────────────
+	import { page } from '$app/state';
+	import { onMount, untrack } from 'svelte';
+
+	// ─── App Internals ────────────────────────────────────────────────────────
+	import { appContext } from '$lib/context';
+	import { CoralServer, agentIdOf, type RegistryAgentIdentifier } from '$lib/CoralServer.svelte';
+	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
+	import { Session } from '$lib/session.svelte';
+	import {
+		makeFormSchema,
+		type CreateSessionRequest,
+		type FormSchema
+	} from '$lib/sessionSchema/types';
+	import { toPayload, importFromPayload } from '$lib/sessionSchema';
+	import { sessionDraft, recentSession } from '$lib/sessionDraftData';
+	import {
+		setSessionContext,
+		type SessionCreatorContext,
+		type AgentSource
+	} from '$lib/sessionCreatorContext';
 	import { getSessionDataFromTemplateName } from './templates/TemplateLib';
 	import { tourTarget } from '$lib/components/tour/tourTarget';
-	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
 	import { cn } from '$lib/utils';
-	import MarketPane from './panes/MarketPane.svelte';
-	import { Skeleton } from '@coral-os/component-library/components/ui/skeleton/index.js';
-	import { SvelteFlowProvider } from '@xyflow/svelte';
-	import * as UnderlineTabs from '@coral-os/component-library/ui/underline-tabs/index.js';
-	import { setSessionContext } from '$lib/sessionCreatorContext';
 	import config from '$lib/config';
 
-	function sourceToRegistryId(source: AgentSource): RegistryAgentIdentifier['registrySourceId'] {
-		switch (source) {
-			case 'local':
-				return { type: 'local' };
+	// ─── Types ────────────────────────────────────────────────────────────────
 
-			case 'marketplace':
-				return { type: 'marketplace' };
-
-			case 'linked':
-				return { type: 'linked', linkedServerId: 'default' };
-		}
-	}
-
-	const AGENT_REGEX = /^(marketplace|linked|local):(.+?)@(\d+\.\d+\.\d+)$/;
-
-	let parsedAgents: ParsedAgent[] = [];
-
-	onMount(async () => {
-		const agentsQuery = page.url.searchParams.get('agents');
-		const template = page.url.searchParams.get('template');
-		if (agentsQuery) {
-			toast('Parsing agents from URL...', { duration: 2000 });
-			try {
-				const result = parseAgentsQuery(agentsQuery);
-				parsedAgents = result.agents;
-
-				for (const agent of parsedAgents) {
-					console.log(
-						'following url instructions to add agent: ' +
-							agent.name +
-							'@' +
-							agent.version +
-							' from ' +
-							agent.source +
-							' '
-					);
-					toast.promise(sessCtx.addAgent(agent.name, agent.source, agent.version), {
-						loading: 'Adding agent...',
-						success: 'Agent added successfully',
-						error: (err: any) => `Failed: ${err.message || err}`
-					});
-				}
-			} catch (err) {
-				console.error('Failed to parse agents:', err);
-			}
-		}
-		if (template) {
-			loadTemplate(template);
-		}
-	});
 	interface ParsedAgent {
 		source: AgentSource;
 		name: string;
@@ -153,22 +96,32 @@
 		raw: string;
 	}
 
-	const loadTemplate = (template: string) => {
-		if (template) {
-			toast('Loading template...', { duration: 2000 });
-			try {
-				const templateSessionData = getSessionDataFromTemplateName(template);
-
-				sessCtx.importSession({
-					from: templateSessionData,
-					success: 'Template loaded successfully'
-				});
-			} catch (err) {
-				console.error('Failed to load template:', err);
-				toast.error('Failed to load template: ' + err);
-			}
-		}
+	type Settings = {
+		enableAgentGraphView: boolean;
+		columns: {
+			name: boolean;
+			version: boolean;
+			registrySource: boolean;
+			agent: boolean;
+		};
 	};
+
+	// ─── Constants ────────────────────────────────────────────────────────────
+
+	const AGENT_REGEX = /^(marketplace|linked|local):(.+?)@(\d+\.\d+\.\d+)$/;
+
+	// ─── Helpers ──────────────────────────────────────────────────────────────
+
+	function sourceToRegistryId(source: AgentSource): RegistryAgentIdentifier['registrySourceId'] {
+		switch (source) {
+			case 'local':
+				return { type: 'local' };
+			case 'marketplace':
+				return { type: 'marketplace' };
+			case 'linked':
+				return { type: 'linked', linkedServerId: 'default' };
+		}
+	}
 
 	function parseAgentsQuery(query: string | null) {
 		if (!query) return { agents: [], errors: [] as string[] };
@@ -181,14 +134,12 @@
 			if (!trimmed) continue;
 
 			const match = trimmed.match(AGENT_REGEX);
-
 			if (!match) {
 				errors.push(`Invalid agent format: "${trimmed}"`);
 				continue;
 			}
 
 			const [, source, name, version] = match;
-
 			agentsFromQuery.push({
 				source: source as AgentSource,
 				name: name ?? '',
@@ -200,63 +151,48 @@
 		return { agents: agentsFromQuery, errors };
 	}
 
-	let lastDeletedAgent: {
-		agent: any;
-		index: number;
-	} | null = $state(null);
-
-	const removeAgent = (index: number) => {
-		if (index < 0 || index >= $formData.agents.length) return;
-
-		const agent = $formData.agents[index];
-
-		lastDeletedAgent = {
-			agent,
-			index
-		};
-
-		$formData.agents.splice(index, 1);
-		$formData.agents = $formData.agents;
-
-		// Maintain selection invariants
-		if (sessCtx.selectedAgent !== null) {
-			if (sessCtx.selectedAgent === index) {
-				sessCtx.selectedAgent = 0;
-			} else if (sessCtx.selectedAgent > index) {
-				sessCtx.selectedAgent--;
-			}
-		}
-
-		toast(`Agent "${lastDeletedAgent.agent.name}" deleted`, {
-			action: {
-				label: 'Undo',
-				onClick: restoreAgent
-			}
-		});
-	};
-
-	const restoreAgent = () => {
-		if (!lastDeletedAgent) return;
-
-		$formData.agents.splice(lastDeletedAgent.index, 0, lastDeletedAgent.agent);
-
-		$formData.agents = $formData.agents;
-		toast.success('Agent "' + lastDeletedAgent.agent.name + '" restored');
-
-		sessCtx.selectedAgent = lastDeletedAgent.index;
-
-		lastDeletedAgent = null;
-	};
+	// ─── App Context & Schema ─────────────────────────────────────────────────
 
 	let ctx = appContext.get();
-
 	let formSchema = $derived(makeFormSchema(ctx.server));
 
+	// ─── Persisted State ──────────────────────────────────────────────────────
+
+	const settings = new PersistedState<Settings>('appSettings', {
+		enableAgentGraphView: true,
+		columns: {
+			name: true,
+			version: true,
+			registrySource: true,
+			agent: true
+		}
+	});
+
+	const lastSession = new PersistedState<{
+		sessionId: string | null;
+		namespace: string | null;
+		closeLastSession: boolean;
+	}>('lastSession', {
+		sessionId: null,
+		namespace: null,
+		closeLastSession: true
+	});
+
+	// ─── UI State ─────────────────────────────────────────────────────────────
+
 	let currentTab = $state('agent');
-
+	let agentsListTabs: string = $state('table');
 	let sendingForm = $state(false);
-
+	let loadingAgent = $state(false);
 	let templateSaverDialogOpen = $state(false);
+	let loggedOutDialog = $state(false);
+	let view = $state('workbench');
+	let overwriteDraft = $state({ template: '', override: false });
+	let lastDeletedAgent: { agent: any; index: number } | null = $state(null);
+	let parsedAgents: ParsedAgent[] = [];
+	let initialised = $state(false);
+
+	// ─── Form Setup ───────────────────────────────────────────────────────────
 
 	// svelte-ignore state_referenced_locally
 	let form = superForm(defaults(zod4(formSchema)), {
@@ -266,12 +202,6 @@
 		validationMethod: 'onblur',
 		resetForm: false,
 		async onUpdate({ form: f }) {
-			// console.log('[onUpdate]', {
-			// 	form: f
-			// });
-
-			// console.trace('SUPERFORM onUpdate fired');
-
 			if (!f.valid) {
 				toast.error('Please fix all errors in the form.');
 				console.error({ errors: f.errors });
@@ -294,24 +224,19 @@
 								}
 							}
 						})
-						.catch((e) => {
-							console.error('Failed to close last session:', e);
-						});
+						.catch((e) => console.error('Failed to close last session:', e));
 				}
 
 				const body = await toPayload(ctx.server, $formData);
-				const res = await ctx.server.api.POST('/api/v1/local/session', {
-					body
-				});
+				const res = await ctx.server.api.POST('/api/v1/local/session', { body });
 
 				if (res.error) {
-					// todo @alan there should probably be an api class where we can generic-ify the handling of this error
-					// with a proper type implementation too..!
 					let error: { message?: string; stackTrace?: string[] } = res.error;
 					console.error(error.stackTrace);
 					toast.error(`Failed to create session: ${error.message}`, { duration: Infinity });
 					return;
 				}
+
 				if (res.data) {
 					lastSession.current.sessionId = res.data.sessionId;
 					lastSession.current.namespace = ctx.server.namespace;
@@ -332,14 +257,14 @@
 		}
 	});
 
-	// This is a workaround for not being able to call superForm in a $derived
+	// Workaround: superForm validators can't be set in a $derived
 	$effect(() => {
 		form.options.validators = zod4(formSchema);
 	});
 
 	let { form: formData, errors, enhance } = $derived(form);
 
-	let loadingAgent = $state(false);
+	// ─── Session Context ──────────────────────────────────────────────────────
 
 	let sessCtx = $state({
 		// svelte-ignore state_referenced_locally
@@ -347,7 +272,6 @@
 		// svelte-ignore state_referenced_locally
 		errors,
 		form,
-
 		payload: null,
 		selectedAgent: null,
 		detailedAgent: null,
@@ -372,31 +296,21 @@
 		},
 
 		addAgent: async (name: string, source: any, version: string) => {
-			if (loadingAgent) {
-				throw new Error('Already adding an agent, please wait');
-			}
+			if (loadingAgent) throw new Error('Already adding an agent, please wait');
 			loadingAgent = true;
+
 			const existingCount = $formData.agents.filter((a) => a.id.name === name).length;
 			const registrySourceId = sourceToRegistryId(source as AgentSource);
 
 			try {
-				const detailed = await ctx.server.lookupAgent({
-					name,
-					version,
-					registrySourceId
-				});
-
+				const detailed = await ctx.server.lookupAgent({ name, version, registrySourceId });
 				if (!detailed) {
 					loadingAgent = false;
 					throw new Error('Agent not found');
 				}
 
 				$formData.agents.push({
-					id: {
-						name,
-						version,
-						registrySourceId
-					},
+					id: { name, version, registrySourceId },
 					name: name + (existingCount > 0 ? `-${existingCount}` : ''),
 					description: detailed.registryAgent.info.description,
 					providerType: 'local',
@@ -418,7 +332,6 @@
 
 				$formData.agents = $formData.agents;
 				sessCtx.selectedAgent = $formData.agents.length - 1;
-				loadingAgent = false;
 			} catch (error) {
 				throw error as Error;
 			} finally {
@@ -430,6 +343,12 @@
 	setSessionContext(sessCtx);
 
 	$effect(() => {
+		sessCtx.formData = formData;
+		sessCtx.errors = errors;
+		sessCtx.form = form;
+	});
+
+	$effect(() => {
 		ctx.server.namespace;
 		toPayload(ctx.server, $formData)
 			.then((val) => {
@@ -437,11 +356,8 @@
 			})
 			.catch(console.error);
 	});
-	$effect(() => {
-		sessCtx.formData = formData;
-		sessCtx.errors = errors;
-		sessCtx.form = form;
-	});
+
+	// ─── Agent Selection & Detail ─────────────────────────────────────────────
 
 	let curAgent = $derived(
 		sessCtx.selectedAgent !== null ? $formData.agents[sessCtx.selectedAgent] : undefined
@@ -451,8 +367,9 @@
 
 	$effect(() => {
 		const id = curAgentId;
-		sessCtx.selectedAgent; // track this so effect re-runs when same agent is added again
+		sessCtx.selectedAgent; // track so effect re-runs when same agent is added again
 		let active = true;
+
 		if (id) {
 			untrack(() => {
 				sessCtx.detailedAgent = null;
@@ -463,6 +380,7 @@
 		} else {
 			sessCtx.detailedAgent = null;
 		}
+
 		return () => {
 			active = false;
 		};
@@ -476,71 +394,110 @@
 		});
 	};
 
-	const isMobile = new IsMobile();
+	// ─── Agent CRUD ───────────────────────────────────────────────────────────
 
-	let agentsListTabs: string = $state('table');
+	const removeAgent = (index: number) => {
+		if (index < 0 || index >= $formData.agents.length) return;
 
-	type Settings = {
-		enableAgentGraphView: boolean;
-		columns: {
-			name: boolean;
-			version: boolean;
-			registrySource: boolean;
-			agent: boolean;
-		};
+		const agent = $formData.agents[index];
+		lastDeletedAgent = { agent, index };
+		$formData.agents.splice(index, 1);
+		$formData.agents = $formData.agents;
+
+		if (sessCtx.selectedAgent !== null) {
+			if (sessCtx.selectedAgent === index) {
+				sessCtx.selectedAgent = 0;
+			} else if (sessCtx.selectedAgent > index) {
+				sessCtx.selectedAgent--;
+			}
+		}
+
+		toast(`Agent "${lastDeletedAgent.agent.name}" deleted`, {
+			action: { label: 'Undo', onClick: restoreAgent }
+		});
 	};
 
-	const settings = new PersistedState<Settings>('appSettings', {
-		enableAgentGraphView: true,
-		columns: {
-			name: true,
-			version: true,
-			registrySource: true,
-			agent: true
-		}
-	});
+	const restoreAgent = () => {
+		if (!lastDeletedAgent) return;
 
-	const lastSession = new PersistedState<{
-		sessionId: string | null;
-		namespace: string | null;
-		closeLastSession: boolean;
-	}>('lastSession', {
-		sessionId: null,
-		namespace: null,
-		closeLastSession: true
-	});
+		$formData.agents.splice(lastDeletedAgent.index, 0, lastDeletedAgent.agent);
+		$formData.agents = $formData.agents;
+		toast.success('Agent "' + lastDeletedAgent.agent.name + '" restored');
+		sessCtx.selectedAgent = lastDeletedAgent.index;
+		lastDeletedAgent = null;
+	};
+
+	// ─── Session Lifecycle ────────────────────────────────────────────────────
 
 	function clearSession() {
 		$formData = {
 			groups: [],
 			tools: {},
-			sessionRuntimeSettings: {
-				ttl: 50000
-			},
+			sessionRuntimeSettings: { ttl: 50000 },
 			sessionBudgetSettings: {
-				budget: 100000,
-				exhaustionBehavior: {
-					type: 'kill_session',
-					minimum: 100
-				}
+				budget: 100000000,
+				exhaustionBehavior: { type: 'kill_session', minimum: 1000000 }
 			},
 			agents: []
 		};
 		sessCtx.selectedAgent = null;
 	}
 
+	let debouncedFormData = new Debounced(() => $formData, 100);
+
+	$effect(() => {
+		const data = debouncedFormData.current;
+		if (!initialised || !data) return;
+
+		toPayload(ctx.server, data)
+			.then((payload) => {
+				untrack(() => {
+					sessCtx.payload = payload;
+					sessionDraft.current = payload;
+				});
+			})
+			.catch(console.error);
+	});
+
+	let emptySession = $derived(!loadingAgent && $formData.agents.length === 0);
+
+	// ─── Template Handling ────────────────────────────────────────────────────
+
+	const loadTemplate = (template: string, override?: boolean) => {
+		if (
+			sessionDraft.current &&
+			sessionDraft.current.agentGraphRequest?.agents.length > 0 &&
+			!override
+		) {
+			overwriteDraft = { template, override: true };
+		} else {
+			if (template) {
+				toast('Loading template...', { duration: 2000 });
+				try {
+					const templateSessionData = getSessionDataFromTemplateName(template);
+					sessCtx.importSession({
+						from: templateSessionData,
+						success: 'Template loaded successfully'
+					});
+				} catch (err) {
+					console.error('Failed to load template:', err);
+					toast.error('Failed to load template: ' + err);
+				}
+			}
+		}
+	};
+
+	// ─── Auth / Login ─────────────────────────────────────────────────────────
+
 	$effect(() => {
 		ctx.server.onNoAuth = onNoAuth;
 	});
-
-	let loggedOutDialog = $state(false);
 
 	const onNoAuth = useDebounce(() => {
 		switch (config.PUBLIC_LOGIN_BEHAVIOUR) {
 			case 'token':
 				loggedOutDialog = true;
 				break;
-
 			case 'reload':
 				break;
 			default:
@@ -549,10 +506,71 @@
 		}
 	}, 500);
 
-	let view = $state('workbench');
+	// ─── Misc Hooks ───────────────────────────────────────────────────────────
 
-	let emptySession = $derived(!loadingAgent && $formData.agents.length === 0);
+	const isMobile = new IsMobile();
+
+	// ─── Mount ────────────────────────────────────────────────────────────────
+
+	onMount(async () => {
+		if (sessionDraft.current && sessionDraft.current.agentGraphRequest.agents.length >= 0) {
+			// ensure required 'from' property is present for importSession
+			sessCtx.importSession({
+				from: JSON.stringify(sessionDraft.current),
+				success: 'Loaded previous workbench draft'
+			});
+		}
+
+		const agentsQuery = page.url.searchParams.get('agents');
+		const template = page.url.searchParams.get('template');
+
+		if (agentsQuery) {
+			toast('Parsing agents from URL...', { duration: 2000 });
+			try {
+				const result = parseAgentsQuery(agentsQuery);
+				parsedAgents = result.agents;
+
+				for (const agent of parsedAgents) {
+					console.log(
+						`following url instructions to add agent: ${agent.name}@${agent.version} from ${agent.source}`
+					);
+					toast.promise(sessCtx.addAgent(agent.name, agent.source, agent.version), {
+						loading: 'Adding agent...',
+						success: 'Agent added successfully',
+						error: (err: any) => `Failed: ${err.message || err}`
+					});
+				}
+			} catch (err) {
+				console.error('Failed to parse agents:', err);
+			}
+		}
+
+		if (template) {
+			loadTemplate(template);
+		}
+
+		initialised = true;
+	});
 </script>
+
+<Dialog.Root bind:open={overwriteDraft.override}>
+	<Dialog.Content>
+		<Dialog.Header>
+			<Dialog.Title>Overwrite current session?</Dialog.Title>
+			<Dialog.Description>
+				This action cannot be undone. This will delete any unsaved progress in the Workbench.
+			</Dialog.Description>
+		</Dialog.Header>
+		<Dialog.Footer>
+			<Dialog.Close>Close</Dialog.Close>
+			<Button
+				onclick={() => (
+					loadTemplate(overwriteDraft.template, true), (overwriteDraft.override = false)
+				)}>Continue</Button
+			>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>
 
 {#if sessCtx.payload}
 	<TemplateSaver bind:open={templateSaverDialogOpen} data={JSON.stringify(sessCtx.payload)} />
@@ -641,7 +659,7 @@
 			<Resizable.Pane defaultSize={75} minSize={25}>
 				<Resizable.PaneGroup direction="vertical">
 					<Resizable.Pane minSize={25} defaultSize={70} class="relative">
-						{#if emptySession}
+						{#if emptySession && initialised}
 							<div
 								class="absolute z-10 m-auto flex h-full w-full flex-col items-center justify-center gap-2"
 							>
@@ -692,6 +710,8 @@
 									</Card.Content>
 								</Card.Root>
 							</div>
+						{:else if !initialised}
+							<Spinner class="m-full absolute top-0 bottom-0 z-50 m-auto size-5 w-full" />
 						{/if}
 						<Card.Root class="h-full gap-0 py-0">
 							<Card.Content class=" flex h-full flex-col px-0">
@@ -805,7 +825,6 @@
 																	<Tooltip.Root>
 																		<Tooltip.Trigger>
 																			<TwostepButton
-																				disabled={sessCtx.selectedAgent === null}
 																				class="m-auto"
 																				variant="ghost"
 																				onclick={() => removeAgent(i)}
@@ -999,7 +1018,7 @@
 		</Resizable.PaneGroup>
 	{:else}
 		<Card.Root class="h-full w-full p-0">
-			<Card.Content class="h-full w-full p-0">
+			<Card.Content class="relative h-full w-full p-0">
 				<CodePane />
 			</Card.Content>
 		</Card.Root>

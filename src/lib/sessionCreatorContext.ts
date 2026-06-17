@@ -8,9 +8,9 @@ import type { CoralServer } from './CoralServer.svelte';
 import { z } from 'zod';
 import type { SuperForm, SuperFormData, SuperFormErrors } from 'sveltekit-superforms/client';
 
-type AgentSource = 'marketplace' | 'linked' | 'local';
+export type AgentSource = 'marketplace' | 'linked' | 'local';
 
-type SessionCreatorContext = {
+export type SessionCreatorContext = {
 	payload: CreateSessionRequest | null;
 	importSession: (options: { success?: string; from: string }) => boolean;
 	addAgent: (name: string, source: AgentSource, version: string) => Promise<void>;
