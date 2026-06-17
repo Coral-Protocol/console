@@ -405,49 +405,35 @@
 											>
 												Force kill agent
 											</TooltipLabel>
-											<ButtonGroup.Root {...props} class="m-0 justify-start">
-												<Button
-													class={cn(force !== true ? 'bg-accent text-accent-foreground' : '')}
-													onclick={() => {
-														const agent = $formData.agents[agentIdx];
-														if (!agent) return;
+											<ToggleGroup.Root
+												{...props}
+												type="single"
+												class="w-full grow"
+												variant="outline"
+												value={String(force)}
+												onValueChange={(v: string) => {
+													if (!v) return;
 
-														agent.budgetSettings ??= {};
+													const agent = $formData.agents[agentIdx];
+													if (!agent) return;
 
-														const existing = agent.budgetSettings.exhaustionBehavior;
+													agent.budgetSettings ??= {};
 
-														agent.budgetSettings.exhaustionBehavior = {
-															type: 'kill',
-															force: true,
-															minimum: existing?.type === 'kill' ? existing.minimum : 0
-														};
+													const existing = agent.budgetSettings.exhaustionBehavior;
 
-														$formData.agents = $formData.agents;
-													}}
-												>
-													True
-												</Button>
-												<Button
-													class={cn(force === true ? 'bg-accent text-accent-foreground' : '')}
-													onclick={() => {
-														const agent = $formData.agents[agentIdx];
-														if (!agent) return;
+													agent.budgetSettings.exhaustionBehavior = {
+														type: 'kill',
+														force: v === 'true',
+														minimum: existing?.type === 'kill' ? existing.minimum : 0
+													};
 
-														agent.budgetSettings ??= {};
+													$formData.agents = $formData.agents;
+												}}
+											>
+												<ToggleGroup.Item value="true">True</ToggleGroup.Item>
 
-														const existing = agent.budgetSettings.exhaustionBehavior;
-
-														agent.budgetSettings.exhaustionBehavior = {
-															type: 'kill',
-															force: false,
-															minimum: existing?.type === 'kill' ? existing.minimum : 0
-														};
-														$formData.agents = $formData.agents;
-													}}
-												>
-													False
-												</Button>
-											</ButtonGroup.Root>
+												<ToggleGroup.Item value="false">False</ToggleGroup.Item>
+											</ToggleGroup.Root>
 										{/snippet}
 									</Form.Control>
 								</Form.ElementField>

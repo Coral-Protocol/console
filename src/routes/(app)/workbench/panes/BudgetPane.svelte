@@ -224,33 +224,23 @@
 						>
 							Force kill agent
 						</TooltipLabel>
-						<ButtonGroup.Root {...props} class="m-0 justify-start">
-							<Button
-								class={cn(
-									$formData.sessionBudgetSettings.exhaustionBehavior.type === 'kill_agent' &&
-										$formData.sessionBudgetSettings.exhaustionBehavior.force !== true &&
-										'bg-accent text-accent-foreground'
-								)}
-								onclick={() => {
-									if ($formData.sessionBudgetSettings.exhaustionBehavior.type === 'kill_agent') {
-										$formData.sessionBudgetSettings.exhaustionBehavior.force = true;
-									}
-								}}>True</Button
-							>
-							<Button
-								class={cn(
-									$formData.sessionBudgetSettings.exhaustionBehavior.type === 'kill_agent' &&
-										$formData.sessionBudgetSettings.exhaustionBehavior.force !== false
-										? 'bg-accent text-accent-foreground'
-										: ''
-								)}
-								onclick={() => {
-									if ($formData.sessionBudgetSettings.exhaustionBehavior.type === 'kill_agent') {
-										$formData.sessionBudgetSettings.exhaustionBehavior.force = false;
-									}
-								}}>False</Button
-							>
-						</ButtonGroup.Root>
+						<ToggleGroup.Root
+							type="single"
+							class="w-full grow"
+							variant="outline"
+							value={$formData.sessionBudgetSettings.exhaustionBehavior.type === 'kill_agent'
+								? String($formData.sessionBudgetSettings.exhaustionBehavior.force)
+								: 'false'}
+							onValueChange={(v: string) => {
+								if (v && $formData.sessionBudgetSettings.exhaustionBehavior.type === 'kill_agent') {
+									$formData.sessionBudgetSettings.exhaustionBehavior.force = v === 'true';
+								}
+							}}
+						>
+							<ToggleGroup.Item value="true">True</ToggleGroup.Item>
+
+							<ToggleGroup.Item value="false">False</ToggleGroup.Item>
+						</ToggleGroup.Root>
 					{/snippet}
 				</Form.Control>
 			</Form.ElementField>
