@@ -514,7 +514,6 @@
 
 	onMount(async () => {
 		if (sessionDraft.current && sessionDraft.current.agentGraphRequest.agents.length >= 0) {
-			// ensure required 'from' property is present for importSession
 			sessCtx.importSession({
 				from: JSON.stringify(sessionDraft.current),
 				success: 'Loaded previous workbench draft'
@@ -644,12 +643,25 @@
 	</Menubar.Root>
 </Header>
 
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <form
 	method="POST"
 	use:enhance
 	class="flex h-full flex-col gap-2 overflow-hidden p-2 pt-0"
 	enctype="multipart/form-data"
 	autocomplete="off"
+	onkeydown={(e) => {
+		if (e.isComposing) return;
+		if (e.key !== 'Enter') return;
+
+		const el = document.activeElement;
+
+		if (el instanceof HTMLInputElement) {
+			e.preventDefault();
+			el.blur();
+		}
+	}}
+	onsubmit={(e) => e.preventDefault()}
 >
 	{#if view === 'workbench'}
 		<Resizable.PaneGroup

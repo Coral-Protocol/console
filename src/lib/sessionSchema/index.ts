@@ -183,6 +183,7 @@ export const importFromPayload = (json: string): z.output<FormSchema> => {
 			blocking: agent.blocking ?? true,
 			systemPrompt: agent.systemPrompt,
 			plugins: agent.plugins ?? [],
+			budgetSettings: agent.budgetSettings ?? {},
 			options: agent.options ? (structuredClone(agent.options) as any) : {},
 			customToolAccess: new Set(
 				(agent.customToolAccess ?? []).map((t) => toolMap[t]).filter(Boolean) as string[] // typescript is stupid this is safe because .filter(Boolean)
