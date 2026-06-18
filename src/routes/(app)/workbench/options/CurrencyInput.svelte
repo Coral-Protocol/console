@@ -10,11 +10,10 @@
 	const toMicro = (dollars: number) => Math.round(dollars * MICRODOLLARS_PER_DOLLAR);
 
 	const formatUSD = (value: number) => {
-		if (value === 0) return '$0.00';
-		if (value < 0.01) return '$' + value.toFixed(10).replace(/\.?0+$/, '');
-		return new Intl.NumberFormat('en-US', {
+		return new Intl.NumberFormat(undefined, {
 			style: 'currency',
 			currency: 'USD',
+			currencyDisplay: 'narrowSymbol',
 			minimumFractionDigits: 2,
 			maximumFractionDigits: 8
 		}).format(value);
