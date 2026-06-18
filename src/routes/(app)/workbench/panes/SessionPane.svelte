@@ -49,10 +49,7 @@
 
 {#if ctx && $formData}
 	<section class="flex h-full min-h-0 grow flex-col gap-2 overflow-y-auto p-4">
-		<p>
-			Providing the optional time to live value results in the Session being terminated when the
-			duration has elapsed.
-		</p>
+		<p>If specified, the session will never live longer than this duration.</p>
 		<Form.ElementField {form} name="sessionRuntimeSettings.ttl" class="flex items-center gap-2 ">
 			<Form.Control>
 				{#snippet children({ props })}
@@ -70,7 +67,12 @@
 					<DurationInout
 						value={$formData.sessionRuntimeSettings.ttl ?? 0}
 						onchange={(totalMilliseconds) => {
-							$formData.sessionRuntimeSettings.ttl = totalMilliseconds;
+							if (totalMilliseconds === 0) {
+								delete $formData.sessionRuntimeSettings.ttl;
+								$formData.sessionBudgetSettings = $formData.sessionBudgetSettings;
+							} else {
+								$formData.sessionRuntimeSettings.ttl = totalMilliseconds;
+							}
 						}}
 					/>
 				{/snippet}
