@@ -11,13 +11,24 @@ export type SessionAgentState = components['schemas']['SessionAgentState'];
 export type SessionAgentStatus = SessionAgentState['status'];
 
 export type SessionThread = components['schemas']['SessionThread'];
+export type SessionStateBase = components['schemas']['SessionStateBase'];
+export type SessionStateExtended = components['schemas']['SessionStateExtended'];
 
 export class Session {
 	private socket: WebSocket;
+	private server: CoralServer;
 	public connected = $state(false);
 
 	readonly sessionId: string;
 	readonly namespace: string;
+
+	public get annotations(): SessionStateBase['annotations'] | undefined {
+		return this.server.sessions[this.sessionId]?.annotations;
+	}
+	public get timestamp(): SessionStateBase['timestamp'] | undefined {
+		return this.server.sessions[this.sessionId]?.timestamp;
+	}
+	public extended: Omit<SessionStateExtended, 'base' | 'threads' | 'agents'> | null = $state(null);
 
 	public agentId: string | null = $state(null);
 
@@ -40,6 +51,7 @@ export class Session {
 		sessionId: string;
 		server: CoralServer;
 	}) {
+		this.server = server;
 		let markInitialStateReady: (value?: any) => void;
 		const initialStateReady = new Promise((resolve) => {
 			markInitialStateReady = resolve;
@@ -63,6 +75,16 @@ export class Session {
 					this.socket.close();
 					return;
 				}
+
+				if (this.sessionId in this.server.sessions) {
+					this.server.sessions[this.sessionId] = res.data.base;
+				}
+
+				this.extended = {
+					budgetSettings: res.data.budgetSettings,
+					runningBudget: res.data.runningBudget
+				};
+
 				this.threads = Object.fromEntries(
 					res.data.threads.map((thread) => {
 						return [
@@ -119,6 +141,8 @@ export class Session {
 			}
 
 			switch (data.type) {
+				case 'agent_budget_claim':
+					break;
 				case 'agent_connected':
 					if (!this.agents[data.name]) {
 						toast.warning("Got agent update about an agent we don't know!");
