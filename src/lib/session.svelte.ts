@@ -267,4 +267,17 @@ export class Session {
 	public close() {
 		this.socket.close();
 	}
+	public async kill() {
+		const res = await this.server.api.DELETE('/api/v1/local/session/{namespace}/{sessionId}', {
+			params: { path: { namespace: this.namespace, sessionId: this.sessionId } }
+		});
+		if (res.error) {
+			toast.error(`Failed to kill session: ${res.error}`);
+		} else {
+			toast.info('Successfully killed session.');
+		}
+
+		this.connected = false; // this makes the socket's close toast not appear
+		this.close();
+	}
 }
