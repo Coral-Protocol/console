@@ -115,7 +115,7 @@
 	};
 </script>
 
-<li class="hover:bg-muted/50 border-b px-4 py-2">
+<li class="hover:bg-muted/50 px-2 py-2 not-last:border-b">
 	<Form.ElementField
 		class="grid grid-cols-[1fr_3fr] gap-2 space-y-0"
 		{form}
@@ -123,7 +123,7 @@
 	>
 		<Form.Control>
 			{#snippet children({ props })}
-				<div class="grid grid-cols-[auto_min-content] items-center gap-1">
+				<div class="grid grid-cols-[auto_min-content] items-start gap-1">
 					<TooltipLabel
 						title={name}
 						for={props.id}
@@ -132,6 +132,7 @@
 							required: meta.required ?? false,
 							type: meta.type
 						}}
+						class="text-xs font-normal"
 					>
 						{meta.display?.label ?? name}
 					</TooltipLabel>

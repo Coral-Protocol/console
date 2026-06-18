@@ -82,7 +82,7 @@
 				<li>
 					<Accordion.Root type="multiple" value={['marketplace']}>
 						<Accordion.Item value={catalog.identifier.type}>
-							<Accordion.Trigger variant="compact" class="">
+							<Accordion.Trigger class="">
 								{#if catalog.agents.length !== 0}
 									<span>
 										{catalog.identifier.type.charAt(0).toLocaleUpperCase() +

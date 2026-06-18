@@ -251,13 +251,13 @@
 				</Form.Control>
 			</Form.ElementField>
 		</header>
-		<ol class="border-t">
-			<li>
-				<Accordion.Root type="multiple" value={['budget']}>
+		<ol>
+			<li class="border-t">
+				<Accordion.Root type="multiple" value={['budget']} class="border-0">
 					<Accordion.Item value="budget">
-						<Accordion.Trigger variant="compact">Agent budget</Accordion.Trigger>
+						<Accordion.Trigger>Agent budget</Accordion.Trigger>
 
-						<Accordion.Content class="flex flex-col gap-2 p-0">
+						<Accordion.Content class="flex flex-col gap-2 px-0">
 							{@const agentIdx = ctx.selectedAgent!}
 							<Form.ElementField
 								{form}
@@ -473,15 +473,15 @@
 				</Accordion.Root>
 			</li>
 			{#each Object.entries(groupedOptions) as [group, entries]}
-				<li>
+				<li class="border-t">
 					{#if group !== '__ungrouped'}
-						<Accordion.Root type="multiple" value={[group]}>
-							<Accordion.Item value={group}>
-								<Accordion.Trigger variant="compact">
+						<Accordion.Root type="multiple" value={[group]} class="border-0 ">
+							<Accordion.Item value={group} class="*:px-0 ">
+								<Accordion.Trigger>
 									{group}
 								</Accordion.Trigger>
 
-								<Accordion.Content class="!p-0">
+								<Accordion.Content class="p-0">
 									<ol>
 										{#each entries as [name, opt] (name)}
 											<OptionField superform={form} agent={ctx.selectedAgent!} {name} meta={opt} />

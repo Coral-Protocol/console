@@ -68,14 +68,14 @@
 			<div class="space-y-6 pb-4">
 				<Accordion.Root type="single" value="item-1">
 					<Accordion.Item value="item-1">
-						<Accordion.Trigger variant="compact">What is Coral Console?</Accordion.Trigger>
+						<Accordion.Trigger>What is Coral Console?</Accordion.Trigger>
 						<Accordion.Content>
 							Coral Console is a playground for <strong>Coral</strong> — a framework for orchestrating
 							AI agents. Use this console to browse available agents and try them out interactively.
 						</Accordion.Content>
 					</Accordion.Item>
 					<Accordion.Item value="item-2">
-						<Accordion.Trigger variant="compact">Browsing Agents</Accordion.Trigger>
+						<Accordion.Trigger>Browsing Agents</Accordion.Trigger>
 						<Accordion.Content>
 							Navigate through the sidebar to explore the agent registry and view all available
 							agents. You can create sessions to interact with agents and test their capabilities in
@@ -83,8 +83,7 @@
 						</Accordion.Content>
 					</Accordion.Item>
 					<Accordion.Item value="item-3">
-						<Accordion.Trigger variant="compact">Creating Agents Programmatically</Accordion.Trigger
-						>
+						<Accordion.Trigger>Creating Agents Programmatically</Accordion.Trigger>
 						<Accordion.Content>
 							Agents are intended to be created programmatically in your application code. The
 							console serves as a testing and exploration tool, but for production use, you'll want
@@ -92,7 +91,7 @@
 						</Accordion.Content>
 					</Accordion.Item>
 					<Accordion.Item value="item-4">
-						<Accordion.Trigger variant="compact">Using the Network Tab</Accordion.Trigger>
+						<Accordion.Trigger>Using the Network Tab</Accordion.Trigger>
 						<Accordion.Content>
 							To use an agent in your own application:
 							<ol class=" list-inside list-decimal space-y-2">
