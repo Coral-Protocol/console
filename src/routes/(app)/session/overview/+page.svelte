@@ -11,7 +11,7 @@
 	import { Underline } from '@lucide/svelte';
 	import { appContext } from '$lib/context';
 	import * as Table from '@coral-os/component-library/ui/table/index.js';
-	import { TooltipLabel } from '@coral-os/component-library';
+	import { TooltipLabel, TwostepButton } from '@coral-os/component-library';
 	import * as Tooltip from '@coral-os/component-library/ui/tooltip/index.js';
 	import { formatDistanceToNow, format } from 'date-fns';
 	import { Badge } from '@coral-os/component-library/components/ui/badge/index.js';
@@ -54,6 +54,15 @@
 			<section class="mt-4 flex grow flex-col">
 				<h2 class="text-sm font-semibold">Current Session</h2>
 				<SessionSwitcher class="my-0" />
+			</section>
+
+			<section class="flex-col self-end">
+				<TwostepButton
+					variant="destructive"
+					onclick={() => {
+						session?.kill();
+					}}>Kill session</TwostepButton
+				>
 			</section>
 			<!-- <div class="flex gap-2">
 			<Button class="btn">Connect Server</Button>
@@ -191,7 +200,7 @@
 								</Table.Row>
 							{:else}
 								<Table.Row>
-									<Table.Cell colspan={4} class="text-center text-sm text-muted-foreground">
+									<Table.Cell colspan={5} class="text-center text-sm text-muted-foreground">
 										No threads in this session.
 									</Table.Cell>
 								</Table.Row>
