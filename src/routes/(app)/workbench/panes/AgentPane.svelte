@@ -105,11 +105,11 @@
 	{#if !ctx.detailedAgent || !ctx.detailedAgent.registryAgent?.info?.identifier || agentIdOf(ctx.detailedAgent.registryAgent.info.identifier) !== agentIdOf(curAgent.id)}
 		<Spinner class="m-auto my-8" />
 	{:else}
-		<header class="flex flex-col gap-2 px-4">
+		<header class="flex flex-col flex-wrap gap-2 px-4 xl:flex-row">
 			<Form.ElementField
 				{form}
 				name="agents[{ctx.selectedAgent}].name"
-				class="flex items-center gap-2"
+				class="flex w-full grow items-center gap-2"
 			>
 				<Form.Control>
 					{#snippet children({ props })}
@@ -123,7 +123,7 @@
 			<Form.ElementField
 				{form}
 				name="agents[{ctx.selectedAgent}].description"
-				class="flex items-center gap-2"
+				class="flex w-full grow  items-center gap-2"
 			>
 				<Form.Control>
 					{#snippet children({ props })}
@@ -143,7 +143,7 @@
 			<Form.ElementField
 				{form}
 				name="agents[{ctx.selectedAgent}].id.version"
-				class="flex items-center gap-2"
+				class="flex grow items-center gap-2"
 			>
 				<Form.Control>
 					{#snippet children({ props })}
@@ -178,7 +178,7 @@
 			<Form.ElementField
 				{form}
 				name="agents[{ctx.selectedAgent}].provider.runtime"
-				class="flex items-center gap-2"
+				class="flex grow items-center gap-2"
 			>
 				<Form.Control>
 					{#snippet children({ props })}
@@ -214,7 +214,7 @@
 			<Form.ElementField
 				{form}
 				name="agents[{ctx.selectedAgent}].provider.runtime"
-				class="flex items-center gap-2"
+				class="flex grow items-center gap-2"
 			>
 				<Form.Control>
 					{#snippet children({ props })}
@@ -233,7 +233,7 @@
 								$formData.agents = $formData.agents;
 							}}
 						>
-							<Select.Trigger class="m-0">
+							<Select.Trigger class="m-0 grow">
 								<span>{tools.size} tools</span>
 							</Select.Trigger>
 							<Select.Content>
@@ -251,6 +251,7 @@
 				</Form.Control>
 			</Form.ElementField>
 		</header>
+
 		<ol>
 			<li class="border-t">
 				<Accordion.Root type="multiple" value={['budget']} class="border-0">
