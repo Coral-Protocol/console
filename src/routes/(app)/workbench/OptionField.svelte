@@ -132,7 +132,6 @@
 							required: meta.required ?? false,
 							type: meta.type
 						}}
-						class="text-xs font-normal"
 					>
 						{meta.display?.label ?? name}
 					</TooltipLabel>

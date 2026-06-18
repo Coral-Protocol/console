@@ -105,7 +105,7 @@
 	{#if !ctx.detailedAgent || !ctx.detailedAgent.registryAgent?.info?.identifier || agentIdOf(ctx.detailedAgent.registryAgent.info.identifier) !== agentIdOf(curAgent.id)}
 		<Spinner class="m-auto my-8" />
 	{:else}
-		<header class="flex flex-col flex-wrap gap-2 px-4 xl:flex-row">
+		<header class="flex flex-col flex-wrap gap-2 px-2 xl:flex-row">
 			<Form.ElementField
 				{form}
 				name="agents[{ctx.selectedAgent}].name"
