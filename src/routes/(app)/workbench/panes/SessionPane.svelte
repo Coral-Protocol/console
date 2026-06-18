@@ -68,7 +68,7 @@
 					</TooltipLabel>
 
 					<DurationInout
-						value={$formData.sessionRuntimeSettings.ttl}
+						value={$formData.sessionRuntimeSettings.ttl ?? 0}
 						onchange={(totalMilliseconds) => {
 							$formData.sessionRuntimeSettings.ttl = totalMilliseconds;
 						}}

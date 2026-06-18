@@ -222,7 +222,7 @@ export type CustomTool = z.output<typeof CustomToolSchema>;
 
 const formSchema = z.object({
 	sessionRuntimeSettings: z.object({
-		ttl: z.number().min(10000).max(15778476000).default(900000)
+		ttl: z.number().min(10000).max(15778476000).optional()
 	}),
 	sessionBudgetSettings: z.object({
 		budget: z.number().min(10000).default(100000000),
