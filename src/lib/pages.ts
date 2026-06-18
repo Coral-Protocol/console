@@ -13,6 +13,7 @@ export const pageTree = {
 	},
 	session: {
 		label: 'Session',
+		href: null,
 		pages: {
 			overview: 'Overview'
 		}
