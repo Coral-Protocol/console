@@ -60,113 +60,111 @@
 	</Dialog.Content>
 </Dialog.Root>
 
-<main class="main flex min-h-0 grow flex-col">
-	<header class="flex w-full flex-col gap-4 border-b p-4">
-		<p class="text-sm">Browse agents created by our community of developers.</p>
-		<InputGroup.Root>
-			<InputGroup.Input placeholder="Search..." bind:value={search} />
-			<InputGroup.Addon>
-				<IconMagnifyingGlassRegular />
-			</InputGroup.Addon>
+<header class="flex w-full flex-col gap-4 border-b p-4">
+	<p class="text-sm">Browse agents created by our community of developers.</p>
+	<InputGroup.Root>
+		<InputGroup.Input placeholder="Search..." bind:value={search} />
+		<InputGroup.Addon>
+			<IconMagnifyingGlassRegular />
+		</InputGroup.Addon>
 
-			<InputGroup.Addon align="inline-end"
-				>{#if search.length > 0}
-					<span transition:fade={{ duration: 100 }}>{filteredCount} results</span>
-				{/if}
-			</InputGroup.Addon>
-		</InputGroup.Root>
-	</header>
-	<ol class="relative h-full">
-		{#each filtered as catalog}
-			{#if catalog.identifier.type == 'marketplace'}
-				<li>
-					<Accordion.Root type="multiple" value={['marketplace']}>
-						<Accordion.Item value={catalog.identifier.type}>
-							<Accordion.Trigger variant="compact" class="">
-								{#if catalog.agents.length !== 0}
-									<span>
-										{catalog.identifier.type.charAt(0).toLocaleUpperCase() +
-											catalog.identifier.type.slice(1)}
-										Agents
-										<span class="text-muted-foreground pl-2 text-sm">{catalog.agents.length}</span>
-									</span>
-								{/if}
-							</Accordion.Trigger>
-							<Accordion.Content class="flex h-full grow flex-col border-b p-0!">
-								<ol class="flex flex-col justify-center">
-									{#each catalog.agents as agent}
-										{#await ctx.server.lookupAgent( { name: agent.name, version: agent.versions[0]!, registrySourceId: catalog.identifier } )}
-											<div class="bg-foreground/5 h-[250px] w-xs border"></div>
-										{:then details}
-											<button
-												onclick={() => {
-													selectedAgent = { agent, details };
-													dialogOpen = true;
-												}}
-												type="button"
-											>
-												<li class="grow cursor-pointer">
-													<Card.Root
-														class="hover:dark:bg-ring/20 hover:bg-ring/10 h-full grow border-0 border-t bg-transparent text-left"
-													>
-														<Card.Header class="flex gap-2">
-															<Avatar.Root class="size-12">
-																<Avatar.Image
-																	class="bg-cover object-cover"
-																	src={details.extension?.iconUrl}
-																	alt={agent.name.charAt(0).toUpperCase()}
-																/>
-																<Avatar.Fallback>
-																	{agent.name.charAt(0).toUpperCase()}
-																</Avatar.Fallback>
-															</Avatar.Root>
-															<div class="flex flex-col items-start gap-1">
-																<Card.Title class="font-bold">{agent.name}</Card.Title>
-																<Card.Description>
-																	{details.extension?.developer
-																		? 'By ' + details.extension.developer
-																		: 'Unknown developer'}
-																</Card.Description>
-															</div>
-														</Card.Header>
-														<Card.Content class="flex w-full grow flex-col gap-2">
-															<p class="line-clamp-4 overflow-ellipsis">
-																{details.registryAgent.info.description}
-															</p>
-															{#if details.registryAgent?.marketplace?.keywords?.length}
-																<div class="flex flex-wrap gap-1">
-																	{#each details.registryAgent.marketplace.keywords.slice(0, 3) as keyword}
-																		<span
-																			class="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs"
-																		>
-																			{keyword}
-																		</span>
-																	{/each}
-																</div>
-															{/if}
-														</Card.Content>
-													</Card.Root>
-												</li>
-											</button>
-										{:catch err}
-											<!-- skip -->
-										{/await}
-									{/each}
-								</ol>
-							</Accordion.Content>
-						</Accordion.Item>
-					</Accordion.Root>
-				</li>
+		<InputGroup.Addon align="inline-end"
+			>{#if search.length > 0}
+				<span transition:fade={{ duration: 100 }}>{filteredCount} results</span>
 			{/if}
-		{/each}
-
-		{#if filteredCount === 0 && !loading}
-			<Card.Root class="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 ">
-				<Card.Content class=" flex-col items-center gap-4  ">
-					<IconCrane class="text-muted-foreground size-16" />
-					<p class="text-muted-foreground text-sm">No agents found</p>
-				</Card.Content>
-			</Card.Root>
+		</InputGroup.Addon>
+	</InputGroup.Root>
+</header>
+<ol class="relative h-full">
+	{#each filtered as catalog}
+		{#if catalog.identifier.type == 'marketplace'}
+			<li>
+				<Accordion.Root type="multiple" value={['marketplace']} class="border-0">
+					<Accordion.Item value={catalog.identifier.type} class="*:px-0 ">
+						<Accordion.Trigger>
+							{#if catalog.agents.length !== 0}
+								<span>
+									{catalog.identifier.type.charAt(0).toLocaleUpperCase() +
+										catalog.identifier.type.slice(1)}
+									Agents
+									<span class="text-muted-foreground pl-2 text-sm">{catalog.agents.length}</span>
+								</span>
+							{/if}
+						</Accordion.Trigger>
+						<Accordion.Content class="flex h-full grow flex-col">
+							<ol class="flex flex-col justify-center">
+								{#each catalog.agents as agent}
+									{#await ctx.server.lookupAgent( { name: agent.name, version: agent.versions[0]!, registrySourceId: catalog.identifier } )}
+										<div class="bg-foreground/5 h-[250px] w-xs border"></div>
+									{:then details}
+										<button
+											onclick={() => {
+												selectedAgent = { agent, details };
+												dialogOpen = true;
+											}}
+											type="button"
+										>
+											<li class="grow cursor-pointer">
+												<Card.Root
+													class="hover:dark:bg-ring/20 hover:bg-ring/10 h-full grow border-0 bg-transparent text-left shadow-none"
+												>
+													<Card.Header class="flex gap-2">
+														<Avatar.Root class="size-12">
+															<Avatar.Image
+																class="bg-cover object-cover"
+																src={details.extension?.iconUrl}
+																alt={agent.name.charAt(0).toUpperCase()}
+															/>
+															<Avatar.Fallback>
+																{agent.name.charAt(0).toUpperCase()}
+															</Avatar.Fallback>
+														</Avatar.Root>
+														<div class="flex flex-col items-start gap-1">
+															<Card.Title class="font-bold">{agent.name}</Card.Title>
+															<Card.Description>
+																{details.extension?.developer
+																	? 'By ' + details.extension.developer
+																	: 'Unknown developer'}
+															</Card.Description>
+														</div>
+													</Card.Header>
+													<Card.Content class="flex w-full grow flex-col gap-2">
+														<p class="line-clamp-4 overflow-ellipsis">
+															{details.registryAgent.info.description}
+														</p>
+														{#if details.registryAgent?.marketplace?.keywords?.length}
+															<div class="flex flex-wrap gap-1">
+																{#each details.registryAgent.marketplace.keywords.slice(0, 3) as keyword}
+																	<span
+																		class="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs"
+																	>
+																		{keyword}
+																	</span>
+																{/each}
+															</div>
+														{/if}
+													</Card.Content>
+												</Card.Root>
+											</li>
+										</button>
+									{:catch err}
+										<!-- skip -->
+									{/await}
+								{/each}
+							</ol>
+						</Accordion.Content>
+					</Accordion.Item>
+				</Accordion.Root>
+			</li>
 		{/if}
-	</ol>
-</main>
+	{/each}
+
+	{#if filteredCount === 0 && !loading}
+		<Card.Root class="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 ">
+			<Card.Content class=" flex-col items-center gap-4  ">
+				<IconCrane class="text-muted-foreground size-16" />
+				<p class="text-muted-foreground text-sm">No agents found</p>
+			</Card.Content>
+		</Card.Root>
+	{/if}
+</ol>

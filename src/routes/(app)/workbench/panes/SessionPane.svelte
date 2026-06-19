@@ -48,7 +48,7 @@
 </script>
 
 {#if ctx && $formData}
-	<section class="flex h-full min-h-0 grow flex-col gap-2 overflow-y-auto p-4">
+	<section class="flex h-full min-h-0 grow flex-col gap-2 overflow-y-auto px-4">
 		<p>If specified, the session will never live longer than this duration.</p>
 		<Form.ElementField {form} name="sessionRuntimeSettings.ttl" class="flex items-center gap-2 ">
 			<Form.Control>

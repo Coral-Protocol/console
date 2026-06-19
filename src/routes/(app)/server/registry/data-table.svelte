@@ -167,7 +167,7 @@
 
 				<Accordion.Root type="single">
 					<Accordion.Item value="details">
-						<Accordion.Trigger variant="compact">Raw data</Accordion.Trigger>
+						<Accordion.Trigger >Raw data</Accordion.Trigger>
 
 						<Accordion.Content>
 							<pre class="text-xs break-words whitespace-pre-wrap">

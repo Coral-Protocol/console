@@ -49,7 +49,7 @@
 	{#each $formData.groups as link, i}
 		<Accordion.Root type="single">
 			<Accordion.Item value="item-1">
-				<Accordion.Trigger variant="compact" class="border-b">
+				<Accordion.Trigger class="border-b">
 					<span
 						>Group {i + 1}
 						<span class="text-muted-foreground pl-2 text-sm">{link.length} members</span></span

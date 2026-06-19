@@ -19,42 +19,42 @@
 
 <Accordion.Root type="single" class="w-full sm:max-w-[70%]" value="sendMessage">
 	<Accordion.Item value="sendMessage">
-		<Accordion.Trigger variant="compact" class="p-4">Send message in thread</Accordion.Trigger>
+		<Accordion.Trigger  class="p-4">Send message in thread</Accordion.Trigger>
 		<Accordion.Content class="flex flex-col gap-4 p-4 text-balance">
 			<SendMessage {agent} {session} />
 		</Accordion.Content>
 	</Accordion.Item>
 
 	<Accordion.Item value="createThread">
-		<Accordion.Trigger variant="compact" class="p-4">Create thread</Accordion.Trigger>
+		<Accordion.Trigger  class="p-4">Create thread</Accordion.Trigger>
 		<Accordion.Content class="flex flex-col gap-4 p-4 text-balance">
 			<CreateThread {agent} {session} />
 		</Accordion.Content>
 	</Accordion.Item>
 
 	<Accordion.Item value="closeThread">
-		<Accordion.Trigger variant="compact" class="p-4">Close thread</Accordion.Trigger>
+		<Accordion.Trigger  class="p-4">Close thread</Accordion.Trigger>
 		<Accordion.Content class="flex flex-col gap-4 p-4 text-balance">
 			<CloseThread {agent} {session} />
 		</Accordion.Content>
 	</Accordion.Item>
 
 	<Accordion.Item value="addThreadParticipant">
-		<Accordion.Trigger variant="compact" class="p-4">Add thread participant</Accordion.Trigger>
+		<Accordion.Trigger  class="p-4">Add thread participant</Accordion.Trigger>
 		<Accordion.Content class="flex flex-col gap-4 p-4 text-balance">
 			<ManageThreadParticipant {agent} {session} remove={false} />
 		</Accordion.Content>
 	</Accordion.Item>
 
 	<Accordion.Item value="removeThreadParticipant">
-		<Accordion.Trigger variant="compact" class="p-4">Remove thread participant</Accordion.Trigger>
+		<Accordion.Trigger  class="p-4">Remove thread participant</Accordion.Trigger>
 		<Accordion.Content class="flex flex-col gap-4 p-4 text-balance">
 			<ManageThreadParticipant {agent} {session} remove={true} />
 		</Accordion.Content>
 	</Accordion.Item>
 
 	<Accordion.Item value="killAgent">
-		<Accordion.Trigger variant="compact" class="p-4">Kill agent</Accordion.Trigger>
+		<Accordion.Trigger  class="p-4">Kill agent</Accordion.Trigger>
 		<Accordion.Content class="flex flex-col gap-4 p-4 text-balance">
 			<KillAgent {agent} {session} />
 		</Accordion.Content>

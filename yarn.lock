@@ -200,10 +200,10 @@
     style-mod "^4.1.0"
     w3c-keyname "^2.2.4"
 
-"@coral-os/component-library@^2.1.7":
-  version "2.1.7"
-  resolved "https://registry.yarnpkg.com/@coral-os/component-library/-/component-library-2.1.7.tgz#b03d0170dd82cb0d8ee2b55a3a552c16359eee53"
-  integrity sha512-bRhf3EC04p2HRAk4mHpvX4zxx5ef5xXOiS1Lwj9PM6XdDvlW92MUMU2IvzTitRaubDprVP4zbZc4CbB8gPYoRg==
+"@coral-os/component-library@^2.3.2":
+  version "2.3.2"
+  resolved "https://registry.yarnpkg.com/@coral-os/component-library/-/component-library-2.3.2.tgz#d735d20f1f462ddfe8a15456ddc93e4b34724b69"
+  integrity sha512-Kf4gCyIcfAobZ8MRQgBKLCYgNND5SQCvoGlNDkD/JqKOonvds52PnOBVrzA5ihinAUgbFNryMW8cT0VlAcLnsw==
 
 "@emnapi/core@^1.4.3":
   version "1.4.5"
