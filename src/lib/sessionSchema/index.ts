@@ -94,7 +94,7 @@ export const toPayload = async (server: CoralServer, data: z.output<FormSchema>)
 					? { type: data.sessionBudgetSettings.exhaustionBehavior }
 					: data.sessionBudgetSettings.exhaustionBehavior
 		},
-		annotations: (data.annotations ?? {}) as Record<string, string>
+		annotations: data.annotations ?? {}
 	} satisfies CreateSessionRequest;
 };
 
