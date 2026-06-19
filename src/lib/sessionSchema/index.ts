@@ -93,7 +93,8 @@ export const toPayload = async (server: CoralServer, data: z.output<FormSchema>)
 				typeof data.sessionBudgetSettings.exhaustionBehavior === 'string'
 					? { type: data.sessionBudgetSettings.exhaustionBehavior }
 					: data.sessionBudgetSettings.exhaustionBehavior
-		}
+		},
+		annotations: (data.annotations ?? {}) as Record<string, string>
 	} satisfies CreateSessionRequest;
 };
 
@@ -176,7 +177,8 @@ export const importFromPayload = (json: string): z.output<FormSchema> => {
 			customToolAccess: new Set(
 				(agent.customToolAccess ?? []).map((t) => toolMap[t]).filter(Boolean) as string[] // typescript is stupid this is safe because .filter(Boolean)
 			)
-		}))
+		})),
+		annotations: (data.annotations ?? {}) as Record<string, string>
 	};
 	// selectedAgent = $formData.agents.length > 0 ? 0 : null;
 	// toast.success('Session JSON updated successfully');

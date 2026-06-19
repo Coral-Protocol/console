@@ -20,6 +20,9 @@
 	import { Spinner } from '@coral-os/component-library/ui/spinner/index.js';
 	import { Pip, TwostepButton } from '@coral-os/component-library';
 	import { Skeleton } from '@coral-os/component-library/components/ui/skeleton/index.js';
+	import { Input } from '@coral-os/component-library/ui/input/index.js';
+
+	import { TooltipLabel } from '@coral-os/component-library';
 
 	// ─── Icons ────────────────────────────────────────────────────────────────
 	import IconWrenchRegular from 'phosphor-icons-svelte/IconWrenchRegular.svelte';
@@ -438,7 +441,9 @@
 				budget: 100000000,
 				exhaustionBehavior: { type: 'kill_session', minimum: 1000000 }
 			},
-			agents: []
+			agents: [],
+
+			annotations: {}
 		};
 		sessCtx.selectedAgent = null;
 	}
@@ -1001,6 +1006,33 @@
 								</Tooltip.Root>
 							</div>
 
+							<Form.ElementField {form} name="annotations.name" class="flex items-center gap-2 ">
+								<Form.Control>
+									{#snippet children({ props })}
+										<TooltipLabel
+											title="Session name"
+											tooltip="Adds annotations to the session, such as a name, with no effect on functionality. In Coral Console, sessions without a name will be identified by their ID instead"
+											extra={{
+												type: 'string'
+											}}
+											class="max-w-1/4 min-w-1/4  "
+										>
+											<Input
+												bind:value={$formData.annotations.name}
+												placeholder="session name"
+												onblur={(e: FocusEvent) => {
+													const value = (e.target as HTMLInputElement).value;
+													if (value === '') {
+														delete $formData.annotations.name;
+														$formData.annotations = $formData.annotations;
+													}
+												}}
+											/>
+										</TooltipLabel>
+									{/snippet}
+								</Form.Control>
+							</Form.ElementField>
+
 							<Button variant="outline" onclick={() => (view = 'raw')}>Edit as JSON</Button>
 
 							<span class="flex gap-1">
@@ -1067,6 +1099,33 @@
 							</Tooltip.Content>
 						</Tooltip.Root>
 					</div>
+
+					<Form.ElementField {form} name="annotations.name" class="flex items-center gap-2 ">
+						<Form.Control>
+							{#snippet children({ props })}
+								<TooltipLabel
+									title="Session name"
+									tooltip="Adds annotations to the session, such as a name, with no effect on functionality. In Coral Console, sessions without a name will be identified by their ID instead"
+									extra={{
+										type: 'string'
+									}}
+									class="max-w-1/4 min-w-1/4  "
+								>
+									<Input
+										bind:value={$formData.annotations.name}
+										placeholder="session name"
+										onblur={(e: FocusEvent) => {
+											const value = (e.target as HTMLInputElement).value;
+											if (value === '') {
+												delete $formData.annotations.name;
+												$formData.annotations = $formData.annotations;
+											}
+										}}
+									/>
+								</TooltipLabel>
+							{/snippet}
+						</Form.Control>
+					</Form.ElementField>
 
 					<Button variant="outline" onclick={() => (view = 'workbench')}>Return to editor</Button>
 

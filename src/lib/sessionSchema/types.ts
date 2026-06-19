@@ -392,6 +392,7 @@ const formSchema = z.object({
 				.default({})
 		})
 	),
-	groups: z.array(z.array(z.string()))
+	groups: z.array(z.array(z.string())),
+	annotations: z.record(z.string(), z.string()).default({})
 });
 export type FormSchema = typeof formSchema;
