@@ -929,28 +929,29 @@
 				minSize={25}
 				class="bg-background flex min-h-0 flex-col gap-2"
 			>
-				<Card.Root class="min-h-0 grow py-0">
-					<Card.Content class="min-h-0 grow px-0">
-						<Tabs.Root bind:value={currentTab} class="h-full overflow-hidden">
-							<Tabs.List class="bg-sidebar flex w-full justify-start rounded-none border-b ">
-								<SidebarTab
-									value="agent"
-									icon={IconRobotRegular}
-									invalid={Object.values($errors?.agents ?? {}).length > 0}>Agent</SidebarTab
-								>
-								<SidebarTab
-									value="groups"
-									icon={IconUsersThreeRegular}
-									invalid={Object.values($errors?.groups ?? {}).length > 0}>Groups</SidebarTab
-								>
-								<SidebarTab
-									value="tools"
-									icon={IconWrenchRegular}
-									invalid={Object.values($errors?.sessionRuntimeSettings ?? {}).length > 0}
-									>Tools</SidebarTab
-								>
-								<SidebarTab value="marketplace" icon={IconStorefront}>Market</SidebarTab>
-							</Tabs.List>
+				<Card.Root class="min-h-0 grow border-0 py-0">
+					<Tabs.Root bind:value={currentTab} class="h-full overflow-hidden">
+						<Tabs.List variant="seamless">
+							<SidebarTab
+								value="agent"
+								icon={IconRobotRegular}
+								invalid={Object.values($errors?.agents ?? {}).length > 0}>Agent</SidebarTab
+							>
+							<SidebarTab
+								value="groups"
+								icon={IconUsersThreeRegular}
+								invalid={Object.values($errors?.groups ?? {}).length > 0}>Groups</SidebarTab
+							>
+							<SidebarTab
+								value="tools"
+								icon={IconWrenchRegular}
+								invalid={Object.values($errors?.sessionRuntimeSettings ?? {}).length > 0}
+								>Tools</SidebarTab
+							>
+							<SidebarTab value="marketplace" icon={IconStorefront}>Market</SidebarTab>
+							<Tabs.Trigger value="" class="pointer-events-none min-w-0 flex-1 p-0"></Tabs.Trigger>
+						</Tabs.List>
+						<Card.Content class="min-h-0 grow border border-t-0 px-0">
 							{#key sessCtx.selectedAgent}
 								<Tabs.Content
 									value="agent"
@@ -971,8 +972,8 @@
 							>
 								<MarketPane />
 							</Tabs.Content>
-						</Tabs.Root>
-					</Card.Content>
+						</Card.Content>
+					</Tabs.Root>
 				</Card.Root>
 				<Card.Root>
 					<Card.Content class="items-right flex gap-4">

@@ -63,6 +63,7 @@
 </script>
 
 <script lang="ts">
+	import * as Resizable from '@coral-os/component-library/ui/resizable/index.js';
 	import type { Component } from 'svelte';
 	import * as store from 'svelte/store';
 	import { type SuperForm } from 'sveltekit-superforms';
@@ -116,48 +117,53 @@
 </script>
 
 <li class="hover:bg-muted/50 px-2 py-2 not-last:border-b">
-	<Form.ElementField
-		class="grid grid-cols-[1fr_3fr] gap-2 space-y-0"
-		{form}
-		name="agents[{agent}].options.{name}.value"
-	>
+	<Form.ElementField class=" space-y-0" {form} name="agents[{agent}].options.{name}.value">
 		<Form.Control>
 			{#snippet children({ props })}
-				<div class="grid grid-cols-[auto_min-content] items-start gap-1">
-					<TooltipLabel
-						title={name}
-						for={props.id}
-						tooltip={meta.display?.description ?? 'No description provided.'}
-						extra={{
-							required: meta.required ?? false,
-							type: meta.type
-						}}
+				<Resizable.PaneGroup direction="horizontal" class="w-full grow">
+					<Resizable.Pane
+						class="grid grid-cols-[auto_min-content] items-start gap-1 truncate"
+						defaultSize={25}
+						minSize={10}
 					>
-						{meta.display?.label ?? name}
-					</TooltipLabel>
-					{#if meta.default !== undefined && $value !== undefined && !valuesEqual($value, meta.default)}
-						<Tooltip.Root>
-							<Tooltip.Trigger
-								class={cn(buttonVariants({ size: 'icon' }))}
-								onclick={() => {
-									$value = meta.default as any;
-								}}
-							>
-								<IconArrowUUpLeft />
-							</Tooltip.Trigger>
-							<Tooltip.Content>Revert to default</Tooltip.Content>
-						</Tooltip.Root>
-					{/if}
-				</div>
-				{#if type}
-					{@const O = componentMap[type] as Component<OptionProps>}
-					{@const errs = $errors.agents?.[agent]?.options?.[name]?.value ?? []}
-					{#if O}
-						<O {type} {props} {value} {meta} errors={errs} />
-					{:else}
-						Unknown option type - {type}
-					{/if}
-				{/if}
+						<TooltipLabel
+							title={name}
+							for={props.id}
+							tooltip={meta.display?.description ?? 'No description provided.'}
+							extra={{
+								required: meta.required ?? false,
+								type: meta.type
+							}}
+						>
+							{meta.display?.label ?? name}
+						</TooltipLabel>
+						{#if meta.default !== undefined && $value !== undefined && !valuesEqual($value, meta.default)}
+							<Tooltip.Root>
+								<Tooltip.Trigger
+									class={cn(buttonVariants({ size: 'icon' }))}
+									onclick={() => {
+										$value = meta.default as any;
+									}}
+								>
+									<IconArrowUUpLeft />
+								</Tooltip.Trigger>
+								<Tooltip.Content>Revert to default</Tooltip.Content>
+							</Tooltip.Root>
+						{/if}
+					</Resizable.Pane>
+					<Resizable.Handle class="w-1 bg-transparent" />
+					<Resizable.Pane minSize={15}>
+						{#if type}
+							{@const O = componentMap[type] as Component<OptionProps>}
+							{@const errs = $errors.agents?.[agent]?.options?.[name]?.value ?? []}
+							{#if O}
+								<O {type} {props} {value} {meta} errors={errs} />
+							{:else}
+								Unknown option type - {type}
+							{/if}
+						{/if}
+					</Resizable.Pane>
+				</Resizable.PaneGroup>
 			{/snippet}
 		</Form.Control>
 	</Form.ElementField>
