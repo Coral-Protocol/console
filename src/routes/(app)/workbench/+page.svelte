@@ -931,7 +931,7 @@
 			>
 				<Card.Root class="min-h-0 grow border-0 py-0">
 					<Tabs.Root bind:value={currentTab} class="h-full overflow-hidden">
-						<Tabs.List variant="seamless">
+						<Tabs.List variant="seamless" class="min-h-9!">
 							<SidebarTab
 								value="agent"
 								icon={IconRobotRegular}
@@ -951,7 +951,7 @@
 							<SidebarTab value="marketplace" icon={IconStorefront}>Market</SidebarTab>
 							<Tabs.Trigger value="" class="pointer-events-none min-w-0 flex-1 p-0"></Tabs.Trigger>
 						</Tabs.List>
-						<Card.Content class="min-h-0 grow border border-t-0 px-0">
+						<Card.Content class="min-h-0 grow border border-t-0 px-0 pt-4">
 							{#key sessCtx.selectedAgent}
 								<Tabs.Content
 									value="agent"
