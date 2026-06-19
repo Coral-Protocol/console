@@ -1105,7 +1105,7 @@
 							{#snippet children({ props })}
 								<TooltipLabel
 									title="Session name"
-									tooltip="Adds annotations to the session, such as a name, with no effect on functionality. In Coral Console, sessions without a name will be identified by their ID instead"
+									tooltip="Utilise annotations to name and describe sessions. In Coral Console, sessions without a name will be identified by their unqiue ID, instead."
 									extra={{
 										type: 'string'
 									}}
