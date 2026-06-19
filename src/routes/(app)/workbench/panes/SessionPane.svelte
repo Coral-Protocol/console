@@ -29,6 +29,7 @@
 	import { randomAdjective, randomAnimal } from '$lib/words';
 	import { getSessionContext } from '$lib/sessionCreatorContext';
 	import { cn } from '$lib/utils';
+	import DurationInout from '../options/DurationInout.svelte';
 
 	let ctx = getSessionContext();
 
@@ -48,7 +49,7 @@
 
 {#if ctx && $formData}
 	<section class="flex h-full min-h-0 grow flex-col gap-2 overflow-y-auto p-4">
-		<p>Time to live restricts how long a session can remain alive and open for.</p>
+		<p>If specified, the session will never live longer than this duration.</p>
 		<Form.ElementField {form} name="sessionRuntimeSettings.ttl" class="flex items-center gap-2 ">
 			<Form.Control>
 				{#snippet children({ props })}
@@ -56,30 +57,28 @@
 						title="Time to live (TTL)"
 						tooltip="Measured in milliseconds, the time to live is the maximum duration the session can last"
 						extra={{
-							required: true,
 							type: 'number'
 						}}
 						class="max-w-1/4 min-w-1/4"
 					>
 						Time to live
 					</TooltipLabel>
-					<Input
-						{...props}
-						bind:value={$formData.sessionRuntimeSettings.ttl}
-						placeholder="time in milliseconds"
-						maxlength={15778476000}
-						type="number"
-						class="grow"
+
+					<DurationInout
+						value={$formData.sessionRuntimeSettings.ttl ?? 0}
+						onchange={(totalMilliseconds) => {
+							if (totalMilliseconds === 0) {
+								delete $formData.sessionRuntimeSettings.ttl;
+								$formData.sessionBudgetSettings = $formData.sessionBudgetSettings;
+							} else {
+								$formData.sessionRuntimeSettings.ttl = totalMilliseconds;
+							}
+						}}
 					/>
 				{/snippet}
 			</Form.Control>
 		</Form.ElementField>
-		<span class="text-muted-foreground flex flex-col justify-between">
-			<TooltipLabel tooltip="Based off Session time to live settings" class=" max-w-fit">
-				Maximum session duration: {formatMsToHHMMSS($formData.sessionRuntimeSettings.ttl ?? 0) ??
-					'HH:MM:SS'}
-			</TooltipLabel>
-		</span>
+
 		{#if $errors?.sessionRuntimeSettings?.ttl && JSON.stringify($errors.sessionRuntimeSettings?.ttl) !== '{}' && JSON.stringify($errors.sessionRuntimeSettings?.ttl) !== '{}'}
 			<span class="text-xs">
 				{$errors?.sessionRuntimeSettings?.ttl}

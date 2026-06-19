@@ -97,15 +97,6 @@ export const toPayload = async (server: CoralServer, data: z.output<FormSchema>)
 	} satisfies CreateSessionRequest;
 };
 
-// export const defaultPayload = {
-// 	groups: [],
-// 	tools: {},
-// 	sessionRuntimeSettings: {
-// 		ttl: 50000
-// 	},
-// 	agents: []
-// } satisfies CreateSessionRequest;
-
 export const defaultProvider = {
 	runtime: 'executable',
 	remote_request: {
@@ -139,14 +130,11 @@ export const importFromPayload = (json: string): z.output<FormSchema> => {
 			];
 		})
 	);
-	const defaultRuntimeSettings = {
-		ttl: 50000
-	};
+
 	return {
 		tools,
 		groups: data.agentGraphRequest.groups ?? [],
 		sessionRuntimeSettings: {
-			...defaultRuntimeSettings,
 			...(data.execution && data.execution.mode === 'immediate'
 				? data.execution.runtimeSettings
 				: {})
