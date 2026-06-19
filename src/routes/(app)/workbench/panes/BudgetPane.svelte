@@ -50,7 +50,7 @@
 	let minimumStored = $state(0);
 
 	const buildExhaustionBehavior = (
-		type: 'kill_agent' | 'kill_session' | 'warn',
+		type: 'kill_agent' | 'kill_session' | 'ignore',
 		minimum = 0,
 		force = true
 	) => {
@@ -59,7 +59,7 @@
 				return { type, force, minimum } as const;
 			case 'kill_session':
 				return { type, minimum } as const;
-			case 'warn':
+			case 'ignore':
 				return { type } as const;
 		}
 	};
@@ -71,7 +71,7 @@
 
 	const getMinimum = () => {
 		if (!$formData) return 0;
-		if ($formData.sessionBudgetSettings.exhaustionBehavior.type === 'warn')
+		if ($formData.sessionBudgetSettings.exhaustionBehavior.type === 'ignore')
 			return minimumStored ?? 0;
 		return $formData.sessionBudgetSettings.exhaustionBehavior.minimum;
 	};
@@ -92,10 +92,10 @@
 				'Once the session budget drops below the specified minimum, agents that claim for it will trigger the session to be killed. The higher the minimum is the lower the chance of overclaiming.'
 		},
 		{
-			value: 'warn',
+			value: 'ignore',
 			label: 'Ignore',
 			onclick: () => {
-				(minimumStored = getMinimum()), setBehavior(buildExhaustionBehavior('warn'));
+				(minimumStored = getMinimum()), setBehavior(buildExhaustionBehavior('ignore'));
 			},
 			tooltip:
 				'Once the session budget is exhausted and claimed from, a warning will be produced. This behavior has a high risk of overclaiming.'
@@ -107,7 +107,7 @@
 	const toDollars = (micro: number) => micro / MICRODOLLARS_PER_DOLLAR;
 	const toMicro = (dollars: number) => Math.round(dollars * MICRODOLLARS_PER_DOLLAR);
 
-	const isWarnOnly = $derived($formData.sessionBudgetSettings.exhaustionBehavior.type === 'warn');
+	const isWarnOnly = $derived($formData.sessionBudgetSettings.exhaustionBehavior.type === 'ignore');
 </script>
 
 {#if ctx && $formData}
@@ -172,7 +172,7 @@
 
 							setBehavior(
 								buildExhaustionBehavior(
-									v as 'kill_agent' | 'kill_session' | 'warn',
+									v as 'kill_agent' | 'kill_session' | 'ignore',
 									getMinimum(),
 									force
 								)
@@ -245,7 +245,7 @@
 				</Form.Control>
 			</Form.ElementField>
 		{/if}
-		{#if $formData.sessionBudgetSettings.exhaustionBehavior.type !== 'warn'}
+		{#if $formData.sessionBudgetSettings.exhaustionBehavior.type !== 'ignore'}
 			<Form.ElementField
 				{form}
 				name="sessionBudgetSettings.exhaustionBehavior.minimum"
@@ -253,7 +253,7 @@
 			>
 				<Form.Control>
 					{#snippet children({ props })}
-						{#if $formData.sessionBudgetSettings.exhaustionBehavior.type !== 'warn'}
+						{#if $formData.sessionBudgetSettings.exhaustionBehavior.type !== 'ignore'}
 							<TooltipLabel
 								title="Minimum threshold"
 								tooltip="If the session budget drops below this, it will trigger the exhaustion behavior. This is used to prevent overclaiming."
@@ -269,7 +269,7 @@
 								value={$formData.sessionBudgetSettings.exhaustionBehavior.minimum ?? 0}
 								disabled={isWarnOnly}
 								onchange={(micro) => {
-									if ($formData.sessionBudgetSettings.exhaustionBehavior.type !== 'warn') {
+									if ($formData.sessionBudgetSettings.exhaustionBehavior.type !== 'ignore') {
 										$formData.sessionBudgetSettings.exhaustionBehavior.minimum = micro;
 									}
 								}}
@@ -285,7 +285,7 @@
 			<Alert.Title>Output</Alert.Title>
 			<Alert.Description>
 				<p>
-					{#if $formData.sessionBudgetSettings.exhaustionBehavior.type === 'warn'}
+					{#if $formData.sessionBudgetSettings.exhaustionBehavior.type === 'ignore'}
 						When the session budget of
 						<span class="font-semibold">
 							${$formData.sessionBudgetSettings.budget / 100000000}

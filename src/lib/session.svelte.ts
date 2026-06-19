@@ -82,7 +82,8 @@ export class Session {
 
 				this.extended = {
 					budgetSettings: res.data.budgetSettings,
-					runningBudget: res.data.runningBudget
+					runningBudget: res.data.runningBudget,
+					agentClaimReceipts: res.data.agentClaimReceipts
 				};
 
 				this.threads = Object.fromEntries(

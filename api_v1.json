@@ -1299,13 +1299,24 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/AgentClaimResponse"
+                  "$ref" : "#/components/schemas/AgentClaimResult"
                 }
               }
             }
           },
           "401" : {
             "description" : "Bad agent secret provided",
+            "headers" : { },
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RouteException"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid claim type provided",
             "headers" : { },
             "content" : {
               "application/json" : {
@@ -1758,23 +1769,73 @@
               "type" : "string",
               "title" : "String"
             },
-            "requestedAmount" : {
-              "type" : "integer",
-              "title" : "AgentBudgetUnit"
+            "claim" : {
+              "anyOf" : [ {
+                "type" : "object",
+                "properties" : {
+                  "type" : {
+                    "type" : "string",
+                    "enum" : [ "llm_proxy_claim" ],
+                    "title" : "String"
+                  },
+                  "timestamp" : {
+                    "type" : "string",
+                    "title" : "UTC timestamp ISO-8601"
+                  },
+                  "inputTokenCount" : {
+                    "type" : "integer",
+                    "title" : "ULong"
+                  },
+                  "inputTokenCost" : {
+                    "type" : "integer",
+                    "title" : "AgentBudgetUnit"
+                  },
+                  "outputTokenCount" : {
+                    "type" : "integer",
+                    "title" : "ULong"
+                  },
+                  "outputTokenCost" : {
+                    "type" : "integer",
+                    "title" : "AgentBudgetUnit"
+                  }
+                },
+                "required" : [ "inputTokenCost", "inputTokenCount", "outputTokenCost", "outputTokenCount", "timestamp", "type" ],
+                "title" : "llm_proxy_claim"
+              }, {
+                "type" : "object",
+                "properties" : {
+                  "type" : {
+                    "$ref" : "#/components/schemas/RegistryAgentClaimType"
+                  },
+                  "timestamp" : {
+                    "type" : "string",
+                    "title" : "UTC timestamp ISO-8601"
+                  },
+                  "quantity" : {
+                    "type" : "integer",
+                    "maximum" : 4294967295,
+                    "minimum" : 0,
+                    "title" : "UInt"
+                  },
+                  "additionalDescription" : {
+                    "type" : "string",
+                    "title" : "String"
+                  }
+                },
+                "required" : [ "quantity", "timestamp", "type" ],
+                "title" : "rpc_claim"
+              } ],
+              "discriminator" : {
+                "propertyName" : "type"
+              },
+              "title" : "SessionAgentClaim"
             },
-            "claimedAmount" : {
-              "type" : "integer",
-              "title" : "AgentBudgetUnit"
-            },
-            "remainingBudget" : {
-              "type" : "integer",
-              "title" : "AgentBudgetUnit"
-            },
-            "budgetSource" : {
-              "$ref" : "#/components/schemas/AgentBudgetSource"
+            "result" : {
+              "$ref" : "#/components/schemas/AgentClaimResult",
+              "description" : "A response to a claim request."
             }
           },
-          "required" : [ "agent", "budgetSource", "claimedAmount", "remainingBudget", "requestedAmount", "timestamp", "type" ],
+          "required" : [ "agent", "claim", "result", "timestamp", "type" ],
           "title" : "agent_budget_claim"
         }, {
           "type" : "object",
@@ -2153,10 +2214,70 @@
         },
         "title" : "SessionEvent"
       },
-      "AgentBudgetSource" : {
-        "type" : "string",
-        "enum" : [ "session", "agent" ],
-        "title" : "AgentBudgetSource"
+      "RegistryAgentClaimType" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "description" : "A unique name for this claim type. This name will be used to make claims of this type",
+            "title" : "String"
+          },
+          "description" : {
+            "type" : "string",
+            "description" : "A human-readable description of this claim type",
+            "title" : "String"
+          },
+          "dependency" : {
+            "type" : "string",
+            "title" : "String"
+          },
+          "cost" : {
+            "type" : "integer",
+            "description" : "The cost of this claim type. This value can be overridden by the application. Application developers are encouraged to specify values for all claim types. The value is specified in micro cents. $1.00 is 100000000 and $0.01 is 1000000.",
+            "title" : "AgentBudgetUnit"
+          }
+        },
+        "required" : [ "dependency", "description", "name" ],
+        "title" : "RegistryAgentClaimType"
+      },
+      "AgentClaimResult" : {
+        "type" : "object",
+        "description" : "A response to a claim request.",
+        "properties" : {
+          "claimId" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "A unique sequential ID assigned to this claim",
+            "title" : "Int"
+          },
+          "requestedAmount" : {
+            "type" : "integer",
+            "description" : "The amount requested, echoed back to the agent",
+            "title" : "AgentBudgetUnit"
+          },
+          "fulfilledAmount" : {
+            "type" : "integer",
+            "description" : "The amount of the budget that could be fulfilled. If this is not equal to the requested amount, the budget was exhausted.",
+            "title" : "AgentBudgetUnit"
+          },
+          "remainingAgentBudget" : {
+            "type" : "integer",
+            "description" : "The remaining agent budget after the claim was made",
+            "title" : "AgentBudgetUnit"
+          },
+          "remainingSessionBudget" : {
+            "type" : "integer",
+            "description" : "The remaining session budget after the claim was made",
+            "title" : "AgentBudgetUnit"
+          },
+          "shouldExit" : {
+            "type" : "boolean",
+            "description" : "If this is true, the claim resulted in a budget exhaustion that should cause the agent to exit.",
+            "title" : "Boolean"
+          }
+        },
+        "required" : [ "claimId", "fulfilledAmount", "remainingAgentBudget", "remainingSessionBudget", "requestedAmount", "shouldExit" ],
+        "title" : "AgentClaimResult"
       },
       "SessionThreadMessage" : {
         "type" : "object",
@@ -2334,6 +2455,30 @@
                   "properties" : {
                     "type" : {
                       "type" : "string",
+                      "enum" : [ "agent_claim" ],
+                      "title" : "String"
+                    },
+                    "claimId" : {
+                      "type" : "integer",
+                      "format" : "int32",
+                      "title" : "Int"
+                    },
+                    "mdcMap" : {
+                      "type" : "object",
+                      "additionalProperties" : {
+                        "type" : "string",
+                        "title" : "String"
+                      },
+                      "title" : "LinkedHashMap<String,String>"
+                    }
+                  },
+                  "required" : [ "claimId", "mdcMap", "type" ],
+                  "title" : "agent_claim"
+                }, {
+                  "type" : "object",
+                  "properties" : {
+                    "type" : {
+                      "type" : "string",
                       "enum" : [ "stdout" ],
                       "title" : "String"
                     },
@@ -2486,6 +2631,30 @@
                   },
                   "required" : [ "mdcMap", "name", "type" ],
                   "title" : "agent"
+                }, {
+                  "type" : "object",
+                  "properties" : {
+                    "type" : {
+                      "type" : "string",
+                      "enum" : [ "agent_claim" ],
+                      "title" : "String"
+                    },
+                    "claimId" : {
+                      "type" : "integer",
+                      "format" : "int32",
+                      "title" : "Int"
+                    },
+                    "mdcMap" : {
+                      "type" : "object",
+                      "additionalProperties" : {
+                        "type" : "string",
+                        "title" : "String"
+                      },
+                      "title" : "LinkedHashMap<String,String>"
+                    }
+                  },
+                  "required" : [ "claimId", "mdcMap", "type" ],
+                  "title" : "agent_claim"
                 }, {
                   "type" : "object",
                   "properties" : {
@@ -2656,6 +2825,30 @@
                   "properties" : {
                     "type" : {
                       "type" : "string",
+                      "enum" : [ "agent_claim" ],
+                      "title" : "String"
+                    },
+                    "claimId" : {
+                      "type" : "integer",
+                      "format" : "int32",
+                      "title" : "Int"
+                    },
+                    "mdcMap" : {
+                      "type" : "object",
+                      "additionalProperties" : {
+                        "type" : "string",
+                        "title" : "String"
+                      },
+                      "title" : "LinkedHashMap<String,String>"
+                    }
+                  },
+                  "required" : [ "claimId", "mdcMap", "type" ],
+                  "title" : "agent_claim"
+                }, {
+                  "type" : "object",
+                  "properties" : {
+                    "type" : {
+                      "type" : "string",
                       "enum" : [ "stdout" ],
                       "title" : "String"
                     },
@@ -2813,6 +3006,30 @@
                   "properties" : {
                     "type" : {
                       "type" : "string",
+                      "enum" : [ "agent_claim" ],
+                      "title" : "String"
+                    },
+                    "claimId" : {
+                      "type" : "integer",
+                      "format" : "int32",
+                      "title" : "Int"
+                    },
+                    "mdcMap" : {
+                      "type" : "object",
+                      "additionalProperties" : {
+                        "type" : "string",
+                        "title" : "String"
+                      },
+                      "title" : "LinkedHashMap<String,String>"
+                    }
+                  },
+                  "required" : [ "claimId", "mdcMap", "type" ],
+                  "title" : "agent_claim"
+                }, {
+                  "type" : "object",
+                  "properties" : {
+                    "type" : {
+                      "type" : "string",
                       "enum" : [ "stdout" ],
                       "title" : "String"
                     },
@@ -2965,6 +3182,30 @@
                   },
                   "required" : [ "mdcMap", "name", "type" ],
                   "title" : "agent"
+                }, {
+                  "type" : "object",
+                  "properties" : {
+                    "type" : {
+                      "type" : "string",
+                      "enum" : [ "agent_claim" ],
+                      "title" : "String"
+                    },
+                    "claimId" : {
+                      "type" : "integer",
+                      "format" : "int32",
+                      "title" : "Int"
+                    },
+                    "mdcMap" : {
+                      "type" : "object",
+                      "additionalProperties" : {
+                        "type" : "string",
+                        "title" : "String"
+                      },
+                      "title" : "LinkedHashMap<String,String>"
+                    }
+                  },
+                  "required" : [ "claimId", "mdcMap", "type" ],
+                  "title" : "agent_claim"
                 }, {
                   "type" : "object",
                   "properties" : {
@@ -3184,9 +3425,17 @@
           "budgetSettings" : {
             "$ref" : "#/components/schemas/SessionBudgetSettings",
             "description" : "The budget settings for this session"
+          },
+          "agentClaimReceipts" : {
+            "type" : "array",
+            "description" : "A list of receipts for all claims made by all agents in this session",
+            "items" : {
+              "$ref" : "#/components/schemas/SessionAgentClaimReceipt"
+            },
+            "title" : "ArrayList<SessionAgentClaimReceipt>"
           }
         },
-        "required" : [ "agents", "base", "budgetSettings", "runningBudget", "threads" ],
+        "required" : [ "agentClaimReceipts", "agents", "base", "budgetSettings", "runningBudget", "threads" ],
         "title" : "SessionStateExtended"
       },
       "SessionAgentState" : {
@@ -3445,36 +3694,10 @@
           "overclaim" : {
             "type" : "integer",
             "title" : "AgentBudgetUnit"
-          },
-          "claims" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/SessionBudgetClaim"
-            },
-            "title" : "ArrayList<SessionBudgetClaim>"
           }
         },
-        "required" : [ "claims", "clamp", "overclaim", "remaining", "startBudget" ],
+        "required" : [ "clamp", "overclaim", "remaining", "startBudget" ],
         "title" : "SessionRunningBudget"
-      },
-      "SessionBudgetClaim" : {
-        "type" : "object",
-        "properties" : {
-          "amount" : {
-            "type" : "integer",
-            "title" : "AgentBudgetUnit"
-          },
-          "description" : {
-            "type" : "string",
-            "title" : "String"
-          },
-          "timestamp" : {
-            "type" : "string",
-            "title" : "UTC timestamp ISO-8601"
-          }
-        },
-        "required" : [ "amount", "description", "timestamp" ],
-        "title" : "SessionBudgetClaim"
       },
       "GraphAgentBudgetSettings" : {
         "type" : "object",
@@ -3483,6 +3706,15 @@
             "type" : "integer",
             "description" : "The budget for this specific agent.  The value is specified in micro cents. $1.00 is 100000000 and $0.01 is 1000000.",
             "title" : "AgentBudgetUnit"
+          },
+          "claimTypeCosts" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "integer",
+              "title" : "AgentBudgetUnit"
+            },
+            "description" : "A map where each key is a claim type name and the value the cost for that claim. Claims that do not have default values set must have their values set in this map or else they will not contribute to the budget.",
+            "title" : "LinkedHashMap<String,AgentBudgetUnit>"
           },
           "exhaustionBehavior" : {
             "anyOf" : [ {
@@ -3546,6 +3778,18 @@
           "exhaustionBehavior" : {
             "anyOf" : [ {
               "type" : "object",
+              "description" : "The exhaustion of the session's budget will be ignored.  This has a high chance of overclaiming.",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "ignore" ],
+                  "title" : "String"
+                }
+              },
+              "required" : [ "type" ],
+              "title" : "ignore"
+            }, {
+              "type" : "object",
               "description" : "Once the session budget drops below the specified minimum, agents that claim for it will be killed.  The higher the minimum is the lower the chance of overclaiming.",
               "properties" : {
                 "type" : {
@@ -3593,18 +3837,6 @@
               },
               "required" : [ "minimum", "type" ],
               "title" : "kill_session"
-            }, {
-              "type" : "object",
-              "description" : "Once the session budget is exhausted and claimed from, a warning will be produced.  This behavior has a high risk of overclaiming.",
-              "properties" : {
-                "type" : {
-                  "type" : "string",
-                  "enum" : [ "warn" ],
-                  "title" : "String"
-                }
-              },
-              "required" : [ "type" ],
-              "title" : "warn"
             } ],
             "description" : "\n        The behavior for agents consuming from this budget after it has been exhausted.  Note that this behavior\n        only applies to agents that consume from the session budgets. Agents that have their own budget will first \n        perform behaviors described by the agent's own budget settings.\n        ",
             "discriminator" : {
@@ -3614,6 +3846,87 @@
           }
         },
         "title" : "SessionBudgetSettings"
+      },
+      "SessionAgentClaimReceipt" : {
+        "type" : "object",
+        "description" : "A receipt for a claim made by an agent",
+        "properties" : {
+          "claim" : {
+            "anyOf" : [ {
+              "type" : "object",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "llm_proxy_claim" ],
+                  "title" : "String"
+                },
+                "timestamp" : {
+                  "type" : "string",
+                  "title" : "UTC timestamp ISO-8601"
+                },
+                "inputTokenCount" : {
+                  "type" : "integer",
+                  "title" : "ULong"
+                },
+                "inputTokenCost" : {
+                  "type" : "integer",
+                  "title" : "AgentBudgetUnit"
+                },
+                "outputTokenCount" : {
+                  "type" : "integer",
+                  "title" : "ULong"
+                },
+                "outputTokenCost" : {
+                  "type" : "integer",
+                  "title" : "AgentBudgetUnit"
+                }
+              },
+              "required" : [ "inputTokenCost", "inputTokenCount", "outputTokenCost", "outputTokenCount", "timestamp", "type" ],
+              "title" : "llm_proxy_claim"
+            }, {
+              "type" : "object",
+              "properties" : {
+                "type" : {
+                  "$ref" : "#/components/schemas/RegistryAgentClaimType"
+                },
+                "timestamp" : {
+                  "type" : "string",
+                  "title" : "UTC timestamp ISO-8601"
+                },
+                "quantity" : {
+                  "type" : "integer",
+                  "maximum" : 4294967295,
+                  "minimum" : 0,
+                  "title" : "UInt"
+                },
+                "additionalDescription" : {
+                  "type" : "string",
+                  "title" : "String"
+                }
+              },
+              "required" : [ "quantity", "timestamp", "type" ],
+              "title" : "rpc_claim"
+            } ],
+            "description" : "The claim that was made",
+            "discriminator" : {
+              "propertyName" : "type"
+            },
+            "title" : "SessionAgentClaim"
+          },
+          "cost" : {
+            "type" : "integer",
+            "description" : "The calculated cost of the claim",
+            "title" : "AgentBudgetUnit"
+          },
+          "id" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "A unique sequential ID assigned to this claim",
+            "title" : "Int"
+          }
+        },
+        "required" : [ "claim", "cost", "id" ],
+        "title" : "SessionAgentClaimReceipt"
       },
       "SessionAgentUsageReport" : {
         "type" : "object",
@@ -5318,6 +5631,13 @@
                     "enum" : [ "blob" ],
                     "title" : "String"
                   },
+                  "default" : {
+                    "type" : "string",
+                    "title" : "String"
+                  },
+                  "validation" : {
+                    "$ref" : "#/components/schemas/BlobAgentOptionValidation"
+                  },
                   "required" : {
                     "type" : "boolean",
                     "title" : "Boolean"
@@ -5327,13 +5647,6 @@
                   },
                   "transport" : {
                     "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
-                  "default" : {
-                    "type" : "string",
-                    "title" : "String"
-                  },
-                  "validation" : {
-                    "$ref" : "#/components/schemas/BlobAgentOptionValidation"
                   }
                 },
                 "required" : [ "type" ],
@@ -5346,16 +5659,6 @@
                     "enum" : [ "list[blob]" ],
                     "title" : "String"
                   },
-                  "required" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
-                  },
-                  "display" : {
-                    "$ref" : "#/components/schemas/AgentOptionDisplay"
-                  },
-                  "transport" : {
-                    "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
                   "default" : {
                     "type" : "array",
                     "items" : {
@@ -5366,6 +5669,16 @@
                   },
                   "validation" : {
                     "$ref" : "#/components/schemas/BlobAgentOptionValidation"
+                  },
+                  "required" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
+                  "display" : {
+                    "$ref" : "#/components/schemas/AgentOptionDisplay"
+                  },
+                  "transport" : {
+                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   }
                 },
                 "required" : [ "type" ],
@@ -5378,6 +5691,10 @@
                     "enum" : [ "bool" ],
                     "title" : "String"
                   },
+                  "default" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
                   "required" : {
                     "type" : "boolean",
                     "title" : "Boolean"
@@ -5387,10 +5704,6 @@
                   },
                   "transport" : {
                     "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
-                  "default" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
                   }
                 },
                 "required" : [ "type" ],
@@ -5403,6 +5716,15 @@
                     "enum" : [ "i8" ],
                     "title" : "String"
                   },
+                  "default" : {
+                    "type" : "integer",
+                    "maximum" : 127,
+                    "minimum" : -128,
+                    "title" : "Byte"
+                  },
+                  "validation" : {
+                    "$ref" : "#/components/schemas/ByteAgentOptionValidation"
+                  },
                   "required" : {
                     "type" : "boolean",
                     "title" : "Boolean"
@@ -5412,15 +5734,6 @@
                   },
                   "transport" : {
                     "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
-                  "default" : {
-                    "type" : "integer",
-                    "maximum" : 127,
-                    "minimum" : -128,
-                    "title" : "Byte"
-                  },
-                  "validation" : {
-                    "$ref" : "#/components/schemas/ByteAgentOptionValidation"
                   }
                 },
                 "required" : [ "type" ],
@@ -5432,16 +5745,6 @@
                     "type" : "string",
                     "enum" : [ "list[i8]" ],
                     "title" : "String"
-                  },
-                  "required" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
-                  },
-                  "display" : {
-                    "$ref" : "#/components/schemas/AgentOptionDisplay"
-                  },
-                  "transport" : {
-                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   },
                   "default" : {
                     "type" : "array",
@@ -5455,6 +5758,16 @@
                   },
                   "validation" : {
                     "$ref" : "#/components/schemas/ByteAgentOptionValidation"
+                  },
+                  "required" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
+                  "display" : {
+                    "$ref" : "#/components/schemas/AgentOptionDisplay"
+                  },
+                  "transport" : {
+                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   }
                 },
                 "required" : [ "type" ],
@@ -5467,6 +5780,14 @@
                     "enum" : [ "f64" ],
                     "title" : "String"
                   },
+                  "default" : {
+                    "type" : "number",
+                    "format" : "double",
+                    "title" : "Double"
+                  },
+                  "validation" : {
+                    "$ref" : "#/components/schemas/DoubleAgentOptionValidation"
+                  },
                   "required" : {
                     "type" : "boolean",
                     "title" : "Boolean"
@@ -5476,14 +5797,6 @@
                   },
                   "transport" : {
                     "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
-                  "default" : {
-                    "type" : "number",
-                    "format" : "double",
-                    "title" : "Double"
-                  },
-                  "validation" : {
-                    "$ref" : "#/components/schemas/DoubleAgentOptionValidation"
                   }
                 },
                 "required" : [ "type" ],
@@ -5496,16 +5809,6 @@
                     "enum" : [ "list[f64]" ],
                     "title" : "String"
                   },
-                  "required" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
-                  },
-                  "display" : {
-                    "$ref" : "#/components/schemas/AgentOptionDisplay"
-                  },
-                  "transport" : {
-                    "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
                   "default" : {
                     "type" : "array",
                     "items" : {
@@ -5517,6 +5820,16 @@
                   },
                   "validation" : {
                     "$ref" : "#/components/schemas/DoubleAgentOptionValidation"
+                  },
+                  "required" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
+                  "display" : {
+                    "$ref" : "#/components/schemas/AgentOptionDisplay"
+                  },
+                  "transport" : {
+                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   }
                 },
                 "required" : [ "type" ],
@@ -5529,6 +5842,14 @@
                     "enum" : [ "f32" ],
                     "title" : "String"
                   },
+                  "default" : {
+                    "type" : "number",
+                    "format" : "float",
+                    "title" : "Float"
+                  },
+                  "validation" : {
+                    "$ref" : "#/components/schemas/FloatAgentOptionValidation"
+                  },
                   "required" : {
                     "type" : "boolean",
                     "title" : "Boolean"
@@ -5538,14 +5859,6 @@
                   },
                   "transport" : {
                     "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
-                  "default" : {
-                    "type" : "number",
-                    "format" : "float",
-                    "title" : "Float"
-                  },
-                  "validation" : {
-                    "$ref" : "#/components/schemas/FloatAgentOptionValidation"
                   }
                 },
                 "required" : [ "type" ],
@@ -5558,16 +5871,6 @@
                     "enum" : [ "list[f32]" ],
                     "title" : "String"
                   },
-                  "required" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
-                  },
-                  "display" : {
-                    "$ref" : "#/components/schemas/AgentOptionDisplay"
-                  },
-                  "transport" : {
-                    "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
                   "default" : {
                     "type" : "array",
                     "items" : {
@@ -5579,6 +5882,16 @@
                   },
                   "validation" : {
                     "$ref" : "#/components/schemas/FloatAgentOptionValidation"
+                  },
+                  "required" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
+                  "display" : {
+                    "$ref" : "#/components/schemas/AgentOptionDisplay"
+                  },
+                  "transport" : {
+                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   }
                 },
                 "required" : [ "type" ],
@@ -5591,6 +5904,14 @@
                     "enum" : [ "i32" ],
                     "title" : "String"
                   },
+                  "default" : {
+                    "type" : "integer",
+                    "format" : "int32",
+                    "title" : "Int"
+                  },
+                  "validation" : {
+                    "$ref" : "#/components/schemas/IntAgentOptionValidation"
+                  },
                   "required" : {
                     "type" : "boolean",
                     "title" : "Boolean"
@@ -5600,14 +5921,6 @@
                   },
                   "transport" : {
                     "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
-                  "default" : {
-                    "type" : "integer",
-                    "format" : "int32",
-                    "title" : "Int"
-                  },
-                  "validation" : {
-                    "$ref" : "#/components/schemas/IntAgentOptionValidation"
                   }
                 },
                 "required" : [ "type" ],
@@ -5620,16 +5933,6 @@
                     "enum" : [ "list[i32]" ],
                     "title" : "String"
                   },
-                  "required" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
-                  },
-                  "display" : {
-                    "$ref" : "#/components/schemas/AgentOptionDisplay"
-                  },
-                  "transport" : {
-                    "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
                   "default" : {
                     "type" : "array",
                     "items" : {
@@ -5641,6 +5944,16 @@
                   },
                   "validation" : {
                     "$ref" : "#/components/schemas/IntAgentOptionValidation"
+                  },
+                  "required" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
+                  "display" : {
+                    "$ref" : "#/components/schemas/AgentOptionDisplay"
+                  },
+                  "transport" : {
+                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   }
                 },
                 "required" : [ "type" ],
@@ -5653,6 +5966,14 @@
                     "enum" : [ "i64" ],
                     "title" : "String"
                   },
+                  "default" : {
+                    "type" : "integer",
+                    "format" : "int64",
+                    "title" : "Long"
+                  },
+                  "validation" : {
+                    "$ref" : "#/components/schemas/LongAgentOptionValidation"
+                  },
                   "required" : {
                     "type" : "boolean",
                     "title" : "Boolean"
@@ -5662,14 +5983,6 @@
                   },
                   "transport" : {
                     "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
-                  "default" : {
-                    "type" : "integer",
-                    "format" : "int64",
-                    "title" : "Long"
-                  },
-                  "validation" : {
-                    "$ref" : "#/components/schemas/LongAgentOptionValidation"
                   }
                 },
                 "required" : [ "type" ],
@@ -5682,16 +5995,6 @@
                     "enum" : [ "list[i64]" ],
                     "title" : "String"
                   },
-                  "required" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
-                  },
-                  "display" : {
-                    "$ref" : "#/components/schemas/AgentOptionDisplay"
-                  },
-                  "transport" : {
-                    "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
                   "default" : {
                     "type" : "array",
                     "items" : {
@@ -5703,6 +6006,16 @@
                   },
                   "validation" : {
                     "$ref" : "#/components/schemas/LongAgentOptionValidation"
+                  },
+                  "required" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
+                  "display" : {
+                    "$ref" : "#/components/schemas/AgentOptionDisplay"
+                  },
+                  "transport" : {
+                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   }
                 },
                 "required" : [ "type" ],
@@ -5715,6 +6028,15 @@
                     "enum" : [ "i16" ],
                     "title" : "String"
                   },
+                  "default" : {
+                    "type" : "integer",
+                    "maximum" : 32767,
+                    "minimum" : -32768,
+                    "title" : "Short"
+                  },
+                  "validation" : {
+                    "$ref" : "#/components/schemas/ShortAgentOptionValidation"
+                  },
                   "required" : {
                     "type" : "boolean",
                     "title" : "Boolean"
@@ -5724,15 +6046,6 @@
                   },
                   "transport" : {
                     "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
-                  "default" : {
-                    "type" : "integer",
-                    "maximum" : 32767,
-                    "minimum" : -32768,
-                    "title" : "Short"
-                  },
-                  "validation" : {
-                    "$ref" : "#/components/schemas/ShortAgentOptionValidation"
                   }
                 },
                 "required" : [ "type" ],
@@ -5744,16 +6057,6 @@
                     "type" : "string",
                     "enum" : [ "list[i16]" ],
                     "title" : "String"
-                  },
-                  "required" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
-                  },
-                  "display" : {
-                    "$ref" : "#/components/schemas/AgentOptionDisplay"
-                  },
-                  "transport" : {
-                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   },
                   "default" : {
                     "type" : "array",
@@ -5767,6 +6070,16 @@
                   },
                   "validation" : {
                     "$ref" : "#/components/schemas/ShortAgentOptionValidation"
+                  },
+                  "required" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
+                  "display" : {
+                    "$ref" : "#/components/schemas/AgentOptionDisplay"
+                  },
+                  "transport" : {
+                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   }
                 },
                 "required" : [ "type" ],
@@ -5778,16 +6091,6 @@
                     "type" : "string",
                     "enum" : [ "string" ],
                     "title" : "String"
-                  },
-                  "required" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
-                  },
-                  "display" : {
-                    "$ref" : "#/components/schemas/AgentOptionDisplay"
-                  },
-                  "transport" : {
-                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   },
                   "default" : {
                     "type" : "string",
@@ -5803,6 +6106,16 @@
                   "secret" : {
                     "type" : "boolean",
                     "title" : "Boolean"
+                  },
+                  "required" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
+                  "display" : {
+                    "$ref" : "#/components/schemas/AgentOptionDisplay"
+                  },
+                  "transport" : {
+                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   }
                 },
                 "required" : [ "type" ],
@@ -5814,16 +6127,6 @@
                     "type" : "string",
                     "enum" : [ "list[string]" ],
                     "title" : "String"
-                  },
-                  "required" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
-                  },
-                  "display" : {
-                    "$ref" : "#/components/schemas/AgentOptionDisplay"
-                  },
-                  "transport" : {
-                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   },
                   "default" : {
                     "type" : "array",
@@ -5843,6 +6146,16 @@
                   "secret" : {
                     "type" : "boolean",
                     "title" : "Boolean"
+                  },
+                  "required" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
+                  "display" : {
+                    "$ref" : "#/components/schemas/AgentOptionDisplay"
+                  },
+                  "transport" : {
+                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   }
                 },
                 "required" : [ "type" ],
@@ -5855,6 +6168,15 @@
                     "enum" : [ "u8" ],
                     "title" : "String"
                   },
+                  "default" : {
+                    "type" : "integer",
+                    "maximum" : 255,
+                    "minimum" : 0,
+                    "title" : "UByte"
+                  },
+                  "validation" : {
+                    "$ref" : "#/components/schemas/UByteAgentOptionValidation"
+                  },
                   "required" : {
                     "type" : "boolean",
                     "title" : "Boolean"
@@ -5864,15 +6186,6 @@
                   },
                   "transport" : {
                     "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
-                  "default" : {
-                    "type" : "integer",
-                    "maximum" : 255,
-                    "minimum" : 0,
-                    "title" : "UByte"
-                  },
-                  "validation" : {
-                    "$ref" : "#/components/schemas/UByteAgentOptionValidation"
                   }
                 },
                 "required" : [ "type" ],
@@ -5884,16 +6197,6 @@
                     "type" : "string",
                     "enum" : [ "list[u8]" ],
                     "title" : "String"
-                  },
-                  "required" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
-                  },
-                  "display" : {
-                    "$ref" : "#/components/schemas/AgentOptionDisplay"
-                  },
-                  "transport" : {
-                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   },
                   "default" : {
                     "type" : "array",
@@ -5907,6 +6210,16 @@
                   },
                   "validation" : {
                     "$ref" : "#/components/schemas/UByteAgentOptionValidation"
+                  },
+                  "required" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
+                  "display" : {
+                    "$ref" : "#/components/schemas/AgentOptionDisplay"
+                  },
+                  "transport" : {
+                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   }
                 },
                 "required" : [ "type" ],
@@ -5919,6 +6232,15 @@
                     "enum" : [ "u32" ],
                     "title" : "String"
                   },
+                  "default" : {
+                    "type" : "integer",
+                    "maximum" : 4294967295,
+                    "minimum" : 0,
+                    "title" : "UInt"
+                  },
+                  "validation" : {
+                    "$ref" : "#/components/schemas/UIntAgentOptionValidation"
+                  },
                   "required" : {
                     "type" : "boolean",
                     "title" : "Boolean"
@@ -5928,15 +6250,6 @@
                   },
                   "transport" : {
                     "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
-                  "default" : {
-                    "type" : "integer",
-                    "maximum" : 4294967295,
-                    "minimum" : 0,
-                    "title" : "UInt"
-                  },
-                  "validation" : {
-                    "$ref" : "#/components/schemas/UIntAgentOptionValidation"
                   }
                 },
                 "required" : [ "type" ],
@@ -5948,16 +6261,6 @@
                     "type" : "string",
                     "enum" : [ "list[u32]" ],
                     "title" : "String"
-                  },
-                  "required" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
-                  },
-                  "display" : {
-                    "$ref" : "#/components/schemas/AgentOptionDisplay"
-                  },
-                  "transport" : {
-                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   },
                   "default" : {
                     "type" : "array",
@@ -5971,6 +6274,16 @@
                   },
                   "validation" : {
                     "$ref" : "#/components/schemas/UIntAgentOptionValidation"
+                  },
+                  "required" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
+                  "display" : {
+                    "$ref" : "#/components/schemas/AgentOptionDisplay"
+                  },
+                  "transport" : {
+                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   }
                 },
                 "required" : [ "type" ],
@@ -5983,6 +6296,13 @@
                     "enum" : [ "u64" ],
                     "title" : "String"
                   },
+                  "default" : {
+                    "type" : "string",
+                    "title" : "String"
+                  },
+                  "validation" : {
+                    "$ref" : "#/components/schemas/ULongAgentOptionValidation"
+                  },
                   "required" : {
                     "type" : "boolean",
                     "title" : "Boolean"
@@ -5992,13 +6312,6 @@
                   },
                   "transport" : {
                     "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
-                  "default" : {
-                    "type" : "string",
-                    "title" : "String"
-                  },
-                  "validation" : {
-                    "$ref" : "#/components/schemas/ULongAgentOptionValidation"
                   }
                 },
                 "required" : [ "type" ],
@@ -6011,16 +6324,6 @@
                     "enum" : [ "list[u64]" ],
                     "title" : "String"
                   },
-                  "required" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
-                  },
-                  "display" : {
-                    "$ref" : "#/components/schemas/AgentOptionDisplay"
-                  },
-                  "transport" : {
-                    "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
                   "default" : {
                     "type" : "array",
                     "items" : {
@@ -6031,6 +6334,16 @@
                   },
                   "validation" : {
                     "$ref" : "#/components/schemas/ULongAgentOptionValidation"
+                  },
+                  "required" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
+                  "display" : {
+                    "$ref" : "#/components/schemas/AgentOptionDisplay"
+                  },
+                  "transport" : {
+                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   }
                 },
                 "required" : [ "type" ],
@@ -6043,6 +6356,15 @@
                     "enum" : [ "u16" ],
                     "title" : "String"
                   },
+                  "default" : {
+                    "type" : "integer",
+                    "maximum" : 65535,
+                    "minimum" : 0,
+                    "title" : "UShort"
+                  },
+                  "validation" : {
+                    "$ref" : "#/components/schemas/UShortAgentOptionValidation"
+                  },
                   "required" : {
                     "type" : "boolean",
                     "title" : "Boolean"
@@ -6052,15 +6374,6 @@
                   },
                   "transport" : {
                     "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
-                  "default" : {
-                    "type" : "integer",
-                    "maximum" : 65535,
-                    "minimum" : 0,
-                    "title" : "UShort"
-                  },
-                  "validation" : {
-                    "$ref" : "#/components/schemas/UShortAgentOptionValidation"
                   }
                 },
                 "required" : [ "type" ],
@@ -6072,16 +6385,6 @@
                     "type" : "string",
                     "enum" : [ "list[u16]" ],
                     "title" : "String"
-                  },
-                  "required" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
-                  },
-                  "display" : {
-                    "$ref" : "#/components/schemas/AgentOptionDisplay"
-                  },
-                  "transport" : {
-                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   },
                   "default" : {
                     "type" : "array",
@@ -6095,6 +6398,16 @@
                   },
                   "validation" : {
                     "$ref" : "#/components/schemas/UShortAgentOptionValidation"
+                  },
+                  "required" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
+                  "display" : {
+                    "$ref" : "#/components/schemas/AgentOptionDisplay"
+                  },
+                  "transport" : {
+                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   }
                 },
                 "required" : [ "type" ],
@@ -6113,6 +6426,20 @@
           "marketplace" : {
             "$ref" : "#/components/schemas/RegistryAgentMarketplaceSettings"
           },
+          "dependencies" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RegistryAgentDependency"
+            },
+            "title" : "ArrayList<RegistryAgentDependency>"
+          },
+          "claimTypes" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RegistryAgentClaimType"
+            },
+            "title" : "ArrayList<RegistryAgentClaimType>"
+          },
           "exportSettings" : {
             "type" : "object",
             "additionalProperties" : {
@@ -6121,7 +6448,7 @@
             "title" : "LinkedHashMap<RuntimeId,AgentExportSettings>"
           }
         },
-        "required" : [ "edition", "exportSettings", "info", "options", "runtimes" ],
+        "required" : [ "claimTypes", "dependencies", "edition", "exportSettings", "info", "options", "runtimes" ],
         "title" : "RegistryAgent"
       },
       "RegistryAgentInfo" : {
@@ -6514,6 +6841,23 @@
         "required" : [ "base" ],
         "title" : "PrototypeLoopInitialPrompt"
       },
+      "BlobAgentOptionValidation" : {
+        "type" : "object",
+        "properties" : {
+          "min_size" : {
+            "$ref" : "#/components/schemas/ByteSize"
+          },
+          "max_size" : {
+            "$ref" : "#/components/schemas/ByteSize"
+          }
+        },
+        "title" : "BlobAgentOptionValidation"
+      },
+      "ByteSize" : {
+        "type" : "object",
+        "properties" : { },
+        "title" : "ByteSize"
+      },
       "AgentOptionDisplay" : {
         "type" : "object",
         "properties" : {
@@ -6540,23 +6884,6 @@
         "type" : "string",
         "enum" : [ "env", "fs" ],
         "title" : "AgentOptionTransport"
-      },
-      "BlobAgentOptionValidation" : {
-        "type" : "object",
-        "properties" : {
-          "min_size" : {
-            "$ref" : "#/components/schemas/ByteSize"
-          },
-          "max_size" : {
-            "$ref" : "#/components/schemas/ByteSize"
-          }
-        },
-        "title" : "BlobAgentOptionValidation"
-      },
-      "ByteSize" : {
-        "type" : "object",
-        "properties" : { },
-        "title" : "ByteSize"
       },
       "ByteAgentOptionValidation" : {
         "type" : "object",
@@ -7008,6 +7335,28 @@
         },
         "required" : [ "endpoint", "name" ],
         "title" : "Erc8004Endpoint"
+      },
+      "RegistryAgentDependency" : {
+        "type" : "object",
+        "description" : "A dependency that must be provided to use this agent. Dependencies are powered by options. If a dependency is only provided options that are not required, the dependency is effectively optional.",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "description" : "The unique name of this dependency",
+            "title" : "String"
+          },
+          "options" : {
+            "type" : "array",
+            "description" : "A list of options associated with this dependency",
+            "items" : {
+              "type" : "string",
+              "title" : "String"
+            },
+            "title" : "ArrayList<String>"
+          }
+        },
+        "required" : [ "name", "options" ],
+        "title" : "RegistryAgentDependency"
       },
       "AgentExportSettings" : {
         "type" : "object",
@@ -7819,14 +8168,14 @@
       "AgentClaimRequest" : {
         "type" : "object",
         "properties" : {
-          "amount" : {
-            "type" : "integer",
-            "description" : "The claim amount, specified in micro cents. $1.00 is 100000000 and $0.01 is 1000000.",
-            "title" : "AgentBudgetUnit"
-          },
-          "description" : {
+          "claimTypeName" : {
             "type" : "string",
-            "description" : "A description of the claim, must be at most 256 characters long",
+            "description" : "The name of the claim type. This claim type must be defined in the agent's coral-agent.toml file",
+            "title" : "String"
+          },
+          "additionalDescription" : {
+            "type" : "string",
+            "description" : "An additional description of the claim, clamped at 256 characters long",
             "title" : "String"
           },
           "autoKill" : {
@@ -7835,36 +8184,8 @@
             "title" : "Boolean"
           }
         },
-        "required" : [ "amount", "autoKill", "description" ],
+        "required" : [ "additionalDescription", "autoKill", "claimTypeName" ],
         "title" : "AgentClaimRequest"
-      },
-      "AgentClaimResponse" : {
-        "type" : "object",
-        "description" : "A response to a claim request.",
-        "properties" : {
-          "requestedAmount" : {
-            "type" : "integer",
-            "description" : "The amount requested, echoed back to the agent",
-            "title" : "AgentBudgetUnit"
-          },
-          "fulfilledAmount" : {
-            "type" : "integer",
-            "description" : "The amount of the budget that could be fulfilled. If this is not equal to the requested amount, the budget was exhausted.",
-            "title" : "AgentBudgetUnit"
-          },
-          "remainingAmount" : {
-            "type" : "integer",
-            "description" : "\n        The remaining budget available to the agent. This includes the agent budget and the session budget, if the agent is configured to use it. \n        \n        NOTE: It is possible that the budgets are configured to warn when empty, which will allow claims to exceed the defined budgets. It is possible that the remaining amount reaches zero but claiming is still possible.\n        ",
-            "title" : "AgentBudgetUnit"
-          },
-          "shouldExit" : {
-            "type" : "boolean",
-            "description" : "If this is true, the claim resulted in a budget exhaustion that should cause the agent to exit.",
-            "title" : "Boolean"
-          }
-        },
-        "required" : [ "fulfilledAmount", "remainingAmount", "requestedAmount", "shouldExit" ],
-        "title" : "AgentClaimResponse"
       },
       "X402ProxyRequest" : {
         "type" : "object",
@@ -8044,6 +8365,13 @@
                     "enum" : [ "blob" ],
                     "title" : "String"
                   },
+                  "default" : {
+                    "type" : "string",
+                    "title" : "String"
+                  },
+                  "validation" : {
+                    "$ref" : "#/components/schemas/BlobAgentOptionValidation"
+                  },
                   "required" : {
                     "type" : "boolean",
                     "title" : "Boolean"
@@ -8053,13 +8381,6 @@
                   },
                   "transport" : {
                     "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
-                  "default" : {
-                    "type" : "string",
-                    "title" : "String"
-                  },
-                  "validation" : {
-                    "$ref" : "#/components/schemas/BlobAgentOptionValidation"
                   }
                 },
                 "required" : [ "type" ],
@@ -8072,16 +8393,6 @@
                     "enum" : [ "list[blob]" ],
                     "title" : "String"
                   },
-                  "required" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
-                  },
-                  "display" : {
-                    "$ref" : "#/components/schemas/AgentOptionDisplay"
-                  },
-                  "transport" : {
-                    "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
                   "default" : {
                     "type" : "array",
                     "items" : {
@@ -8092,6 +8403,16 @@
                   },
                   "validation" : {
                     "$ref" : "#/components/schemas/BlobAgentOptionValidation"
+                  },
+                  "required" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
+                  "display" : {
+                    "$ref" : "#/components/schemas/AgentOptionDisplay"
+                  },
+                  "transport" : {
+                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   }
                 },
                 "required" : [ "type" ],
@@ -8104,6 +8425,10 @@
                     "enum" : [ "bool" ],
                     "title" : "String"
                   },
+                  "default" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
                   "required" : {
                     "type" : "boolean",
                     "title" : "Boolean"
@@ -8113,10 +8438,6 @@
                   },
                   "transport" : {
                     "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
-                  "default" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
                   }
                 },
                 "required" : [ "type" ],
@@ -8129,6 +8450,15 @@
                     "enum" : [ "i8" ],
                     "title" : "String"
                   },
+                  "default" : {
+                    "type" : "integer",
+                    "maximum" : 127,
+                    "minimum" : -128,
+                    "title" : "Byte"
+                  },
+                  "validation" : {
+                    "$ref" : "#/components/schemas/ByteAgentOptionValidation"
+                  },
                   "required" : {
                     "type" : "boolean",
                     "title" : "Boolean"
@@ -8138,15 +8468,6 @@
                   },
                   "transport" : {
                     "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
-                  "default" : {
-                    "type" : "integer",
-                    "maximum" : 127,
-                    "minimum" : -128,
-                    "title" : "Byte"
-                  },
-                  "validation" : {
-                    "$ref" : "#/components/schemas/ByteAgentOptionValidation"
                   }
                 },
                 "required" : [ "type" ],
@@ -8158,16 +8479,6 @@
                     "type" : "string",
                     "enum" : [ "list[i8]" ],
                     "title" : "String"
-                  },
-                  "required" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
-                  },
-                  "display" : {
-                    "$ref" : "#/components/schemas/AgentOptionDisplay"
-                  },
-                  "transport" : {
-                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   },
                   "default" : {
                     "type" : "array",
@@ -8181,6 +8492,16 @@
                   },
                   "validation" : {
                     "$ref" : "#/components/schemas/ByteAgentOptionValidation"
+                  },
+                  "required" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
+                  "display" : {
+                    "$ref" : "#/components/schemas/AgentOptionDisplay"
+                  },
+                  "transport" : {
+                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   }
                 },
                 "required" : [ "type" ],
@@ -8193,6 +8514,14 @@
                     "enum" : [ "f64" ],
                     "title" : "String"
                   },
+                  "default" : {
+                    "type" : "number",
+                    "format" : "double",
+                    "title" : "Double"
+                  },
+                  "validation" : {
+                    "$ref" : "#/components/schemas/DoubleAgentOptionValidation"
+                  },
                   "required" : {
                     "type" : "boolean",
                     "title" : "Boolean"
@@ -8202,14 +8531,6 @@
                   },
                   "transport" : {
                     "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
-                  "default" : {
-                    "type" : "number",
-                    "format" : "double",
-                    "title" : "Double"
-                  },
-                  "validation" : {
-                    "$ref" : "#/components/schemas/DoubleAgentOptionValidation"
                   }
                 },
                 "required" : [ "type" ],
@@ -8222,16 +8543,6 @@
                     "enum" : [ "list[f64]" ],
                     "title" : "String"
                   },
-                  "required" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
-                  },
-                  "display" : {
-                    "$ref" : "#/components/schemas/AgentOptionDisplay"
-                  },
-                  "transport" : {
-                    "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
                   "default" : {
                     "type" : "array",
                     "items" : {
@@ -8243,6 +8554,16 @@
                   },
                   "validation" : {
                     "$ref" : "#/components/schemas/DoubleAgentOptionValidation"
+                  },
+                  "required" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
+                  "display" : {
+                    "$ref" : "#/components/schemas/AgentOptionDisplay"
+                  },
+                  "transport" : {
+                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   }
                 },
                 "required" : [ "type" ],
@@ -8255,6 +8576,14 @@
                     "enum" : [ "f32" ],
                     "title" : "String"
                   },
+                  "default" : {
+                    "type" : "number",
+                    "format" : "float",
+                    "title" : "Float"
+                  },
+                  "validation" : {
+                    "$ref" : "#/components/schemas/FloatAgentOptionValidation"
+                  },
                   "required" : {
                     "type" : "boolean",
                     "title" : "Boolean"
@@ -8264,14 +8593,6 @@
                   },
                   "transport" : {
                     "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
-                  "default" : {
-                    "type" : "number",
-                    "format" : "float",
-                    "title" : "Float"
-                  },
-                  "validation" : {
-                    "$ref" : "#/components/schemas/FloatAgentOptionValidation"
                   }
                 },
                 "required" : [ "type" ],
@@ -8284,16 +8605,6 @@
                     "enum" : [ "list[f32]" ],
                     "title" : "String"
                   },
-                  "required" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
-                  },
-                  "display" : {
-                    "$ref" : "#/components/schemas/AgentOptionDisplay"
-                  },
-                  "transport" : {
-                    "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
                   "default" : {
                     "type" : "array",
                     "items" : {
@@ -8305,6 +8616,16 @@
                   },
                   "validation" : {
                     "$ref" : "#/components/schemas/FloatAgentOptionValidation"
+                  },
+                  "required" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
+                  "display" : {
+                    "$ref" : "#/components/schemas/AgentOptionDisplay"
+                  },
+                  "transport" : {
+                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   }
                 },
                 "required" : [ "type" ],
@@ -8317,6 +8638,14 @@
                     "enum" : [ "i32" ],
                     "title" : "String"
                   },
+                  "default" : {
+                    "type" : "integer",
+                    "format" : "int32",
+                    "title" : "Int"
+                  },
+                  "validation" : {
+                    "$ref" : "#/components/schemas/IntAgentOptionValidation"
+                  },
                   "required" : {
                     "type" : "boolean",
                     "title" : "Boolean"
@@ -8326,14 +8655,6 @@
                   },
                   "transport" : {
                     "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
-                  "default" : {
-                    "type" : "integer",
-                    "format" : "int32",
-                    "title" : "Int"
-                  },
-                  "validation" : {
-                    "$ref" : "#/components/schemas/IntAgentOptionValidation"
                   }
                 },
                 "required" : [ "type" ],
@@ -8346,16 +8667,6 @@
                     "enum" : [ "list[i32]" ],
                     "title" : "String"
                   },
-                  "required" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
-                  },
-                  "display" : {
-                    "$ref" : "#/components/schemas/AgentOptionDisplay"
-                  },
-                  "transport" : {
-                    "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
                   "default" : {
                     "type" : "array",
                     "items" : {
@@ -8367,6 +8678,16 @@
                   },
                   "validation" : {
                     "$ref" : "#/components/schemas/IntAgentOptionValidation"
+                  },
+                  "required" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
+                  "display" : {
+                    "$ref" : "#/components/schemas/AgentOptionDisplay"
+                  },
+                  "transport" : {
+                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   }
                 },
                 "required" : [ "type" ],
@@ -8379,6 +8700,14 @@
                     "enum" : [ "i64" ],
                     "title" : "String"
                   },
+                  "default" : {
+                    "type" : "integer",
+                    "format" : "int64",
+                    "title" : "Long"
+                  },
+                  "validation" : {
+                    "$ref" : "#/components/schemas/LongAgentOptionValidation"
+                  },
                   "required" : {
                     "type" : "boolean",
                     "title" : "Boolean"
@@ -8388,14 +8717,6 @@
                   },
                   "transport" : {
                     "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
-                  "default" : {
-                    "type" : "integer",
-                    "format" : "int64",
-                    "title" : "Long"
-                  },
-                  "validation" : {
-                    "$ref" : "#/components/schemas/LongAgentOptionValidation"
                   }
                 },
                 "required" : [ "type" ],
@@ -8408,16 +8729,6 @@
                     "enum" : [ "list[i64]" ],
                     "title" : "String"
                   },
-                  "required" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
-                  },
-                  "display" : {
-                    "$ref" : "#/components/schemas/AgentOptionDisplay"
-                  },
-                  "transport" : {
-                    "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
                   "default" : {
                     "type" : "array",
                     "items" : {
@@ -8429,6 +8740,16 @@
                   },
                   "validation" : {
                     "$ref" : "#/components/schemas/LongAgentOptionValidation"
+                  },
+                  "required" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
+                  "display" : {
+                    "$ref" : "#/components/schemas/AgentOptionDisplay"
+                  },
+                  "transport" : {
+                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   }
                 },
                 "required" : [ "type" ],
@@ -8441,6 +8762,15 @@
                     "enum" : [ "i16" ],
                     "title" : "String"
                   },
+                  "default" : {
+                    "type" : "integer",
+                    "maximum" : 32767,
+                    "minimum" : -32768,
+                    "title" : "Short"
+                  },
+                  "validation" : {
+                    "$ref" : "#/components/schemas/ShortAgentOptionValidation"
+                  },
                   "required" : {
                     "type" : "boolean",
                     "title" : "Boolean"
@@ -8450,15 +8780,6 @@
                   },
                   "transport" : {
                     "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
-                  "default" : {
-                    "type" : "integer",
-                    "maximum" : 32767,
-                    "minimum" : -32768,
-                    "title" : "Short"
-                  },
-                  "validation" : {
-                    "$ref" : "#/components/schemas/ShortAgentOptionValidation"
                   }
                 },
                 "required" : [ "type" ],
@@ -8470,16 +8791,6 @@
                     "type" : "string",
                     "enum" : [ "list[i16]" ],
                     "title" : "String"
-                  },
-                  "required" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
-                  },
-                  "display" : {
-                    "$ref" : "#/components/schemas/AgentOptionDisplay"
-                  },
-                  "transport" : {
-                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   },
                   "default" : {
                     "type" : "array",
@@ -8493,6 +8804,16 @@
                   },
                   "validation" : {
                     "$ref" : "#/components/schemas/ShortAgentOptionValidation"
+                  },
+                  "required" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
+                  "display" : {
+                    "$ref" : "#/components/schemas/AgentOptionDisplay"
+                  },
+                  "transport" : {
+                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   }
                 },
                 "required" : [ "type" ],
@@ -8504,16 +8825,6 @@
                     "type" : "string",
                     "enum" : [ "string" ],
                     "title" : "String"
-                  },
-                  "required" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
-                  },
-                  "display" : {
-                    "$ref" : "#/components/schemas/AgentOptionDisplay"
-                  },
-                  "transport" : {
-                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   },
                   "default" : {
                     "type" : "string",
@@ -8529,6 +8840,16 @@
                   "secret" : {
                     "type" : "boolean",
                     "title" : "Boolean"
+                  },
+                  "required" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
+                  "display" : {
+                    "$ref" : "#/components/schemas/AgentOptionDisplay"
+                  },
+                  "transport" : {
+                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   }
                 },
                 "required" : [ "type" ],
@@ -8540,16 +8861,6 @@
                     "type" : "string",
                     "enum" : [ "list[string]" ],
                     "title" : "String"
-                  },
-                  "required" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
-                  },
-                  "display" : {
-                    "$ref" : "#/components/schemas/AgentOptionDisplay"
-                  },
-                  "transport" : {
-                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   },
                   "default" : {
                     "type" : "array",
@@ -8569,6 +8880,16 @@
                   "secret" : {
                     "type" : "boolean",
                     "title" : "Boolean"
+                  },
+                  "required" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
+                  "display" : {
+                    "$ref" : "#/components/schemas/AgentOptionDisplay"
+                  },
+                  "transport" : {
+                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   }
                 },
                 "required" : [ "type" ],
@@ -8581,6 +8902,15 @@
                     "enum" : [ "u8" ],
                     "title" : "String"
                   },
+                  "default" : {
+                    "type" : "integer",
+                    "maximum" : 255,
+                    "minimum" : 0,
+                    "title" : "UByte"
+                  },
+                  "validation" : {
+                    "$ref" : "#/components/schemas/UByteAgentOptionValidation"
+                  },
                   "required" : {
                     "type" : "boolean",
                     "title" : "Boolean"
@@ -8590,15 +8920,6 @@
                   },
                   "transport" : {
                     "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
-                  "default" : {
-                    "type" : "integer",
-                    "maximum" : 255,
-                    "minimum" : 0,
-                    "title" : "UByte"
-                  },
-                  "validation" : {
-                    "$ref" : "#/components/schemas/UByteAgentOptionValidation"
                   }
                 },
                 "required" : [ "type" ],
@@ -8610,16 +8931,6 @@
                     "type" : "string",
                     "enum" : [ "list[u8]" ],
                     "title" : "String"
-                  },
-                  "required" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
-                  },
-                  "display" : {
-                    "$ref" : "#/components/schemas/AgentOptionDisplay"
-                  },
-                  "transport" : {
-                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   },
                   "default" : {
                     "type" : "array",
@@ -8633,6 +8944,16 @@
                   },
                   "validation" : {
                     "$ref" : "#/components/schemas/UByteAgentOptionValidation"
+                  },
+                  "required" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
+                  "display" : {
+                    "$ref" : "#/components/schemas/AgentOptionDisplay"
+                  },
+                  "transport" : {
+                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   }
                 },
                 "required" : [ "type" ],
@@ -8645,6 +8966,15 @@
                     "enum" : [ "u32" ],
                     "title" : "String"
                   },
+                  "default" : {
+                    "type" : "integer",
+                    "maximum" : 4294967295,
+                    "minimum" : 0,
+                    "title" : "UInt"
+                  },
+                  "validation" : {
+                    "$ref" : "#/components/schemas/UIntAgentOptionValidation"
+                  },
                   "required" : {
                     "type" : "boolean",
                     "title" : "Boolean"
@@ -8654,15 +8984,6 @@
                   },
                   "transport" : {
                     "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
-                  "default" : {
-                    "type" : "integer",
-                    "maximum" : 4294967295,
-                    "minimum" : 0,
-                    "title" : "UInt"
-                  },
-                  "validation" : {
-                    "$ref" : "#/components/schemas/UIntAgentOptionValidation"
                   }
                 },
                 "required" : [ "type" ],
@@ -8674,16 +8995,6 @@
                     "type" : "string",
                     "enum" : [ "list[u32]" ],
                     "title" : "String"
-                  },
-                  "required" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
-                  },
-                  "display" : {
-                    "$ref" : "#/components/schemas/AgentOptionDisplay"
-                  },
-                  "transport" : {
-                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   },
                   "default" : {
                     "type" : "array",
@@ -8697,6 +9008,16 @@
                   },
                   "validation" : {
                     "$ref" : "#/components/schemas/UIntAgentOptionValidation"
+                  },
+                  "required" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
+                  "display" : {
+                    "$ref" : "#/components/schemas/AgentOptionDisplay"
+                  },
+                  "transport" : {
+                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   }
                 },
                 "required" : [ "type" ],
@@ -8709,6 +9030,13 @@
                     "enum" : [ "u64" ],
                     "title" : "String"
                   },
+                  "default" : {
+                    "type" : "string",
+                    "title" : "String"
+                  },
+                  "validation" : {
+                    "$ref" : "#/components/schemas/ULongAgentOptionValidation"
+                  },
                   "required" : {
                     "type" : "boolean",
                     "title" : "Boolean"
@@ -8718,13 +9046,6 @@
                   },
                   "transport" : {
                     "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
-                  "default" : {
-                    "type" : "string",
-                    "title" : "String"
-                  },
-                  "validation" : {
-                    "$ref" : "#/components/schemas/ULongAgentOptionValidation"
                   }
                 },
                 "required" : [ "type" ],
@@ -8737,16 +9058,6 @@
                     "enum" : [ "list[u64]" ],
                     "title" : "String"
                   },
-                  "required" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
-                  },
-                  "display" : {
-                    "$ref" : "#/components/schemas/AgentOptionDisplay"
-                  },
-                  "transport" : {
-                    "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
                   "default" : {
                     "type" : "array",
                     "items" : {
@@ -8757,6 +9068,16 @@
                   },
                   "validation" : {
                     "$ref" : "#/components/schemas/ULongAgentOptionValidation"
+                  },
+                  "required" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
+                  "display" : {
+                    "$ref" : "#/components/schemas/AgentOptionDisplay"
+                  },
+                  "transport" : {
+                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   }
                 },
                 "required" : [ "type" ],
@@ -8769,6 +9090,15 @@
                     "enum" : [ "u16" ],
                     "title" : "String"
                   },
+                  "default" : {
+                    "type" : "integer",
+                    "maximum" : 65535,
+                    "minimum" : 0,
+                    "title" : "UShort"
+                  },
+                  "validation" : {
+                    "$ref" : "#/components/schemas/UShortAgentOptionValidation"
+                  },
                   "required" : {
                     "type" : "boolean",
                     "title" : "Boolean"
@@ -8778,15 +9108,6 @@
                   },
                   "transport" : {
                     "$ref" : "#/components/schemas/AgentOptionTransport"
-                  },
-                  "default" : {
-                    "type" : "integer",
-                    "maximum" : 65535,
-                    "minimum" : 0,
-                    "title" : "UShort"
-                  },
-                  "validation" : {
-                    "$ref" : "#/components/schemas/UShortAgentOptionValidation"
                   }
                 },
                 "required" : [ "type" ],
@@ -8798,16 +9119,6 @@
                     "type" : "string",
                     "enum" : [ "list[u16]" ],
                     "title" : "String"
-                  },
-                  "required" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
-                  },
-                  "display" : {
-                    "$ref" : "#/components/schemas/AgentOptionDisplay"
-                  },
-                  "transport" : {
-                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   },
                   "default" : {
                     "type" : "array",
@@ -8821,6 +9132,16 @@
                   },
                   "validation" : {
                     "$ref" : "#/components/schemas/UShortAgentOptionValidation"
+                  },
+                  "required" : {
+                    "type" : "boolean",
+                    "title" : "Boolean"
+                  },
+                  "display" : {
+                    "$ref" : "#/components/schemas/AgentOptionDisplay"
+                  },
+                  "transport" : {
+                    "$ref" : "#/components/schemas/AgentOptionTransport"
                   }
                 },
                 "required" : [ "type" ],

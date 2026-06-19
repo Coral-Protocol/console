@@ -238,7 +238,7 @@ const formSchema = z.object({
 					minimum: z.number().nonoptional()
 				}),
 				z.object({
-					type: z.literal('warn')
+					type: z.literal('ignore')
 				})
 			])
 			.default({
