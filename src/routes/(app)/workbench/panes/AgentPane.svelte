@@ -105,151 +105,153 @@
 	{#if !ctx.detailedAgent || !ctx.detailedAgent.registryAgent?.info?.identifier || agentIdOf(ctx.detailedAgent.registryAgent.info.identifier) !== agentIdOf(curAgent.id)}
 		<Spinner class="m-auto my-8" />
 	{:else}
-		<header class="flex flex-col flex-wrap gap-2 px-2 xl:flex-row">
-			<Form.ElementField
-				{form}
-				name="agents[{ctx.selectedAgent}].name"
-				class="flex w-full grow items-center gap-2"
-			>
-				<Form.Control>
-					{#snippet children({ props })}
-						<TooltipLabel tooltip={'Name of the agent in this session'} class="m-0 max-w-1/4"
-							>Name
-						</TooltipLabel>
-						<Input {...props} bind:value={$formData.agents[ctx.selectedAgent!]!.name} />
-					{/snippet}
-				</Form.Control>
-			</Form.ElementField>
-			<Form.ElementField
-				{form}
-				name="agents[{ctx.selectedAgent}].description"
-				class="flex w-full grow  items-center gap-2"
-			>
-				<Form.Control>
-					{#snippet children({ props })}
-						<TooltipLabel
-							tooltip={'Optional agent description shared with other agents'}
-							class="m-0 max-w-1/4"
-							>Description
-						</TooltipLabel>
-						<Textarea
-							{...props}
-							class="relative m-0 resize-y"
-							bind:value={$formData.agents[ctx.selectedAgent!]!.description}
-						/>
-					{/snippet}
-				</Form.Control>
-			</Form.ElementField>
-			<Form.ElementField
-				{form}
-				name="agents[{ctx.selectedAgent}].id.version"
-				class="flex grow items-center gap-2"
-			>
-				<Form.Control>
-					{#snippet children({ props })}
-						{@const id = curAgent.id}
-						{@const reg = curCatalog.agents[id.name]!}
-
-						<TooltipLabel
-							tooltip={'Version to use from the server agent registry'}
-							class="w m-0 max-w-1/4 truncate">Version</TooltipLabel
-						>
-						<Combobox
-							{...props}
-							class="w-auto grow pr-[2px] "
-							side="right"
-							align="start"
-							disabled={reg.versions.length <= 1}
-							bind:selected={() => id.version, () => {}}
-							options={[{ items: reg.versions }]}
-							searchPlaceholder="Search versions..."
-							onValueChange={(value: string) => {
-								$formData.agents[ctx.selectedAgent!]!.id.version = value;
-								$formData.agents = $formData.agents;
-								tick().then(() => {
+		<header class="grid w-full grid-cols-2 gap-2 px-2">
+			<section class="col-span-1 flex flex-col gap-2">
+				<Form.ElementField
+					{form}
+					name="agents[{ctx.selectedAgent}].name"
+					class="flex w-full flex-col gap-2"
+				>
+					<Form.Control>
+						{#snippet children({ props })}
+							<TooltipLabel tooltip={'Name of the agent in this session'} class="m-0  w-fit"
+								>Name
+							</TooltipLabel>
+							<Input {...props} bind:value={$formData.agents[ctx.selectedAgent!]!.name} />
+						{/snippet}
+					</Form.Control>
+				</Form.ElementField>
+				<Form.ElementField
+					{form}
+					name="agents[{ctx.selectedAgent}].description"
+					class="flex w-full grow flex-col gap-2"
+				>
+					<Form.Control>
+						{#snippet children({ props })}
+							<TooltipLabel
+								tooltip={'Optional agent description shared with other agents'}
+								class="m-0  w-fit"
+								>Description
+							</TooltipLabel>
+							<Textarea
+								{...props}
+								class="relative m-0 grow resize-y"
+								bind:value={$formData.agents[ctx.selectedAgent!]!.description}
+							/>
+						{/snippet}
+					</Form.Control>
+				</Form.ElementField>
+			</section>
+			<section class="col-span-1 flex h-fit flex-col gap-2">
+				<Form.ElementField
+					{form}
+					name="agents[{ctx.selectedAgent}].id.version"
+					class="flex grow flex-col gap-2"
+				>
+					<Form.Control>
+						{#snippet children({ props })}
+							{@const id = curAgent.id}
+							{@const reg = curCatalog.agents[id.name]!}
+							<TooltipLabel
+								tooltip={'Version to use from the server agent registry'}
+								class="w m-0  w-fit truncate">Version</TooltipLabel
+							>
+							<Combobox
+								{...props}
+								class="w-auto grow pr-[2px] "
+								side="right"
+								align="start"
+								disabled={reg.versions.length <= 1}
+								bind:selected={() => id.version, () => {}}
+								options={[{ items: reg.versions }]}
+								searchPlaceholder="Search versions..."
+								onValueChange={(value: string) => {
+									$formData.agents[ctx.selectedAgent!]!.id.version = value;
 									$formData.agents = $formData.agents;
-								});
-							}}
-						/>
-					{/snippet}
-				</Form.Control>
-			</Form.ElementField>
-
-			<Form.ElementField
-				{form}
-				name="agents[{ctx.selectedAgent}].provider.runtime"
-				class="flex grow items-center gap-2"
-			>
-				<Form.Control>
-					{#snippet children({ props })}
-						{@const runtime = $formData.agents[ctx.selectedAgent!]!.provider.runtime}
-						{@const items = Object.keys(ctx.detailedAgent?.registryAgent?.runtimes ?? {})}
-						<TooltipLabel
-							tooltip={'Will only show available options for the selected agent type'}
-							class="m-0 max-w-1/4">Runtime</TooltipLabel
-						>
-						<Combobox
-							{...props}
-							class="w-auto grow pr-[2px]"
-							side="right"
-							align="start"
-							disabled={items.length <= 1}
-							options={[
-								{
-									items
+									tick().then(() => {
+										$formData.agents = $formData.agents;
+									});
+								}}
+							/>
+						{/snippet}
+					</Form.Control>
+				</Form.ElementField>
+				<Form.ElementField
+					{form}
+					name="agents[{ctx.selectedAgent}].provider.runtime"
+					class="flex grow flex-col gap-2"
+				>
+					<Form.Control>
+						{#snippet children({ props })}
+							{@const runtime = $formData.agents[ctx.selectedAgent!]!.provider.runtime}
+							{@const items = Object.keys(ctx.detailedAgent?.registryAgent?.runtimes ?? {})}
+							<TooltipLabel
+								tooltip={'Will only show available options for the selected agent type'}
+								class="m-0  w-fit">Runtime</TooltipLabel
+							>
+							<Combobox
+								{...props}
+								class="w-auto grow pr-[2px]"
+								side="right"
+								align="start"
+								disabled={items.length <= 1}
+								options={[
+									{
+										items
+									}
+								]}
+								searchPlaceholder="Search runtimes..."
+								bind:selected={
+									() => runtime || Object.keys(ctx.detailedAgent?.registryAgent?.runtimes ?? {})[0],
+									() => {}
 								}
-							]}
-							searchPlaceholder="Search runtimes..."
-							bind:selected={
-								() => runtime || Object.keys(ctx.detailedAgent?.registryAgent?.runtimes ?? {})[0],
-								() => {}
-							}
-							onValueChange={(selected: string) => {
-								$formData.agents[ctx.selectedAgent!]!.provider.runtime = selected as any;
-							}}
-						/>
-					{/snippet}
-				</Form.Control>
-			</Form.ElementField>
-			<Form.ElementField
-				{form}
-				name="agents[{ctx.selectedAgent}].provider.runtime"
-				class="flex grow items-center gap-2"
-			>
-				<Form.Control>
-					{#snippet children({ props })}
-						{@const tools = $formData.agents[ctx.selectedAgent!]!.customToolAccess}
-						<TooltipLabel
-							tooltip={'What custom tools this agent has access to.'}
-							class="m-0 max-w-1/4">Custom Tools</TooltipLabel
-						>
-						<Select.Root
-							{...props}
-							type="multiple"
-							value={Array.from(tools.keys())}
-							onValueChange={(value) => {
-								if (ctx.selectedAgent === null || !$formData.agents[ctx.selectedAgent]) return;
-								$formData.agents[ctx.selectedAgent!]!.customToolAccess = new Set(value);
-								$formData.agents = $formData.agents;
-							}}
-						>
-							<Select.Trigger class="m-0 grow">
-								<span>{tools.size} tools</span>
-							</Select.Trigger>
-							<Select.Content>
-								{#if Object.keys($formData.tools).length == 0}
-									<span class="text-muted-foreground h-9 px-2 text-sm italic"
-										>No tools found, add some in the tools pane</span
-									>
-								{/if}
-								{#each Object.values($formData.tools) as tool}
-									<Select.Item value={tool.id}>{tool.name}</Select.Item>
-								{/each}
-							</Select.Content>
-						</Select.Root>
-					{/snippet}
-				</Form.Control>
-			</Form.ElementField>
+								onValueChange={(selected: string) => {
+									$formData.agents[ctx.selectedAgent!]!.provider.runtime = selected as any;
+								}}
+							/>
+						{/snippet}
+					</Form.Control>
+				</Form.ElementField>
+				<Form.ElementField
+					{form}
+					name="agents[{ctx.selectedAgent}].provider.runtime"
+					class="flex grow flex-col gap-2"
+				>
+					<Form.Control>
+						{#snippet children({ props })}
+							{@const tools = $formData.agents[ctx.selectedAgent!]!.customToolAccess}
+							<TooltipLabel
+								tooltip={'What custom tools this agent has access to.'}
+								class="m-0 w-fit ">Custom Tools</TooltipLabel
+							>
+							<Select.Root
+								{...props}
+								type="multiple"
+								value={Array.from(tools.keys())}
+								onValueChange={(value) => {
+									if (ctx.selectedAgent === null || !$formData.agents[ctx.selectedAgent]) return;
+									$formData.agents[ctx.selectedAgent!]!.customToolAccess = new Set(value);
+									$formData.agents = $formData.agents;
+								}}
+							>
+								<Select.Trigger class="m-0 w-full grow">
+									<span>{tools.size} tools</span>
+								</Select.Trigger>
+								<Select.Content>
+									{#if Object.keys($formData.tools).length == 0}
+										<span class="text-muted-foreground h-9 px-2 text-sm italic"
+											>No tools found, add some in the tools pane</span
+										>
+									{/if}
+									{#each Object.values($formData.tools) as tool}
+										<Select.Item value={tool.id}>{tool.name}</Select.Item>
+									{/each}
+								</Select.Content>
+							</Select.Root>
+						{/snippet}
+					</Form.Control>
+				</Form.ElementField>
+			</section>
 		</header>
 
 		<ol>
