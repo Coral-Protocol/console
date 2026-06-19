@@ -271,7 +271,6 @@
 											title="Session budget"
 											tooltip="This budget is shared across all agents in the session and can be used by any agent configured to consume the shared budget."
 											extra={{
-												required: true,
 												type: 'integer'
 											}}
 											class="max-w-1/4 min-w-1/4"
@@ -284,12 +283,14 @@
 											onchange={(micro) => {
 												const agent = $formData.agents[agentIdx];
 												if (!agent) return;
-
 												agent.budgetSettings ??= {};
-
-												agent.budgetSettings.budget = micro;
-
-												$formData.agents = $formData.agents;
+												if (micro === 0) {
+													delete $formData.agents[agentIdx]?.budgetSettings?.budget;
+													$formData.agents = $formData.agents;
+												} else {
+													agent.budgetSettings.budget = micro;
+													$formData.agents = $formData.agents;
+												}
 											}}
 										/>
 									{/snippet}
@@ -307,9 +308,7 @@
 										<TooltipLabel
 											title="Exhaustion Behavior"
 											tooltip="What happens once the budget has been drained"
-											extra={{
-												required: true
-											}}
+											extra={{}}
 											class="max-w-1/4 min-w-1/4"
 										>
 											Exhaustion Behavior

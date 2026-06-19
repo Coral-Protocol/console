@@ -111,7 +111,7 @@
 </script>
 
 {#if ctx && $formData}
-	<section class="flex h-full min-h-0 grow flex-col gap-2 overflow-y-auto p-4">
+	<section class="flex h-full min-h-0 grow flex-col gap-2 overflow-y-auto px-4">
 		<!-- TODO: later all of this should use the same input field components that the optionfield comp uses -->
 		<p>
 			The Session Budget is a shared pool of funds used across all agents in the session. Agents

@@ -898,13 +898,15 @@
 					</Resizable.Pane>
 					<Resizable.Handle class="bg-background !h-2" />
 					<Resizable.Pane minSize={25} defaultSize={30}>
-						<Card.Root class=" h-full py-0">
-							<Card.Content class="flex h-full min-h-0 flex-col px-0">
-								<Tabs.Root value="budget" class="grow gap-0 overflow-hidden">
-									<Tabs.List class="bg-sidebar flex w-full justify-start rounded-none border-b ">
-										<Tabs.Trigger value="budget" class="grow-0">Budget settings</Tabs.Trigger>
-										<Tabs.Trigger value="session" class="grow-0">Session settings</Tabs.Trigger>
-									</Tabs.List>
+						<Card.Root class=" h-full border-0 py-0">
+							<Tabs.Root value="budget" class="grow gap-0 overflow-hidden">
+								<Tabs.List variant="seamless" class="min-h-9! ">
+									<Tabs.Trigger value="budget" class="grow-0">Budget settings</Tabs.Trigger>
+									<Tabs.Trigger value="session" class="grow-0">Session settings</Tabs.Trigger>
+									<Tabs.Trigger value="" class="pointer-events-none min-w-0 flex-1 p-0"
+									></Tabs.Trigger>
+								</Tabs.List>
+								<Card.Content class="min-h-0 grow border border-t-0 px-0 pt-4">
 									<Tabs.Content
 										value="budget"
 										class="{emptySession
@@ -916,8 +918,8 @@
 									<Tabs.Content value="session" class="relative overflow-hidden">
 										<SessionPane />
 									</Tabs.Content>
-								</Tabs.Root>
-							</Card.Content>
+								</Card.Content>
+							</Tabs.Root>
 						</Card.Root>
 					</Resizable.Pane>
 				</Resizable.PaneGroup>
