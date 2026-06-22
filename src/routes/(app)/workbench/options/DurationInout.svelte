@@ -91,9 +91,9 @@
 	<InputGroup.Root>
 		<InputGroup.Input
 			value={isEditingH ? editH : String(hms.h)}
-			onfocus={(e) => onFocusSegment(e, 'h')}
-			onblur={(e) => onBlurSegment(e, 'h')}
-			oninput={(e) => (editH = e.currentTarget.value)}
+			onfocus={(e: any) => onFocusSegment(e, 'h')}
+			onblur={(e: any) => onBlurSegment(e, 'h')}
+			oninput={(e: any) => (editH = e.currentTarget.value)}
 			{disabled}
 			placeholder="0"
 			maxlength={4}
@@ -109,9 +109,9 @@
 	<InputGroup.Root>
 		<InputGroup.Input
 			value={isEditingM ? editM : pad(hms.m)}
-			onfocus={(e) => onFocusSegment(e, 'm')}
-			onblur={(e) => onBlurSegment(e, 'm')}
-			oninput={(e) => (editM = e.currentTarget.value)}
+			onfocus={(e: any) => onFocusSegment(e, 'm')}
+			onblur={(e: any) => onBlurSegment(e, 'm')}
+			oninput={(e: any) => (editM = e.currentTarget.value)}
 			{disabled}
 			placeholder="00"
 			maxlength={2}
@@ -127,9 +127,9 @@
 	<InputGroup.Root>
 		<InputGroup.Input
 			value={isEditingS ? editS : pad(hms.s)}
-			onfocus={(e) => onFocusSegment(e, 's')}
-			onblur={(e) => onBlurSegment(e, 's')}
-			oninput={(e) => (editS = e.currentTarget.value)}
+			onfocus={(e: any) => onFocusSegment(e, 's')}
+			onblur={(e: any) => onBlurSegment(e, 's')}
+			oninput={(e: any) => (editS = e.currentTarget.value)}
 			{disabled}
 			placeholder="00"
 			maxlength={2}

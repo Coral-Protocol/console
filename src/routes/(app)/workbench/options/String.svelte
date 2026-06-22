@@ -4,10 +4,13 @@
 	import { cn } from '$lib/utils';
 
 	import type { OptionProps } from '../OptionField.svelte';
+	import { onMount } from 'svelte';
 
 	type Props = OptionProps<'string'>;
 
-	let { meta, value, props, errors }: Props = $props();
+	let readonly = $state(true);
+
+	let { meta, value, props, errors, name }: Props = $props();
 </script>
 
 {#if meta.display?.multiline === true}
@@ -26,8 +29,11 @@
 		class="m-0 w-full"
 		defaultValue={meta.default}
 		aria-invalid={errors.length > 0}
-		autocomplete={meta.secret ? 'off' : undefined}
+		autocomplete={meta.secret ? `section-${name} one-time-code` : undefined}
 		data-1p-ignore={meta.secret ? 'true' : undefined}
 		spellcheck={meta.secret ? 'false' : undefined}
+		{readonly}
+		onfocus={() => (readonly = false)}
+		onblur={() => (readonly = true)}
 	/>
 {/if}
