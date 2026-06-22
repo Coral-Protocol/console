@@ -73,6 +73,7 @@
 			{placeholder}
 			{maxlength}
 			type="text"
+			autocomplete="one-time-code"
 		/>
 	</InputGroup.Root>
 </ButtonGroup.Root>

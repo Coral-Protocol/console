@@ -23,7 +23,7 @@
 		| 'list[string]'
 	>;
 
-	let { meta, value, props }: Props = $props();
+	let { meta, value, props, name }: Props = $props();
 	const re = /list\[(.*)\]/;
 	let subtype = $derived(re.exec(meta.type)?.[1]) as OptionTypes | null;
 </script>
@@ -54,7 +54,7 @@
 						}
 					)}
 					{#if O}
-						<O type={subtype} {props} value={subval} {meta} errors={[]} />
+						<O type={subtype} {props} value={subval} {meta} {name} errors={[]} />
 					{:else}
 						Unknown option type - {subtype}
 					{/if}

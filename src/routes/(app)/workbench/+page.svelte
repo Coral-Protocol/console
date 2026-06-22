@@ -1018,7 +1018,6 @@
 											extra={{
 												type: 'string'
 											}}
-											class="max-w-1/4 min-w-1/4  "
 										>
 											<Input
 												bind:value={$formData.annotations.name}
