@@ -24,7 +24,6 @@
 
 	let ctx = getSessionContext();
 
-	const editorTab = new PersistedState('sessionEditorTab', 'json');
 	let payloadJson = $derived(ctx.payload ? JSON.stringify(ctx.payload, null, 4) : '');
 	let jsonDirty = $state(false);
 
@@ -72,4 +71,5 @@
 		lineWrapping={true}
 		class="size-full [&_.cm-content]:p-0! [&>*]:size-full "
 	/>
+	
 </ScrollArea>

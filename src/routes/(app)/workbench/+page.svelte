@@ -1067,6 +1067,7 @@
 			<Card.Content class="relative h-full w-full p-0">
 				<CodePane />
 			</Card.Content>
+			{JSON.stringify(toPayload(ctx.server, $formData), null, 4)}
 		</Card.Root>
 		<Card.Root
 			class="absolute right-4 bottom-4 w-fit py-4 opacity-75 transition-opacity hover:opacity-100"
