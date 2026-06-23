@@ -79,15 +79,17 @@
 
 	import type { components } from '$generated/api';
 	import { TooltipLabel } from '@coral-os/component-library';
+	import { Separator } from '@coral-os/component-library/components/ui/separator/index.js';
 
 	type Props = {
 		superform: SuperForm<Schema>;
 		agent: number;
 		name: string;
+		class?: string;
 		meta: components['schemas']['RegistryAgent']['options'][string];
 	};
 
-	let { superform: form, agent, name, meta }: Props = $props();
+	let { superform: form, agent, name, meta, class: className }: Props = $props();
 	const { form: formData, errors } = form;
 
 	let type = $derived(meta.type);
@@ -117,7 +119,7 @@
 	};
 </script>
 
-<li class="hover:bg-muted/50 px-2 py-2 not-last:border-b">
+<li class={cn('hover:bg-muted/50 group px-2 py-2', className)}>
 	<Form.ElementField class=" space-y-0" {form} name="agents[{agent}].options.{name}.value">
 		<Form.Control>
 			{#snippet children({ props })}
@@ -136,7 +138,13 @@
 								type: meta.type
 							}}
 						>
-							{meta.display?.label ?? name}
+							<div class="flex flex-col">
+								<span class="truncate wrap-break-word">{meta.display?.label ?? name}</span>
+
+								<span class="text-muted-foreground truncate text-xs"
+									>{meta.display?.description ?? ''}</span
+								>
+							</div>
 						</TooltipLabel>
 						{#if meta.default !== undefined && $value !== undefined && !valuesEqual($value, meta.default)}
 							<Tooltip.Root>
@@ -176,4 +184,5 @@
 	<!-- 			$errors?.agents?.[selectedAgent!]?.options?.[name]} -->
 	<!-- 	</span> -->
 	<!-- {/if} -->
+	<Separator class="mt-4 group-last:hidden" />
 </li>
