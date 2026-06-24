@@ -1,6 +1,7 @@
 import type { operations } from '$generated/api';
 import type { CoralServer } from '$lib/CoralServer.svelte';
 import { z } from 'zod/v4';
+import { randomAdjective, randomAnimal } from '$lib/words';
 
 export type CreateSessionRequest = NonNullable<
 	operations['createSession']['requestBody']
@@ -393,6 +394,8 @@ const formSchema = z.object({
 		})
 	),
 	groups: z.array(z.array(z.string())),
-	annotations: z.record(z.string(), z.string()).default({})
+	annotations: z
+		.record(z.string(), z.string())
+		.default({ name: `${randomAdjective()}-${randomAnimal()}` })
 });
 export type FormSchema = typeof formSchema;
