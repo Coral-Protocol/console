@@ -180,7 +180,6 @@
 									side="right"
 									align="start"
 									disabled
-									placeholder="no versions found"
 								/>
 							{/if}
 						{/snippet}
