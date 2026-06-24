@@ -9,7 +9,11 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import type { Template } from './templates/TemplateV1';
-	import { saveTemplateToLocalStorage } from './templates/TemplateLib';
+	import {
+		normalizeTemplate,
+		safeJSONParse,
+		saveTemplateToLocalStorage
+	} from './templates/TemplateLib';
 
 	let { open = $bindable(false), data }: { open: boolean; data: Template['payload']['data'] } =
 		$props();
@@ -22,6 +26,14 @@
 		const template = page.url.searchParams.get('template');
 		if (template) {
 			templateName = template;
+
+			let templateData = normalizeTemplate(
+				safeJSONParse(localStorage.getItem(`template_${template}`))
+			);
+
+			if (templateData.description) {
+				templateDescription = templateData.description;
+			}
 		}
 
 		if (localStorage.getItem(`template_${templateName}`) != null) {
