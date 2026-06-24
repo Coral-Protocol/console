@@ -130,7 +130,7 @@
 			</li>
 		{/each}
 	</ol>
-	<p
+		note: empty groups are ignored during session creation
 		class="text-muted-foreground mx-auto transition-opacity select-none {$formData.groups.length >
 			1 && $formData.groups.filter((g) => g.length === 0).length >= 1
 			? 'opacity-50 delay-300 duration-800'
