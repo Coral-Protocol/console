@@ -757,7 +757,7 @@
 												<IconPlusCircle class="size-5" />
 												Add agents</Popover.Trigger
 											>
-											<Popover.Content
+											<Popover.Content class="p-0"
 												><AgentPicker
 													server={ctx.server}
 													onSelect={(agent, catalogId) => {
