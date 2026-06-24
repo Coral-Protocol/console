@@ -569,7 +569,9 @@
 			<Dialog.Close>Close</Dialog.Close>
 			<Button
 				onclick={() => (
-					loadTemplate(overwriteDraft.template, true), (overwriteDraft.override = false)
+					clearSession(),
+					loadTemplate(overwriteDraft.template, true),
+					(overwriteDraft.override = false)
 				)}>Continue</Button
 			>
 		</Dialog.Footer>
