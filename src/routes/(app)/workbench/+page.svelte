@@ -237,7 +237,7 @@
 				if (res.error) {
 					let error: { message?: string; stackTrace?: string[] } = res.error;
 					console.error(error.stackTrace);
-					toast.error(`Failed to create session: ${error.message}`, { duration: Infinity });
+					toast.error(`Failed to create session: ${error.message}`);
 					return;
 				}
 
@@ -254,7 +254,7 @@
 				}
 			} catch (e) {
 				console.log(e);
-				toast.error(`Failed to create session: ${e}`, { duration: Infinity });
+				toast.error(`Failed to create session: ${e}`);
 			} finally {
 				sendingForm = false;
 			}
@@ -391,11 +391,12 @@
 	});
 
 	const getDetailed = async (agentId: RegistryAgentIdentifier) => {
-		return await ctx.server.lookupAgent(agentId).catch((e) => {
-			toast.error(`${e}`);
-			console.error(e);
+		try {
+			return await ctx.server.lookupAgent(agentId);
+		} catch (error) {
+			sessCtx.selectedAgentError = `${error}`;
 			return null;
-		});
+		}
 	};
 
 	// ─── Agent CRUD ───────────────────────────────────────────────────────────
@@ -1072,7 +1073,6 @@
 			<Card.Content class="relative h-full w-full p-0">
 				<CodePane />
 			</Card.Content>
-			{JSON.stringify(toPayload(ctx.server, $formData), null, 4)}
 		</Card.Root>
 		<Card.Root
 			class="absolute right-4 bottom-4 w-fit py-4 opacity-75 transition-opacity hover:opacity-100"
