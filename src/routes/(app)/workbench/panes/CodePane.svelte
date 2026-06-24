@@ -17,15 +17,20 @@
 
 	import { cn } from '$lib/utils';
 	import { CopyButton } from '@coral-os/component-library';
-	import { PersistedState } from 'runed';
 	import { fade } from 'svelte/transition';
-	import CodeSnippet from './CodeSnippet.svelte';
 	import { getSessionContext } from '$lib/sessionCreatorContext';
 
-	let ctx = getSessionContext();
+	let ctx: ReturnType<typeof getSessionContext> | undefined;
 
-	let payloadJson = $derived(ctx.payload ? JSON.stringify(ctx.payload, null, 4) : '');
+	let { customPayload }: { customPayload?: string } = $props();
+
 	let jsonDirty = $state(false);
+
+	if (!customPayload) {
+		ctx = getSessionContext();
+	}
+
+	let payloadJson = $derived(ctx?.payload ? JSON.stringify(ctx.payload, null, 4) : '');
 
 	let theme = $derived.by(() => {
 		switch (mode.current) {
@@ -39,37 +44,52 @@
 	});
 </script>
 
-<section class="absolute top-5 right-5 z-10 flex flex-col gap-2">
-	<CopyButton value={payloadJson} />
-	{#if jsonDirty}
-		<span transition:fade={{ duration: 100 }}>
-			<Tooltip.Root>
-				<Tooltip.Trigger
-					class={cn(buttonVariants({ size: 'icon' }), '')}
-					onclick={() => {
-						if (ctx.importSession({ from: payloadJson })) {
-							jsonDirty = false;
-						}
-					}}
-				>
-					<IconArrowsClockwise /></Tooltip.Trigger
-				>
-				<Tooltip.Content>Update session graph from JSON</Tooltip.Content>
-			</Tooltip.Root>
-		</span>
-	{/if}
-</section>
+{#if !customPayload}
+	<section class="absolute top-5 right-5 z-10 flex flex-col gap-2">
+		<CopyButton value={payloadJson} />
+		{#if jsonDirty}
+			<span transition:fade={{ duration: 100 }}>
+				<Tooltip.Root>
+					<Tooltip.Trigger
+						class={cn(buttonVariants({ size: 'icon' }), '')}
+						onclick={() => {
+							if (ctx?.importSession({ from: payloadJson })) {
+								jsonDirty = false;
+							}
+						}}
+					>
+						<IconArrowsClockwise /></Tooltip.Trigger
+					>
+					<Tooltip.Content>Update session graph from JSON</Tooltip.Content>
+				</Tooltip.Root>
+			</span>
+		{/if}
+	</section>
+{/if}
 <ScrollArea class="size-full">
-	<CodeMirror
-		bind:value={payloadJson}
-		onchange={() => {
-			jsonDirty = true;
-		}}
-		lang={json()}
-		tabSize={4}
-		{theme}
-		lineWrapping={true}
-		class="size-full [&_.cm-content]:p-0! [&>*]:size-full "
-	/>
-	
+	{#if !customPayload}
+		<CodeMirror
+			bind:value={payloadJson}
+			onchange={() => {
+				jsonDirty = true;
+			}}
+			lang={json()}
+			tabSize={4}
+			{theme}
+			lineWrapping={true}
+			class="size-full [&_.cm-content]:p-0! [&>*]:size-full "
+		/>
+	{:else}
+		<CodeMirror
+			bind:value={customPayload}
+			onchange={() => {
+				jsonDirty = true;
+			}}
+			lang={json()}
+			tabSize={4}
+			{theme}
+			lineWrapping={true}
+			class="size-full [&_.cm-content]:p-0! [&>*]:size-full "
+		/>
+	{/if}
 </ScrollArea>
