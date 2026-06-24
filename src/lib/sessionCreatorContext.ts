@@ -17,7 +17,7 @@ export type SessionCreatorContext = {
 
 	selectedAgent: number | null;
 	detailedAgent: Awaited<ReturnType<CoralServer['lookupAgent']>> | null;
-	selectedAgentError: Error | null;
+	selectedAgentError: string | null;
 
 	form: SuperForm<z.output<FormSchema>>;
 	formData: SuperFormData<z.output<FormSchema>>;

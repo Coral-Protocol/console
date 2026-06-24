@@ -393,7 +393,7 @@
 		try {
 			return await ctx.server.lookupAgent(agentId);
 		} catch (error) {
-			sessCtx.selectedAgentError = error as Error;
+			sessCtx.selectedAgentError = `${error}`;
 			return null;
 		}
 	};
