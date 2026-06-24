@@ -65,7 +65,7 @@ export const toPayload = async (server: CoralServer, data: z.output<FormSchema>)
 	return {
 		agentGraphRequest: {
 			agents,
-			groups: data.groups,
+			groups: data.groups.filter((group) => group.length > 0),
 			customTools
 		},
 		namespaceProvider: {
