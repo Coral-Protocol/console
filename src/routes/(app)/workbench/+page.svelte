@@ -89,6 +89,7 @@
 	import { tourTarget } from '$lib/components/tour/tourTarget';
 	import { cn } from '$lib/utils';
 	import config from '$lib/config';
+	import { randomAdjective, randomAnimal } from '$lib/words';
 
 	// ─── Types ────────────────────────────────────────────────────────────────
 
@@ -443,7 +444,9 @@
 			},
 			agents: [],
 
-			annotations: {}
+			annotations: {
+				name: `${randomAdjective()}-${randomAnimal()}`
+			}
 		};
 		sessCtx.selectedAgent = null;
 	}
