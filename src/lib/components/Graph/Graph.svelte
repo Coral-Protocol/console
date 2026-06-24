@@ -77,14 +77,20 @@
 
 	const edgesFromGroups = (groupList: string[][]): GroupEdge[] => {
 		const seen = new Set<string>();
-		return groupList.flatMap((group) =>
+		return groupList.flatMap((group, groupIndex) =>
 			group
 				.flatMap((a, i) =>
 					group.slice(i + 1).map((b) => {
 						const key = [a, b].sort().join('|');
 						if (seen.has(key)) return null;
 						seen.add(key);
-						return { id: key, source: a, target: b, type: 'straight' } satisfies GroupEdge;
+						return {
+							id: key,
+							source: a,
+							target: b,
+							type: 'straight',
+							style: `stroke: oklch(0.7 0.1 ${53 * groupIndex})`
+						} satisfies GroupEdge;
 					})
 				)
 				.filter(notNull)
@@ -95,10 +101,10 @@
 		nodes: agents.map((agent, index) => ({
 			id: agent.name,
 			position: { x: !viewOnly ? 0 : 0 + index * 100, y: !viewOnly ? 0 : 0 + index * 20 },
-			data: { label: agent.name, viewOnly: viewOnly },
+			data: { label: agent.name, viewOnly: viewOnly, selectedAgent: selectedAgent, index: index },
 			type: 'circleNode',
-			selectable: !viewOnly,
-			selected: selectedAgent === index,
+			selectable: false,
+			selected: false,
 			draggable: !viewOnly
 		})),
 		edges: edgesFromGroups(groups)
@@ -266,6 +272,7 @@
 	fitView
 	onnodedragstart={handleNodeDragStart}
 	onnodedrag={handleNodeDrag}
+	edgesFocusable={false}
 	onnodedragstop={handleNodeDragStop}
 	defaultEdgeOptions={{ selectable: false, focusable: false }}
 	panOnDrag={!viewOnly}
@@ -276,6 +283,11 @@
 			selectedAgent = index;
 			onSelect?.(index);
 		}
+	}}
+	autoPanOnNodeDrag={false}
+	selectNodesOnDrag={false}
+	onedgeclick={() => {
+		selectedAgent = null;
 	}}
 	connectionMode={'loose' as ConnectionMode}
 	colorMode={mode.current}

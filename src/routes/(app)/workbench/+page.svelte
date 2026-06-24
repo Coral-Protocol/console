@@ -906,10 +906,10 @@
 									<Tabs.Trigger value="" class="pointer-events-none min-w-0 flex-1 p-0"
 									></Tabs.Trigger>
 								</Tabs.List>
-								<Card.Content class="min-h-0 grow border border-t-0 px-0 pt-4">
+								<Card.Content class="min-h-0 grow overflow-y-auto border border-t-0 px-0 pt-4">
 									<Tabs.Content
 										value="budget"
-										class="{emptySession
+										class="pb-4 {emptySession
 											? '**:text-muted-foreground! text-muted-foreground!'
 											: ''}  relative overflow-hidden transition-colors"
 									>
@@ -1067,6 +1067,7 @@
 			<Card.Content class="relative h-full w-full p-0">
 				<CodePane />
 			</Card.Content>
+			{JSON.stringify(toPayload(ctx.server, $formData), null, 4)}
 		</Card.Root>
 		<Card.Root
 			class="absolute right-4 bottom-4 w-fit py-4 opacity-75 transition-opacity hover:opacity-100"
