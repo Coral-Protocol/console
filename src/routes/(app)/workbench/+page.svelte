@@ -569,7 +569,9 @@
 			<Dialog.Close>Close</Dialog.Close>
 			<Button
 				onclick={() => (
-					loadTemplate(overwriteDraft.template, true), (overwriteDraft.override = false)
+					clearSession(),
+					loadTemplate(overwriteDraft.template, true),
+					(overwriteDraft.override = false)
 				)}>Continue</Button
 			>
 		</Dialog.Footer>
@@ -757,7 +759,7 @@
 												<IconPlusCircle class="size-5" />
 												Add agents</Popover.Trigger
 											>
-											<Popover.Content
+											<Popover.Content class="p-0"
 												><AgentPicker
 													server={ctx.server}
 													onSelect={(agent, catalogId) => {
