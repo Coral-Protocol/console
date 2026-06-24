@@ -24,6 +24,8 @@
 	function handleScroll() {
 		openId = null;
 	}
+
+	let newGroup = [];
 </script>
 
 <header class="flex w-full flex-col gap-4 border-b p-4">
@@ -39,13 +41,13 @@
 				$formData.groups = [...$formData.groups, []];
 			}}>Create a new group</Button
 		>
-		<Button
+		<!-- <Button
 			class="w-fit gap-1 px-3"
 			variant="outline"
 			onclick={() => {
 				$formData.groups = [...$formData.groups, []];
 			}}>New group from selection</Button
-		>
+		> -->
 	</section>
 </header>
 <ul class=" flex flex-col">
@@ -56,7 +58,11 @@
 	{/if}
 	<ol class="flex flex-col gap-1 p-2">
 		{#each $formData.groups as group, i}
-			<li class="flex h-full w-full grid-cols-2 items-center gap-2 border p-2">
+			<li
+				class="flex h-full w-full grid-cols-2 items-center gap-2 border {group.length == 0
+					? 'border-dashed'
+					: ''} p-2"
+			>
 				<div
 					style="background-color: oklch(0.7 0.1 {53 * i})"
 					class="h-full w-2 transition-all"
@@ -124,12 +130,12 @@
 			</li>
 		{/each}
 	</ol>
-	<p
+		note: empty groups are ignored during session creation
 		class="text-muted-foreground mx-auto transition-opacity select-none {$formData.groups.length >
 			1 && $formData.groups.filter((g) => g.length === 0).length >= 1
 			? 'opacity-50 delay-300 duration-800'
 			: 'opacity-0 delay-0 duration-0'}"
 	>
-		note: empty groups are deleted during session creation
+		note: empty groups are removed during session creation
 	</p>
 </ul>
