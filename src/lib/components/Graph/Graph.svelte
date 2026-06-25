@@ -29,6 +29,8 @@
 	import IconSelection from 'phosphor-icons-svelte/IconSelectionFill.svelte';
 	import IconPlay from 'phosphor-icons-svelte/IconPlayFill.svelte';
 	import IconPause from 'phosphor-icons-svelte/IconPauseFill.svelte';
+	import * as Command from '@coral-os/component-library/ui/command/index.js';
+	import * as Popover from '@coral-os/component-library/ui/popover/index.js';
 
 	const nodeTypes = {
 		circleNode: GraphCircleNode
@@ -52,7 +54,8 @@
 		id,
 		controls = false,
 		viewOnly = false,
-		fitDefault = true
+		fitDefault = true,
+		enableContext = false
 	}: {
 		class?: string;
 		agents: z.infer<FormSchema>['agents'] | SessionAgentState[];
@@ -63,6 +66,7 @@
 		controls?: boolean;
 		viewOnly?: boolean;
 		fitDefault?: boolean;
+		enableContext?: boolean;
 	} = $props();
 
 	type AgentNode = Node<{ label: string }>;
@@ -262,6 +266,22 @@
 	function handleNodeDragStop() {
 		draggingNode = null;
 	}
+
+	function handleContextMenu({ event }: { event: MouseEvent }) {
+		if (!enableContext) return;
+		event.preventDefault();
+		openPaneContext = !openPaneContext;
+		if (!openPaneContext) return;
+		contextPos = {
+			x: event.clientX,
+			y: event.clientY
+		};
+		console.log(contextPos);
+	}
+
+	let contextPos = $state({ x: 0, y: 0 });
+	let openPaneContext = $state(false);
+	let customAnchor = $state<HTMLElement>(null!);
 </script>
 
 <SvelteFlow
@@ -270,12 +290,13 @@
 	{nodeTypes}
 	class={cn('[&_.svelte-flow__edge-wrapper]:z-10!', className)}
 	fitView
+	onpanecontextmenu={handleContextMenu}
 	onnodedragstart={handleNodeDragStart}
 	onnodedrag={handleNodeDrag}
 	edgesFocusable={false}
 	onnodedragstop={handleNodeDragStop}
 	defaultEdgeOptions={{ selectable: false, focusable: false }}
-	panOnDrag={!viewOnly}
+	panOnDrag={false}
 	onnodeclick={(e) => {
 		const node = e.node;
 		const index = agents.findIndex((a) => a.name === node.id);
@@ -285,7 +306,7 @@
 		}
 	}}
 	autoPanOnNodeDrag={false}
-	selectNodesOnDrag={false}
+	selectNodesOnDrag={true}
 	onedgeclick={() => {
 		selectedAgent = null;
 	}}
@@ -319,5 +340,33 @@
 			</Tooltip.Root>
 		</Panel>
 	{/if}
+	<div
+		style="position: fixed; left: {contextPos.x}px !important; top: {contextPos.y}px !important;"
+		bind:this={customAnchor}
+	></div>
+	{#if enableContext}
+		<Popover.Root bind:open={openPaneContext}>
+			<Popover.Content align="start" sideOffset={1} {customAnchor} class="p-0">
+				<Command.Root>
+					<Command.Input placeholder="Type a command or search..." />
+					<Command.List>
+						<Command.Empty>No results found.</Command.Empty>
+						<Command.Group heading="Suggestions">
+							<Command.Item>Add agent</Command.Item>
+							<Command.Item>Select agent</Command.Item>
+							<Command.Item>Remove agent</Command.Item>
+						</Command.Group>
+						<Command.Separator />
+						<Command.Group heading="Settings">
+							<Command.Item>Profile</Command.Item>
+							<Command.Item>Billing</Command.Item>
+							<Command.Item>Settings</Command.Item>
+						</Command.Group>
+					</Command.List>
+				</Command.Root>
+			</Popover.Content>
+		</Popover.Root>
+	{/if}
+
 	<Background {id} />
 </SvelteFlow>

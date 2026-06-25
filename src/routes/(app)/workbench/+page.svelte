@@ -134,7 +134,7 @@
 								<section>zoom controls</section>
 							</header>
 							<SvelteFlowProvider>
-								<Graph agents={[]} groups={[]} controls fitDefault={false} />
+								<Graph agents={[]} groups={[]} controls fitDefault={false} enableContext />
 							</SvelteFlowProvider>
 						</Resizable.Pane>
 						<Resizable.Handle />
