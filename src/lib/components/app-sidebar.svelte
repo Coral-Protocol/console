@@ -33,6 +33,8 @@
 	import IconXRegular from 'phosphor-icons-svelte/IconXRegular.svelte';
 	import IconGhost from 'phosphor-icons-svelte/IconGhostRegular.svelte';
 	import IconEnvelopeOpen from 'phosphor-icons-svelte/IconEnvelopeOpenRegular.svelte';
+	import IconGearRegular from 'phosphor-icons-svelte/IconGearRegular.svelte';
+
 	import IconDotsThree from 'phosphor-icons-svelte/IconDotsThreeRegular.svelte';
 	import IconCheckRegular from 'phosphor-icons-svelte/IconCheckRegular.svelte';
 	import { sessionDraft, recentSession } from '$lib/sessionDraftData';
@@ -61,6 +63,8 @@
 
 	import Logo from '$lib/icons/logo.svelte';
 	import type { WithElementRef } from 'bits-ui';
+	import IconSpinnerGapRegular from 'phosphor-icons-svelte/IconSpinnerGapRegular.svelte';
+	import Settings from './Settings.svelte';
 
 	let ctx = appContext.get();
 	let tools = socketCtx.get();
@@ -283,6 +287,17 @@
 		/>
 		<span class="sr-only">Toggle theme</span>
 	</Button>
+
+	<Separator orientation="vertical" class="!h-6" />
+
+	<Popover.Root>
+		<Popover.Trigger class={buttonVariants({ variant: 'ghost', size: 'icon' })}>
+			<IconGearRegular />
+		</Popover.Trigger>
+		<Popover.Content align="end" sideOffset={5} alignOffset={-4}>
+			<Settings />
+		</Popover.Content>
+	</Popover.Root>
 </div>
 
 <Sidebar.Root class="">
