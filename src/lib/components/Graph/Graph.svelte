@@ -276,7 +276,6 @@
 			x: event.clientX,
 			y: event.clientY
 		};
-		console.log(contextPos);
 	}
 
 	let contextPos = $state({ x: 0, y: 0 });
@@ -294,9 +293,9 @@
 	onnodedragstart={handleNodeDragStart}
 	onnodedrag={handleNodeDrag}
 	edgesFocusable={false}
+	panOnDrag={[1]}
 	onnodedragstop={handleNodeDragStop}
 	defaultEdgeOptions={{ selectable: false, focusable: false }}
-	panOnDrag={false}
 	onnodeclick={(e) => {
 		const node = e.node;
 		const index = agents.findIndex((a) => a.name === node.id);
@@ -306,7 +305,7 @@
 		}
 	}}
 	autoPanOnNodeDrag={false}
-	selectNodesOnDrag={true}
+	selectNodesOnDrag={false}
 	onedgeclick={() => {
 		selectedAgent = null;
 	}}
