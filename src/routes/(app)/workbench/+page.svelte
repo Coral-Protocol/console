@@ -6,6 +6,7 @@
 	import { Button, buttonVariants } from '@coral-os/component-library/ui/button/index.js';
 	import IconXRegular from 'phosphor-icons-svelte/IconXRegular.svelte';
 	import IconPlusRegular from 'phosphor-icons-svelte/IconPlusRegular.svelte';
+	import IconMinusRegular from 'phosphor-icons-svelte/IconMinusRegular.svelte';
 
 	import * as Tooltip from '@coral-os/component-library/ui/tooltip/index.js';
 	import IconCircuity from 'phosphor-icons-svelte/IconCircuitryRegular.svelte';
@@ -16,6 +17,11 @@
 
 	import IconWrenchRegular from 'phosphor-icons-svelte/IconWrenchRegular.svelte';
 	import IconUsersThreeRegular from 'phosphor-icons-svelte/IconUsersThreeRegular.svelte';
+	import IconCodeRegular from 'phosphor-icons-svelte/IconCodeRegular.svelte';
+	import IconTableRegular from 'phosphor-icons-svelte/IconTableRegular.svelte';
+	import IconGraphRegular from 'phosphor-icons-svelte/IconGraphRegular.svelte';
+	import IconEditRegular from 'phosphor-icons-svelte/IconPencilSimpleLineRegular.svelte';
+
 	import IconRobotRegular from '$lib/icons/robot.svelte';
 	import IconCaretDown from 'phosphor-icons-svelte/IconCaretDownRegular.svelte';
 	import IconPlusCircle from 'phosphor-icons-svelte/IconPlusCircleRegular.svelte';
@@ -25,14 +31,28 @@
 
 	import { SvelteFlowProvider } from '@xyflow/svelte';
 	import Graph from '$lib/components/Graph/Graph.svelte';
+	import CodePane from './panes/CodePane.svelte';
+	import { Input } from '@coral-os/component-library/ui/input/index.js';
 
 	const isMobile = new IsMobile();
 
 	type Tab = { id: string; dirty: boolean };
-	type File = { name: string; description: string; id: string; data: object };
+	type File = {
+		name: string;
+		description: string;
+		id: string;
+		created: EpochTimeStamp;
+		data: object;
+	};
 
 	const files = new PersistedState<File[]>('files', [
-		{ name: 'Untitled', description: 'no description', id: crypto.randomUUID(), data: {} }
+		{
+			name: 'Untitled',
+			description: 'no description',
+			id: crypto.randomUUID(),
+			created: Date.now(),
+			data: {}
+		}
 	]);
 
 	const openTabs = new PersistedState<Tab[]>('openTabs', []);
@@ -52,7 +72,13 @@
 
 	function newTab() {
 		const id = crypto.randomUUID();
-		files.current.push({ name: 'Untitled', description: 'no description', id, data: {} });
+		files.current.push({
+			name: 'Untitled',
+			description: 'no description',
+			id,
+			created: Date.now(),
+			data: {}
+		});
 		openTabs.current.push({ id, dirty: true });
 		activeTab.current = id;
 	}
@@ -64,12 +90,21 @@
 		openTabs.current.splice(tabIndex, 1);
 
 		if (activeTab.current === id) {
-			activeTab.current = openTabs.current[tabIndex - 1]?.id ?? null;
+			activeTab.current =
+				(tabIndex > 0 ? openTabs.current[tabIndex - 1] : openTabs.current[0])?.id ?? '';
 		}
+	}
+
+	function deleteFile(id: string) {
+		const fileIndex = files.current.findIndex((file) => file.id === id);
+		files.current.splice(fileIndex, 1);
+		closeTab(id);
 	}
 
 	let activeFile = $derived(files.current.find((file) => file.id === activeTab.current) ?? null);
 	let filesById = $derived(new Map(files.current.map((f) => [f.id, f])));
+
+	let draftName = $derived(activeFile.name);
 </script>
 
 <Header />
@@ -81,11 +116,28 @@
 				<IconCircuity class="size-6" />
 				<Menubar.Trigger>File</Menubar.Trigger>
 				<Menubar.Content>
-					<Menubar.Item>
-						New Tab
-						<Menubar.Shortcut>⌘T</Menubar.Shortcut>
-					</Menubar.Item>
-					<Menubar.Item>New Window</Menubar.Item>
+					<Menubar.Sub>
+						<Menubar.SubTrigger>Open file...</Menubar.SubTrigger>
+						<Menubar.SubContent class="max-h-1/3 overflow-y-auto">
+							{#each files.current as file}
+								<Menubar.Item
+									onclick={() => (
+										openTabs.current.push({ id: file.id, dirty: false }),
+										(activeTab.current = file.id)
+									)}>{file.name}</Menubar.Item
+								>
+							{/each}
+						</Menubar.SubContent>
+					</Menubar.Sub>
+					<Menubar.Item onclick={newTab}>New File</Menubar.Item>
+
+					<Menubar.Item
+						onclick={() => {
+							if (activeFile) {
+								deleteFile(activeFile.id);
+							}
+						}}>Delete file</Menubar.Item
+					>
 					<Menubar.Separator />
 					<Menubar.Item>Share</Menubar.Item>
 					<Menubar.Separator />
@@ -95,7 +147,7 @@
 			<Menubar.Menu>
 				<Menubar.Trigger>Edit</Menubar.Trigger>
 				<Menubar.Content>
-					<Menubar.Item>New Tab</Menubar.Item>
+					<Menubar.Item onclick={newTab}>New File</Menubar.Item>
 				</Menubar.Content>
 			</Menubar.Menu>
 			<Menubar.Menu>
@@ -138,7 +190,7 @@
 											}}
 											class="not-data-active:bg-background/80! not-data-active:hover:bg-card! peer data-active:border-t-brand-primary! w-full grow justify-start overflow-hidden pr-8"
 											><span class="truncate {tab.dirty ? 'italic' : ''}"
-												>{filesById.get(tab.id)?.name ?? 'Untitled'}
+												>{filesById.get(tab.id)?.name ?? 'Untitled'}{tab.dirty ? '*' : ''}
 											</span></Tabs.Trigger
 										>
 									{/snippet}
@@ -173,44 +225,60 @@
 			<Card.Content class="bg-card h-full border border-t-0 p-0 ">
 				<Resizable.PaneGroup direction="horizontal" class="h-full min-h-0 w-full grow rounded-lg ">
 					<Resizable.Pane defaultSize={75}>
-						<header class="flex w-full border-b p-4">
-							<section class="grow">
-								{#if activeFile}
-									<form>
-										<input
-											type="text"
-											value={activeFile.name}
-											onblur={(v) => (activeFile.name = v.currentTarget.value)}
-											class="w-fit text-xl"
-										/>
-									</form>
-									<form>
-										<input
-											type="text"
-											value={activeFile.description}
-											onblur={(v) => (activeFile.description = v.currentTarget.value)}
-											class="text-foreground/80"
-										/>
-									</form>
-								{/if}
-							</section>
-							<section>
-								<Button variant="outline">Diagram</Button>
-								<Button variant="ghost">Outline</Button>
-							</section>
-							<section>zoom controls</section>
-						</header>
-						<SvelteFlowProvider>
-							{#key activeFile?.id}
-								<Graph
-									agents={activeFile?.data.agents ?? []}
-									groups={activeFile?.data.groups ?? []}
-									controls
-									fitDefault={false}
-									enableContext
-								/>
-							{/key}
-						</SvelteFlowProvider>
+						<Tabs.Root value="diagram" class="h-full grow gap-0">
+							<header class="flex w-full items-center gap-4 border-b p-4">
+								<section class="flex min-w-0 flex-1 flex-col">
+									{#if activeFile}
+										<form class="relative inline-flex w-max max-w-full min-w-0 items-center gap-1">
+											<input
+												type="text"
+												maxlength="45"
+												value={draftName}
+												oninput={(e) => (draftName = e.currentTarget.value)}
+												onblur={() => (activeFile.name = draftName)}
+												class="peer absolute inset-0 z-10 w-full min-w-0 text-xl outline-0!"
+											/>
+											<span class="pointer-events-none max-w-full truncate text-xl opacity-0"
+												>{draftName || ' '}</span
+											>
+											<IconEditRegular class="z-0 shrink-0 opacity-50 peer-focus:opacity-0" />
+										</form>
+										<form>
+											<input
+												type="text"
+												value={activeFile.description}
+												onblur={(v) => (activeFile.description = v.currentTarget.value)}
+												class="text-foreground/80 outline-0!"
+											/>
+										</form>
+									{/if}
+								</section>
+								<Tabs.List class="shrink-0 gap-2 bg-transparent pr-4">
+									<Tabs.Trigger value="diagram"><IconGraphRegular /> Diagram</Tabs.Trigger>
+									<Tabs.Trigger value="outline"><IconTableRegular /> Outline</Tabs.Trigger>
+									<Tabs.Trigger value="raw"><IconCodeRegular /> Raw</Tabs.Trigger>
+								</Tabs.List>
+								<section class="flex shrink-0 gap-0">
+									<Button variant="outline" size="icon" class="border-r-0"
+										><IconMinusRegular /></Button
+									>
+									<Input value="100" class="w-16 border-x-0 bg-transparent!" />
+									<Button variant="outline" size="icon" class="border-l-0"
+										><IconPlusRegular /></Button
+									>
+								</section>
+							</header>
+							<Tabs.Content value="diagram" class="p-0">
+								<SvelteFlowProvider>
+									{#key activeFile?.id}
+										<Graph agents={[]} groups={[]} controls fitDefault={false} enableContext />
+									{/key}
+								</SvelteFlowProvider>
+							</Tabs.Content>
+							<Tabs.Content value="outline">outline...!</Tabs.Content>
+
+							<Tabs.Content value="raw">raw code</Tabs.Content>
+						</Tabs.Root>
 					</Resizable.Pane>
 					<Resizable.Handle />
 					<Resizable.Pane defaultSize={25}>
