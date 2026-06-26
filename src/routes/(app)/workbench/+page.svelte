@@ -33,6 +33,7 @@
 	import Graph from '$lib/components/Graph/Graph.svelte';
 	import CodePane from './panes/CodePane.svelte';
 	import { Input } from '@coral-os/component-library/ui/input/index.js';
+	import { formatDistanceToNow, format } from 'date-fns';
 
 	const isMobile = new IsMobile();
 
@@ -57,7 +58,7 @@
 
 	const openTabs = new PersistedState<Tab[]>('openTabs', []);
 
-	const activeTab = new PersistedState<string | null>('activeTab', '', {
+	const activeTab = new PersistedState<string>('activeTab', '', {
 		storage: 'session'
 	});
 
@@ -70,10 +71,31 @@
 		activeTab.current = openTabs.current[0].id;
 	}
 
+	function uniqueName(base: string, existingNames: string[]): string {
+		if (!existingNames.includes(base)) return base;
+
+		const escaped = base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+		const pattern = new RegExp(`^${escaped} (\\d+)$`);
+
+		let max = 1;
+		for (const name of existingNames) {
+			const match = name.match(pattern);
+			if (match) {
+				max = Math.max(max, parseInt(match[1] ?? '0', 10));
+			}
+		}
+
+		return `${base} ${max + 1}`;
+	}
+
 	function newTab() {
 		const id = crypto.randomUUID();
+		const name = uniqueName(
+			'Untitled',
+			files.current.map((f) => f.name)
+		);
 		files.current.push({
-			name: 'Untitled',
+			name,
 			description: 'no description',
 			id,
 			created: Date.now(),
@@ -104,7 +126,7 @@
 	let activeFile = $derived(files.current.find((file) => file.id === activeTab.current) ?? null);
 	let filesById = $derived(new Map(files.current.map((f) => [f.id, f])));
 
-	let draftName = $derived(activeFile.name);
+	let draftName = $derived(activeFile?.name);
 </script>
 
 <Header />
@@ -116,21 +138,28 @@
 				<IconCircuity class="size-6" />
 				<Menubar.Trigger>File</Menubar.Trigger>
 				<Menubar.Content>
+					<Menubar.Item onclick={newTab}>New File</Menubar.Item>
 					<Menubar.Sub>
-						<Menubar.SubTrigger>Open file...</Menubar.SubTrigger>
-						<Menubar.SubContent class="max-h-1/3 overflow-y-auto">
-							{#each files.current as file}
+						<Menubar.SubTrigger>Open Recent...</Menubar.SubTrigger>
+						<Menubar.SubContent
+							align="start"
+							class="max-h-96 max-w-64 overflow-x-hidden overflow-y-auto"
+						>
+							{#each [...files.current].sort((a, b) => b.created - a.created) as file}
 								<Menubar.Item
+									class="flex w-full justify-between"
 									onclick={() => (
 										openTabs.current.push({ id: file.id, dirty: false }),
 										(activeTab.current = file.id)
-									)}>{file.name}</Menubar.Item
+									)}
+									><span class=" truncate">{file.name}</span><span
+										class="text-foreground/50 w-max text-xs text-nowrap"
+										>{formatDistanceToNow(file.created, { addSuffix: true })}</span
+									></Menubar.Item
 								>
 							{/each}
 						</Menubar.SubContent>
 					</Menubar.Sub>
-					<Menubar.Item onclick={newTab}>New File</Menubar.Item>
-
 					<Menubar.Item
 						onclick={() => {
 							if (activeFile) {
@@ -189,14 +218,14 @@
 												if (e.button === 1) closeTab(tab.id);
 											}}
 											class="not-data-active:bg-background/80! not-data-active:hover:bg-card! peer data-active:border-t-brand-primary! w-full grow justify-start overflow-hidden pr-8"
-											><span class="truncate {tab.dirty ? 'italic' : ''}"
-												>{filesById.get(tab.id)?.name ?? 'Untitled'}{tab.dirty ? '*' : ''}
+											><span class="truncate"
+												>{filesById.get(tab.id)?.name ?? 'Untitled'}
 											</span></Tabs.Trigger
 										>
 									{/snippet}
 								</Tooltip.Trigger>
 								<Tooltip.Content>
-									<p>{filesById.get(tab.id)?.name} {tab.dirty ? '(unsaved)' : ''}</p>
+									<p>{filesById.get(tab.id)?.name}</p>
 								</Tooltip.Content>
 							</Tooltip.Root>
 
@@ -235,7 +264,7 @@
 												maxlength="45"
 												value={draftName}
 												oninput={(e) => (draftName = e.currentTarget.value)}
-												onblur={() => (activeFile.name = draftName)}
+												onblur={() => (activeFile.name = draftName ?? '')}
 												class="peer absolute inset-0 z-10 w-full min-w-0 text-xl outline-0!"
 											/>
 											<span class="pointer-events-none max-w-full truncate text-xl opacity-0"
@@ -290,9 +319,18 @@
 							</Resizable.Pane>
 							<Resizable.Handle />
 							<Resizable.Pane defaultSize={75}>
-								<div class="flex h-full items-center justify-center p-6">
-									<span class="font-semibold">Three</span>
-								</div>
+								<Tabs.Root value="Agent">
+									<Tabs.List variant="line">
+										<Tabs.Trigger value="Agent">Agent</Tabs.Trigger>
+										<Tabs.Trigger value="Tools">Tools</Tabs.Trigger>
+										<Tabs.Trigger value="Marketplace">Marketplace</Tabs.Trigger>
+										<Tabs.Trigger value="Groups">Groups</Tabs.Trigger>
+									</Tabs.List>
+									<Tabs.Content value="Agent" class="p-2">agents details!</Tabs.Content>
+									<Tabs.Content value="Tools" class="p-2">tools!</Tabs.Content>
+									<Tabs.Content value="Marketplace" class="p-2">marketplace!</Tabs.Content>
+									<Tabs.Content value="Groups" class="p-2">groups!</Tabs.Content>
+								</Tabs.Root>
 							</Resizable.Pane>
 						</Resizable.PaneGroup>
 					</Resizable.Pane>
