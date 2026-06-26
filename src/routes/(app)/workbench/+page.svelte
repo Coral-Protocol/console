@@ -34,6 +34,19 @@
 	import CodePane from './panes/CodePane.svelte';
 	import { Input } from '@coral-os/component-library/ui/input/index.js';
 	import { formatDistanceToNow, format } from 'date-fns';
+	import MarketPane from './panes/MarketPane.svelte';
+	import { appContext } from '$lib/context';
+	import { makeFormSchema } from '$lib/sessionSchema/types';
+	import type { SessionCreatorContext } from '$lib/sessionCreatorContext';
+
+	let sessCtx = $state({
+		payload: null,
+		selectedAgent: null,
+		detailedAgent: null
+	}) as SessionCreatorContext;
+
+	let ctx = appContext.get();
+	let formSchema = $derived(makeFormSchema(ctx.server));
 
 	const isMobile = new IsMobile();
 
@@ -253,7 +266,7 @@
 			</Tabs.List>
 			<Card.Content class="bg-card h-full border border-t-0 p-0 ">
 				<Resizable.PaneGroup direction="horizontal" class="h-full min-h-0 w-full grow rounded-lg ">
-					<Resizable.Pane defaultSize={75}>
+					<Resizable.Pane defaultSize={75} minSize={40}>
 						<Tabs.Root value="diagram" class="h-full grow gap-0">
 							<header class="flex w-full items-center gap-4 border-b p-4">
 								<section class="flex min-w-0 flex-1 flex-col">
@@ -310,20 +323,34 @@
 						</Tabs.Root>
 					</Resizable.Pane>
 					<Resizable.Handle />
-					<Resizable.Pane defaultSize={25}>
+					<Resizable.Pane defaultSize={25} minSize={10}>
 						<Resizable.PaneGroup direction="vertical">
-							<Resizable.Pane defaultSize={25}>
-								<div class="flex h-full items-center justify-center p-6">
-									<span class="font-semibold">Two</span>
-								</div>
+							<Resizable.Pane defaultSize={25} minSize={10}>
+								<Tabs.Root value="Market" class="h-full grow">
+									<Tabs.List variant="line" class="*:after:bg-brand-primary">
+										<Tabs.Trigger value="Market">Agent Market</Tabs.Trigger>
+										<Tabs.Trigger value="Local">Local Agents</Tabs.Trigger>
+									</Tabs.List>
+									<Tabs.Content
+										value="Market"
+										class="flex min-h-0 grow flex-col overflow-y-auto p-2 "
+									>
+										<MarketPane source="marketplace" />
+									</Tabs.Content>
+									<Tabs.Content
+										value="Local"
+										class="flex min-h-0 grow flex-col overflow-y-auto p-2"
+									>
+										<MarketPane source="local" />
+									</Tabs.Content>
+								</Tabs.Root>
 							</Resizable.Pane>
 							<Resizable.Handle />
-							<Resizable.Pane defaultSize={75}>
+							<Resizable.Pane defaultSize={75} minSize={10}>
 								<Tabs.Root value="Agent">
-									<Tabs.List variant="line">
+									<Tabs.List variant="line" class="*:after:bg-brand-primary">
 										<Tabs.Trigger value="Agent">Agent</Tabs.Trigger>
 										<Tabs.Trigger value="Tools">Tools</Tabs.Trigger>
-										<Tabs.Trigger value="Marketplace">Marketplace</Tabs.Trigger>
 										<Tabs.Trigger value="Groups">Groups</Tabs.Trigger>
 									</Tabs.List>
 									<Tabs.Content value="Agent" class="p-2">agents details!</Tabs.Content>
