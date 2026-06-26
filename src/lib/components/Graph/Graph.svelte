@@ -315,7 +315,7 @@
 		hideAttribution: true
 	}}
 >
-	{#if controls && nodes.length > 0}
+	{#if controls}
 		<Panel position="top-right" class="flex gap-4">
 			<Tooltip.Root>
 				<Tooltip.Trigger
