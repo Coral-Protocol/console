@@ -22,6 +22,8 @@
 	import Header from '$lib/components/header.svelte';
 	import AgentMarketView from '$lib/components/dialogs/AgentMarketView.svelte';
 
+	import { useDnD } from '$lib/components/DndProvider.svelte';
+
 	let ctx = appContext.get();
 
 	let search = $state('');
@@ -50,6 +52,17 @@
 	let dialogOpen = $state(false);
 
 	let { source }: { source: string } = $props();
+
+	const agentData = useDnD();
+
+	const onDragStart = (event: DragEvent, agent: { name: string; id: string }) => {
+		if (!event.dataTransfer) {
+			return null;
+		}
+
+		agentData.agent = agent;
+		event.dataTransfer.effectAllowed = 'move';
+	};
 </script>
 
 <InputGroup.Root>
@@ -69,7 +82,7 @@
 		<ol class="flex w-full grow flex-col justify-center gap-2 pt-2">
 			{#each catalog.agents as agent}
 				{#await ctx.server.lookupAgent( { name: agent.name, version: agent.versions[0]!, registrySourceId: catalog.identifier } )}
-					<div class="bg-foreground/5 h-[250px] w-xs border"></div>
+					<div class="bg-foreground/5 h-[42px] w-xs border"></div>
 				{:then details}
 					<li class="w-full grow cursor-pointer">
 						<button
@@ -77,6 +90,8 @@
 								selectedAgent = { agent, details };
 								dialogOpen = true;
 							}}
+							ondragstart={(event) => onDragStart(event, { name: agent.name, id: '' })}
+							draggable={true}
 							type="button"
 							class="h-full w-full grow"
 						>

@@ -13,7 +13,7 @@
 
 	import { mode } from 'mode-watcher';
 	import type { FormSchema } from '../../sessionSchema';
-	import z from 'zod';
+	import z, { json } from 'zod';
 	import GraphCircleNode from './GraphCircleNode.svelte';
 
 	import * as d3Force from 'd3-force';
@@ -31,6 +31,9 @@
 	import IconPause from 'phosphor-icons-svelte/IconPauseFill.svelte';
 	import * as Command from '@coral-os/component-library/ui/command/index.js';
 	import * as Popover from '@coral-os/component-library/ui/popover/index.js';
+	import type { SessionCreatorContext } from '$lib/sessionCreatorContext';
+	import { useDnD } from '$lib/components/DndProvider.svelte';
+	const { setCenter } = useSvelteFlow();
 
 	const nodeTypes = {
 		circleNode: GraphCircleNode
@@ -47,19 +50,17 @@
 
 	let {
 		class: className,
-		agents,
-		groups,
 		selectedAgent = $bindable(undefined),
 		onSelect,
+		rawPayload = $bindable(),
 		id,
 		controls = false,
 		viewOnly = false,
-		fitDefault = true,
+		fitDefault = false,
 		enableContext = false
 	}: {
 		class?: string;
-		agents: z.infer<FormSchema>['agents'] | SessionAgentState[];
-		groups: z.infer<FormSchema>['groups'];
+		rawPayload: string;
 		selectedAgent?: number | null;
 		onSelect?: (idx: number) => void;
 		id?: string;
@@ -68,6 +69,45 @@
 		fitDefault?: boolean;
 		enableContext?: boolean;
 	} = $props();
+
+	const payloadData = $derived.by(() => {
+		try {
+			return JSON.parse(rawPayload);
+		} catch {
+			return null;
+		}
+	}) as SessionCreatorContext['payload'] | null;
+
+	$inspect('payloadData' + payloadData);
+
+	const agents = $derived.by(() => {
+		const raw = payloadData?.agentGraphRequest?.agents;
+		if (!Array.isArray(raw)) return [];
+
+		return raw
+			.filter((a) => a && typeof a.name === 'string' && a.name.trim().length > 0)
+			.map((a) => ({
+				name: a.name.trim()
+			}));
+	});
+	const groups = $derived.by((): string[][] => {
+		const raw = payloadData?.agentGraphRequest?.groups;
+		if (!Array.isArray(raw)) return [];
+
+		return raw
+			.map((g) => {
+				if (Array.isArray(g))
+					return g.filter(
+						(item): item is string => typeof item === 'string' && item.trim().length > 0
+					);
+				if (g && typeof g === 'object')
+					return Object.values(g).filter(
+						(item): item is string => typeof item === 'string' && item.trim().length > 0
+					);
+				return [];
+			})
+			.filter((g) => g.length > 0);
+	});
 
 	type AgentNode = Node<{ label: string }>;
 	type GroupEdge = Edge;
@@ -81,10 +121,15 @@
 
 	const edgesFromGroups = (groupList: string[][]): GroupEdge[] => {
 		const seen = new Set<string>();
-		return groupList.flatMap((group, groupIndex) =>
-			group
+		return groupList.flatMap((group, groupIndex) => {
+			const members = Array.isArray(group)
+				? group
+				: group
+					? (Object.values(group) as string[])
+					: [];
+			return members
 				.flatMap((a, i) =>
-					group.slice(i + 1).map((b) => {
+					members.slice(i + 1).map((b) => {
 						const key = [a, b].sort().join('|');
 						if (seen.has(key)) return null;
 						seen.add(key);
@@ -97,28 +142,42 @@
 						} satisfies GroupEdge;
 					})
 				)
-				.filter(notNull)
-		);
+				.filter(notNull);
+		});
 	};
 
-	let data: GraphData = $derived.by(() => ({
-		nodes: agents.map((agent, index) => ({
-			id: agent.name,
-			position: { x: !viewOnly ? 0 : 0 + index * 100, y: !viewOnly ? 0 : 0 + index * 20 },
-			data: { label: agent.name, viewOnly: viewOnly, selectedAgent: selectedAgent, index: index },
+	let data: GraphData = $derived.by(() => {
+		const nodes: AgentNode[] = agents.map((agent, index) => ({
+			id: agent.name, // now guaranteed safe
+			position: {
+				x: viewOnly ? index * 120 : 0,
+				y: viewOnly ? index * 60 : 0
+			},
+			data: {
+				label: agent.name,
+				viewOnly,
+				selectedAgent,
+				index
+			},
 			type: 'circleNode',
 			selectable: false,
 			selected: false,
 			draggable: !viewOnly
-		})),
-		edges: edgesFromGroups(groups)
-	}));
+		}));
+
+		const edges = edgesFromGroups(groups);
+
+		return { nodes, edges };
+	});
 
 	let nodes = $state.raw<Node[]>([]);
 	let edges = $state.raw<Edge[]>([]);
 
+	const safeNodes = (nodes: Node[]) =>
+		nodes.filter((n) => typeof n.id === 'string' && n.id.trim().length > 0);
+
 	$effect(() => {
-		nodes = structuredClone(data.nodes);
+		nodes = structuredClone(safeNodes(data.nodes));
 		edges = structuredClone(data.edges);
 	});
 
@@ -130,6 +189,8 @@
 	const { fitView } = useSvelteFlow();
 
 	onMount(() => {
+		setCenter(30, 30, { zoom: 2 });
+
 		simulation = d3Force
 			.forceSimulation()
 			.force('charge', d3Force.forceManyBody().strength(-800))
@@ -216,12 +277,14 @@
 	}
 
 	$effect(() => {
-		if (!initialized && nodes.length > 0 && !viewOnly) {
-			initialized = true;
-			initializeSimulation();
-			running = true;
-			requestAnimationFrame(tick);
-		}
+		if (viewOnly) return;
+		if (initialized) return;
+		if (nodes.length === 0) return;
+
+		initialized = true;
+		initializeSimulation();
+		running = true;
+		requestAnimationFrame(tick);
 	});
 
 	$effect(() => {
@@ -281,91 +344,148 @@
 	let contextPos = $state({ x: 0, y: 0 });
 	let openPaneContext = $state(false);
 	let customAnchor = $state<HTMLElement>(null!);
+
+	const { screenToFlowPosition } = useSvelteFlow();
+
+	const agentData = useDnD();
+
+	const onDragOver = (event: DragEvent) => {
+		event.preventDefault();
+
+		if (event.dataTransfer) {
+			event.dataTransfer.dropEffect = 'move';
+		}
+	};
+
+	const onDrop = (event: DragEvent) => {
+		event.preventDefault();
+
+		const agent = agentData.agent;
+		if (!agent) return;
+
+		let parsed: SessionCreatorContext['payload'] | null;
+		try {
+			parsed = JSON.parse(rawPayload);
+		} catch {
+			return;
+		}
+		if (!parsed) return;
+
+		parsed.agentGraphRequest ??= { agents: [], groups: [], customTools: {} };
+		parsed.agentGraphRequest.agents ??= [];
+
+		parsed.agentGraphRequest.agents.push({
+			id: {
+				name: agent.name,
+				version: '1.0.0',
+				registrySourceId: { type: 'marketplace' }
+			},
+			name: agent.name,
+			description: agent.description ?? '',
+			provider: { type: 'local', runtime: 'prototype' },
+			blocking: false,
+			customToolAccess: [],
+			plugins: [],
+			budgetSettings: {
+				budget: 0,
+				exhaustionBehavior: { type: 'consume_session' }
+			},
+			x402Budgets: [],
+			options: {}
+		});
+
+		rawPayload = JSON.stringify(parsed, null, 2); // write straight back to the bound prop
+	};
 </script>
 
-<SvelteFlow
-	bind:nodes
-	bind:edges
-	{nodeTypes}
-	class={cn('[&_.svelte-flow__edge-wrapper]:z-10!', className)}
-	fitView
-	onpanecontextmenu={handleContextMenu}
-	onnodedragstart={handleNodeDragStart}
-	onnodedrag={handleNodeDrag}
-	edgesFocusable={false}
-	panOnDrag={[1]}
-	onnodedragstop={handleNodeDragStop}
-	defaultEdgeOptions={{ selectable: false, focusable: false }}
-	onnodeclick={(e) => {
-		const node = e.node;
-		const index = agents.findIndex((a) => a.name === node.id);
-		if (index !== -1) {
-			selectedAgent = index;
-			onSelect?.(index);
-		}
-	}}
-	autoPanOnNodeDrag={false}
-	selectNodesOnDrag={false}
-	onedgeclick={() => {
-		selectedAgent = null;
-	}}
-	connectionMode={'loose' as ConnectionMode}
-	colorMode={mode.current}
-	proOptions={{
-		hideAttribution: true
-	}}
->
-	{#if controls}
-		<Panel position="top-right" class="flex gap-4">
-			<Tooltip.Root>
-				<Tooltip.Trigger
-					onclick={() => fitView()}
-					class={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}
-					><IconSelection /></Tooltip.Trigger
-				>
-				<Tooltip.Content>
-					<p>Fit all in view</p>
-				</Tooltip.Content>
-			</Tooltip.Root>
-			<Tooltip.Root>
-				<Tooltip.Trigger
-					onclick={toggleLayout}
-					class={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}
-					>{#if running}<IconPause />{:else}<IconPlay />{/if}</Tooltip.Trigger
-				>
-				<Tooltip.Content>
-					<p>{running ? 'Stop simulating' : 'Start simulating'}</p>
-				</Tooltip.Content>
-			</Tooltip.Root>
-		</Panel>
-	{/if}
-	<div
-		style="position: fixed; left: {contextPos.x}px !important; top: {contextPos.y}px !important;"
-		bind:this={customAnchor}
-	></div>
-	{#if enableContext}
-		<Popover.Root bind:open={openPaneContext}>
-			<Popover.Content align="start" sideOffset={1} {customAnchor} class="p-0">
-				<Command.Root>
-					<Command.Input placeholder="Type a command or search..." />
-					<Command.List>
-						<Command.Empty>No results found.</Command.Empty>
-						<Command.Group heading="Suggestions">
-							<Command.Item>Add agent</Command.Item>
-							<Command.Item>Select agent</Command.Item>
-							<Command.Item>Remove agent</Command.Item>
-						</Command.Group>
-						<Command.Separator />
-						<Command.Group heading="Settings">
-							<Command.Item>Profile</Command.Item>
-							<Command.Item>Billing</Command.Item>
-							<Command.Item>Settings</Command.Item>
-						</Command.Group>
-					</Command.List>
-				</Command.Root>
-			</Popover.Content>
-		</Popover.Root>
-	{/if}
+{#if mode.current}
+	<SvelteFlow
+		bind:nodes
+		bind:edges
+		{nodeTypes}
+		class={cn('[&_.svelte-flow__edge-wrapper]:z-10!', className)}
+		ondragover={onDragOver}
+		ondrop={onDrop}
+		onpanecontextmenu={handleContextMenu}
+		onnodedragstart={handleNodeDragStart}
+		onnodedrag={handleNodeDrag}
+		edgesFocusable={false}
+		panOnDrag={[1]}
+		onnodedragstop={handleNodeDragStop}
+		defaultEdgeOptions={{ selectable: false, focusable: false }}
+		onnodeclick={(e) => {
+			const node = e.node;
+			if (agents) {
+				const index = agents.findIndex((a) => a.name === node.id);
+				if (index !== -1) {
+					selectedAgent = index;
+					onSelect?.(index);
+				}
+			}
+		}}
+		autoPanOnNodeDrag={false}
+		selectNodesOnDrag={false}
+		onedgeclick={() => {
+			selectedAgent = null;
+		}}
+		connectionMode={'loose' as ConnectionMode}
+		colorMode={mode.current}
+		proOptions={{
+			hideAttribution: true
+		}}
+	>
+		{#if controls}
+			<Panel position="top-right" class="flex gap-4">
+				<Tooltip.Root>
+					<Tooltip.Trigger
+						onclick={() => fitView()}
+						class={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}
+						><IconSelection /></Tooltip.Trigger
+					>
+					<Tooltip.Content>
+						<p>Fit all in view</p>
+					</Tooltip.Content>
+				</Tooltip.Root>
+				<Tooltip.Root>
+					<Tooltip.Trigger
+						onclick={toggleLayout}
+						class={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}
+						>{#if running}<IconPause />{:else}<IconPlay />{/if}</Tooltip.Trigger
+					>
+					<Tooltip.Content>
+						<p>{running ? 'Stop simulating' : 'Start simulating'}</p>
+					</Tooltip.Content>
+				</Tooltip.Root>
+			</Panel>
+		{/if}
+		<div
+			style="position: fixed; left: {contextPos.x}px !important; top: {contextPos.y}px !important;"
+			bind:this={customAnchor}
+		></div>
+		{#if enableContext}
+			<Popover.Root bind:open={openPaneContext}>
+				<Popover.Content align="start" sideOffset={1} {customAnchor} class="p-0">
+					<Command.Root>
+						<Command.Input placeholder="Type a command or search..." />
+						<Command.List>
+							<Command.Empty>No results found.</Command.Empty>
+							<Command.Group heading="Suggestions">
+								<Command.Item>Add agent</Command.Item>
+								<Command.Item>Select agent</Command.Item>
+								<Command.Item>Remove agent</Command.Item>
+							</Command.Group>
+							<Command.Separator />
+							<Command.Group heading="Settings">
+								<Command.Item>Profile</Command.Item>
+								<Command.Item>Billing</Command.Item>
+								<Command.Item>Settings</Command.Item>
+							</Command.Group>
+						</Command.List>
+					</Command.Root>
+				</Popover.Content>
+			</Popover.Root>
+		{/if}
 
-	<Background {id} />
-</SvelteFlow>
+		<Background {id} />
+	</SvelteFlow>
+{/if}

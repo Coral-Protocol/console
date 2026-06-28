@@ -11,7 +11,7 @@ import type { SuperForm, SuperFormData, SuperFormErrors } from 'sveltekit-superf
 export type AgentSource = 'marketplace' | 'linked' | 'local';
 
 export type SessionCreatorContext = {
-	payload: CreateSessionRequest | null;
+	payload: CreateSessionRequest;
 	importSession: (options: { success?: string; from: string }) => boolean;
 	addAgent: (name: string, source: AgentSource, version: string) => Promise<void>;
 

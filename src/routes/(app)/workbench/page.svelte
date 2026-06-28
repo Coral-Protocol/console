@@ -280,8 +280,7 @@
 		detailedAgent: null,
 
 		importSession: ({
-			success = 'Session JSON updated successfully',
-			from
+			success = 'Session JSON updated successfully', from
 		}: {
 			success?: string;
 			from: string;
@@ -341,7 +340,7 @@
 				loadingAgent = false;
 			}
 		}
-	}) as SessionCreatorContext;
+	}) as unknown as SessionCreatorContext;
 
 	setSessionContext(sessCtx);
 

@@ -598,17 +598,8 @@
 	{/await}
 {:else}
 	<section
-		class="text-muted-foreground m-auto flex w-3/4 grow flex-col items-center justify-center gap-6 text-center"
+		class="text-muted-foreground m-auto flex w-full h-full grow flex-col items-center justify-center gap-6 text-center"
 	>
 		<AgentPanelIcon class="w-4/5 py-8 " />
-
-		<Alert.Root class="text-left">
-			<IconInfo />
-			<Alert.Title>Tip</Alert.Title>
-			<Alert.Description
-				>New here? Agents are the building blocks of sessions, they communicate, execute tools, and
-				output results, try loading a template for a prebuilt configuration.</Alert.Description
-			>
-		</Alert.Root>
 	</section>
 {/if}

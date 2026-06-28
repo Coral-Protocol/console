@@ -252,11 +252,11 @@
 <Welcome bind:open={welcomeOpen} bind:tourToggle={tourOpen} />
 
 <div
-	class="fixed top-3.5 right-3 z-1 flex items-center justify-end gap-1"
+	class="fixed top-3.5 right-3.5 z-1 flex items-center justify-end gap-1"
 	use:tourTarget={'quick-switch'}
 >
 	<Button
-		class="flex w-fit max-w-64 cursor-text items-center justify-between gap-6 "
+		class="flex h-6 w-fit max-w-64 cursor-text items-center justify-between gap-6 "
 		variant="ghost"
 		onclick={() => (openQuickswitch = true)}
 	>
@@ -272,13 +272,13 @@
 
 	<Separator orientation="vertical" class="!h-6" />
 
-	<Button size="icon" variant="ghost" onclick={() => (welcomeOpen = true)}>
+	<Button class="size-6" variant="ghost" onclick={() => (welcomeOpen = true)}>
 		<IconQuestion class="size-4" />
 	</Button>
 
 	<Separator orientation="vertical" class="!h-6" />
 
-	<Button onclick={toggleMode} variant="ghost" size="icon">
+	<Button onclick={toggleMode} variant="ghost" class="size-6">
 		<SunIcon
 			class="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90"
 		/>
@@ -291,7 +291,9 @@
 	<Separator orientation="vertical" class="!h-6" />
 
 	<Popover.Root>
-		<Popover.Trigger class={buttonVariants({ variant: 'ghost', size: 'icon' })}>
+		<Popover.Trigger
+			class="{buttonVariants({ variant: 'ghost', size: 'icon' })} aspect-square size-6"
+		>
 			<IconGearRegular />
 		</Popover.Trigger>
 		<Popover.Content align="end" sideOffset={5} alignOffset={-4}>

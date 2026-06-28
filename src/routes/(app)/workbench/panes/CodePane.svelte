@@ -18,19 +18,9 @@
 	import { cn } from '$lib/utils';
 	import { CopyButton } from '@coral-os/component-library';
 	import { fade } from 'svelte/transition';
-	import { getSessionContext } from '$lib/sessionCreatorContext';
+	import { getSessionContext, type SessionCreatorContext } from '$lib/sessionCreatorContext';
 
-	let ctx: ReturnType<typeof getSessionContext> | undefined;
-
-	let { customPayload }: { customPayload?: string } = $props();
-
-	let jsonDirty = $state(false);
-
-	if (!customPayload) {
-		ctx = getSessionContext();
-	}
-
-	let payloadJson = $derived(ctx?.payload ? JSON.stringify(ctx.payload, null, 4) : '');
+	let { data = $bindable() }: { data?: string } = $props();
 
 	let theme = $derived.by(() => {
 		switch (mode.current) {
@@ -44,7 +34,7 @@
 	});
 </script>
 
-{#if !customPayload}
+<!-- {#if !customPayload}
 	<section class="absolute top-5 right-5 z-10 flex flex-col gap-2">
 		<CopyButton value={payloadJson} />
 		{#if jsonDirty}
@@ -65,31 +55,15 @@
 			</span>
 		{/if}
 	</section>
-{/if}
+{/if} -->
 <ScrollArea class="size-full">
-	{#if !customPayload}
-		<CodeMirror
-			bind:value={payloadJson}
-			onchange={() => {
-				jsonDirty = true;
-			}}
-			lang={json()}
-			tabSize={4}
-			{theme}
-			lineWrapping={true}
-			class="size-full [&_.cm-content]:p-0! [&>*]:size-full "
-		/>
-	{:else}
-		<CodeMirror
-			bind:value={customPayload}
-			onchange={() => {
-				jsonDirty = true;
-			}}
-			lang={json()}
-			tabSize={4}
-			{theme}
-			lineWrapping={true}
-			class="size-full [&_.cm-content]:p-0! [&>*]:size-full "
-		/>
-	{/if}
+	<CodeMirror
+		bind:value={data}
+		lang={json()}
+		tabSize={4}
+		syntaxHighlighting
+		{theme}
+		lineWrapping={true}
+		class="size-full [&_.cm-content]:p-0! [&>*]:size-full "
+	/>
 </ScrollArea>
