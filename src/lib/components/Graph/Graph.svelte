@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount, onDestroy, untrack } from 'svelte';
 	import {
 		SvelteFlow,
 		Background,
@@ -7,7 +7,8 @@
 		useSvelteFlow,
 		type Node,
 		type Edge,
-		ConnectionMode
+		ConnectionMode,
+		useOnSelectionChange
 	} from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
 
@@ -31,10 +32,15 @@
 	import IconPause from 'phosphor-icons-svelte/IconPauseFill.svelte';
 	import * as Command from '@coral-os/component-library/ui/command/index.js';
 	import * as Popover from '@coral-os/component-library/ui/popover/index.js';
-	import type { SessionCreatorContext } from '$lib/sessionCreatorContext';
+	import { getSessionContext, type SessionCreatorContext } from '$lib/sessionCreatorContext';
 	import { useDnD } from '$lib/components/DndProvider.svelte';
 	const { setCenter } = useSvelteFlow();
+	import { activeFile } from '$lib/activeFile.svelte';
+	let sessCtx = getSessionContext();
 
+	useOnSelectionChange(({ nodes, edges }) => {
+		sessCtx.selectedAgent = nodes[0]?.id;
+	});
 	const nodeTypes = {
 		circleNode: GraphCircleNode
 	};
@@ -50,18 +56,14 @@
 
 	let {
 		class: className,
-		selectedAgent = $bindable(undefined),
 		onSelect,
-		rawPayload = $bindable(),
 		id,
 		controls = false,
 		viewOnly = false,
-		fitDefault = false,
+		fitDefault = true,
 		enableContext = false
 	}: {
 		class?: string;
-		rawPayload: string;
-		selectedAgent?: number | null;
 		onSelect?: (idx: number) => void;
 		id?: string;
 		controls?: boolean;
@@ -70,46 +72,13 @@
 		enableContext?: boolean;
 	} = $props();
 
-	const payloadData = $derived.by(() => {
-		try {
-			return JSON.parse(rawPayload);
-		} catch {
-			return null;
-		}
-	}) as SessionCreatorContext['payload'] | null;
+	import { type Agent, type Group } from '$lib/fileStorage';
+	import { randomAdjective, randomAnimal } from '$lib/words';
 
-	$inspect('payloadData' + payloadData);
+	const agents = $derived(activeFile.current?.agents ?? []);
+	const groups = $derived(activeFile.current?.groups ?? []);
 
-	const agents = $derived.by(() => {
-		const raw = payloadData?.agentGraphRequest?.agents;
-		if (!Array.isArray(raw)) return [];
-
-		return raw
-			.filter((a) => a && typeof a.name === 'string' && a.name.trim().length > 0)
-			.map((a) => ({
-				name: a.name.trim()
-			}));
-	});
-	const groups = $derived.by((): string[][] => {
-		const raw = payloadData?.agentGraphRequest?.groups;
-		if (!Array.isArray(raw)) return [];
-
-		return raw
-			.map((g) => {
-				if (Array.isArray(g))
-					return g.filter(
-						(item): item is string => typeof item === 'string' && item.trim().length > 0
-					);
-				if (g && typeof g === 'object')
-					return Object.values(g).filter(
-						(item): item is string => typeof item === 'string' && item.trim().length > 0
-					);
-				return [];
-			})
-			.filter((g) => g.length > 0);
-	});
-
-	type AgentNode = Node<{ label: string }>;
+	type AgentNode = Node<{ label: string; type: string; index: number }>;
 	type GroupEdge = Edge;
 
 	type GraphData = {
@@ -119,14 +88,10 @@
 
 	const notNull = <T,>(x: T | null): x is T => x !== null;
 
-	const edgesFromGroups = (groupList: string[][]): GroupEdge[] => {
+	const edgesFromGroups = (groupList: Group[]): GroupEdge[] => {
 		const seen = new Set<string>();
 		return groupList.flatMap((group, groupIndex) => {
-			const members = Array.isArray(group)
-				? group
-				: group
-					? (Object.values(group) as string[])
-					: [];
+			const members = group.agentClientIds;
 			return members
 				.flatMap((a, i) =>
 					members.slice(i + 1).map((b) => {
@@ -148,21 +113,20 @@
 
 	let data: GraphData = $derived.by(() => {
 		const nodes: AgentNode[] = agents.map((agent, index) => ({
-			id: agent.name, // now guaranteed safe
+			id: agent.clientId,
 			position: {
-				x: viewOnly ? index * 120 : 0,
-				y: viewOnly ? index * 60 : 0
+				x: viewOnly ? index * 120 : Math.cos(index * 2.4) * (40 + index * 6),
+				y: viewOnly ? index * 60 : Math.sin(index * 2.4) * (40 + index * 6)
 			},
 			data: {
 				label: agent.name,
+				type: agent.id.name,
 				viewOnly,
-				selectedAgent,
 				index
 			},
 			type: 'circleNode',
-			selectable: false,
-			selected: false,
-			draggable: !viewOnly
+			draggable: !viewOnly,
+			selected: agent.clientId === sessCtx.selectedAgent
 		}));
 
 		const edges = edgesFromGroups(groups);
@@ -177,7 +141,13 @@
 		nodes.filter((n) => typeof n.id === 'string' && n.id.trim().length > 0);
 
 	$effect(() => {
-		nodes = structuredClone(safeNodes(data.nodes));
+		const fresh = structuredClone(safeNodes(data.nodes));
+
+		const prevNodes = untrack(() => nodes);
+		nodes = fresh.map((n) => {
+			const existing = prevNodes.find((prev) => prev.id === n.id);
+			return existing ? { ...n, position: existing.position } : n;
+		});
 		edges = structuredClone(data.edges);
 	});
 
@@ -188,25 +158,28 @@
 
 	const { fitView } = useSvelteFlow();
 
-	onMount(() => {
-		setCenter(30, 30, { zoom: 2 });
+	const ALPHA_SETTLE_THRESHOLD = 0.001;
+	let cooldownFrame: number | null = null;
 
+	onMount(() => {
 		simulation = d3Force
 			.forceSimulation()
 			.force('charge', d3Force.forceManyBody().strength(-800))
 			.force('x', d3Force.forceX().x(0).strength(0.1))
 			.force('y', d3Force.forceY().y(0).strength(0.1))
-			.force('collide', d3Force.forceCollide().radius(32))
-			.alphaTarget(0.05)
+			.force('collide', d3Force.forceCollide().radius(82 + 12))
+			.alphaTarget(0)
 			.stop();
 
 		return () => {
 			if (simulation) simulation.stop();
+			if (cooldownFrame !== null) cancelAnimationFrame(cooldownFrame);
 		};
 	});
 
 	onDestroy(() => {
 		if (simulation) simulation.stop();
+		if (cooldownFrame !== null) cancelAnimationFrame(cooldownFrame);
 	});
 
 	function initializeSimulation() {
@@ -257,21 +230,22 @@
 
 		simulation.tick();
 
-		nodes = simNodes.map((simNode) => {
-			const originalNode = nodes.find((n) => n.id === simNode.id) ?? {};
-			return {
-				...originalNode,
-				position: {
-					x: simNode.fx ?? simNode.x ?? 0,
-					y: simNode.fy ?? simNode.y ?? 0
-				}
-			};
-		}) as Node[];
+		nodes = simNodes
+			.map((simNode) => {
+				const originalNode = nodes.find((n) => n.id === simNode.id);
+
+				if (!originalNode) return null;
+				return {
+					...originalNode,
+					position: {
+						x: simNode.fx ?? simNode.x ?? 0,
+						y: simNode.fy ?? simNode.y ?? 0
+					}
+				};
+			})
+			.filter((n): n is Node => n !== null);
 
 		window.requestAnimationFrame(() => {
-			if (fitDefault) {
-				fitView();
-			}
 			if (running) tick();
 		});
 	}
@@ -284,34 +258,66 @@
 		initialized = true;
 		initializeSimulation();
 		running = true;
+
+		simulation.alpha(1).restart();
 		requestAnimationFrame(tick);
 	});
 
 	$effect(() => {
 		if (!initialized || !simulation) return;
 
-		const simNodes = simulation.nodes();
-		const existing = new Set(simNodes.map((n) => (n as { id: string }).id));
+		const currentIds = new Set(nodes.map((n) => n.id));
+		const simNodes = simulation.nodes() as SimNode[];
+		const existing = new Set(simNodes.map((n) => n.id));
 		const added = nodes.filter((n) => !existing.has(n.id));
+		const survivors = simNodes.filter((n) => currentIds.has(n.id));
+		const removedCount = simNodes.length - survivors.length;
 
-		if (added.length === 0) return;
+		if (added.length === 0 && removedCount === 0) return;
 
 		for (const n of added) {
-			simNodes.push({
+			survivors.push({
 				...n,
 				x: n.position.x,
 				y: n.position.y
-			} as d3Force.SimulationNodeDatum);
+			} as SimNode);
 		}
 
-		simulation.nodes(simNodes);
-		simulation.alphaTarget(0.15).restart();
+		simulation.nodes(survivors);
+		simulation.force(
+			'link',
+			d3Force
+				.forceLink(edges.map((e) => ({ ...e })))
+				.id((d) => (d as { id: string }).id)
+				.strength(0.05)
+				.distance(100)
+		);
+
+		const isMostlyNewGraph = nodes.length > 0 && added.length / nodes.length > 0.5;
+
+		if (isMostlyNewGraph) {
+			simulation.alpha(1).restart();
+		} else {
+			simulation.alphaTarget(0.15).restart();
+			if (cooldownFrame !== null) cancelAnimationFrame(cooldownFrame);
+			cooldownFrame = window.requestAnimationFrame(function cooldown() {
+				simulation.alphaTarget(0);
+				cooldownFrame = null;
+			});
+		}
+
+		if (!running) {
+			running = true;
+			window.requestAnimationFrame(tick);
+		}
 	});
 
 	function toggleLayout() {
 		if (!running) {
 			initializeSimulation();
 			running = true;
+
+			simulation.alpha(Math.max(simulation.alpha(), 0.5)).restart();
 			window.requestAnimationFrame(tick);
 		} else {
 			running = false;
@@ -320,6 +326,11 @@
 
 	function handleNodeDragStart({ targetNode }: { targetNode: Node | null }) {
 		if (targetNode) draggingNode = { id: targetNode.id, position: targetNode.position };
+		if (!running) {
+			running = true;
+			window.requestAnimationFrame(tick);
+		}
+		if (simulation) simulation.alphaTarget(0.1).restart();
 	}
 
 	function handleNodeDrag({ targetNode }: { targetNode: Node | null }) {
@@ -345,8 +356,6 @@
 	let openPaneContext = $state(false);
 	let customAnchor = $state<HTMLElement>(null!);
 
-	const { screenToFlowPosition } = useSvelteFlow();
-
 	const agentData = useDnD();
 
 	const onDragOver = (event: DragEvent) => {
@@ -359,42 +368,21 @@
 
 	const onDrop = (event: DragEvent) => {
 		event.preventDefault();
-
 		const agent = agentData.agent;
 		if (!agent) return;
 
-		let parsed: SessionCreatorContext['payload'] | null;
-		try {
-			parsed = JSON.parse(rawPayload);
-		} catch {
-			return;
-		}
-		if (!parsed) return;
-
-		parsed.agentGraphRequest ??= { agents: [], groups: [], customTools: {} };
-		parsed.agentGraphRequest.agents ??= [];
-
-		parsed.agentGraphRequest.agents.push({
-			id: {
-				name: agent.name,
-				version: '1.0.0',
-				registrySourceId: { type: 'marketplace' }
-			},
-			name: agent.name,
+		activeFile.addAgent({
+			id: { name: agent.name, version: agent.version, registrySourceId: { type: agent.source } },
+			name: `${randomAdjective()} ${randomAnimal()}`,
 			description: agent.description ?? '',
 			provider: { type: 'local', runtime: 'prototype' },
 			blocking: false,
 			customToolAccess: [],
 			plugins: [],
-			budgetSettings: {
-				budget: 0,
-				exhaustionBehavior: { type: 'consume_session' }
-			},
+			budgetSettings: { budget: 0, exhaustionBehavior: { type: 'consume_session' } },
 			x402Budgets: [],
 			options: {}
 		});
-
-		rawPayload = JSON.stringify(parsed, null, 2); // write straight back to the bound prop
 	};
 </script>
 
@@ -405,28 +393,21 @@
 		{nodeTypes}
 		class={cn('[&_.svelte-flow__edge-wrapper]:z-10!', className)}
 		ondragover={onDragOver}
+		fitView
 		ondrop={onDrop}
 		onpanecontextmenu={handleContextMenu}
 		onnodedragstart={handleNodeDragStart}
 		onnodedrag={handleNodeDrag}
+		onnodeclick={(nodes) => {
+			sessCtx.selectedAgent = nodes.node.id;
+		}}
 		edgesFocusable={false}
 		panOnDrag={[1]}
 		onnodedragstop={handleNodeDragStop}
 		defaultEdgeOptions={{ selectable: false, focusable: false }}
-		onnodeclick={(e) => {
-			const node = e.node;
-			if (agents) {
-				const index = agents.findIndex((a) => a.name === node.id);
-				if (index !== -1) {
-					selectedAgent = index;
-					onSelect?.(index);
-				}
-			}
-		}}
 		autoPanOnNodeDrag={false}
-		selectNodesOnDrag={false}
 		onedgeclick={() => {
-			selectedAgent = null;
+			sessCtx.selectedAgent = null;
 		}}
 		connectionMode={'loose' as ConnectionMode}
 		colorMode={mode.current}
@@ -466,19 +447,13 @@
 			<Popover.Root bind:open={openPaneContext}>
 				<Popover.Content align="start" sideOffset={1} {customAnchor} class="p-0">
 					<Command.Root>
-						<Command.Input placeholder="Type a command or search..." />
+						<Command.Input placeholder="Search available agents" />
 						<Command.List>
 							<Command.Empty>No results found.</Command.Empty>
-							<Command.Group heading="Suggestions">
-								<Command.Item>Add agent</Command.Item>
-								<Command.Item>Select agent</Command.Item>
-								<Command.Item>Remove agent</Command.Item>
-							</Command.Group>
-							<Command.Separator />
-							<Command.Group heading="Settings">
+							<Command.Group heading="Available agents">
+								<!-- {#each array as item} -->
 								<Command.Item>Profile</Command.Item>
-								<Command.Item>Billing</Command.Item>
-								<Command.Item>Settings</Command.Item>
+								<!-- {/each} -->
 							</Command.Group>
 						</Command.List>
 					</Command.Root>
