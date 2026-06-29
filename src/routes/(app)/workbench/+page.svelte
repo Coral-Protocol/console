@@ -445,9 +445,9 @@
 								</Tabs.Root>
 							</Resizable.Pane>
 							<Resizable.Handle />
-							<Resizable.Pane defaultSize={25} minSize={10}>
+							<Resizable.Pane defaultSize={35} minSize={10}>
 								<Resizable.PaneGroup direction="vertical">
-									<Resizable.Pane defaultSize={25} minSize={10}>
+									<Resizable.Pane defaultSize={35} minSize={10}>
 										<Tabs.Root
 											value={sessCtx.selectedAgent ? 'Inspector' : 'Agents'}
 											class="h-full grow"
@@ -456,6 +456,8 @@
 												<Tabs.Trigger value="Agents">Agents</Tabs.Trigger>
 												<Tabs.Trigger value="Inspector">Inspector</Tabs.Trigger>
 												<Tabs.Trigger value="Session">Session</Tabs.Trigger>
+												<Tabs.Trigger value="Tools">Tools</Tabs.Trigger>
+												<Tabs.Trigger value="Groups">Groups</Tabs.Trigger>
 											</Tabs.List>
 											<Tabs.Content
 												value="Agents"
@@ -477,23 +479,21 @@
 												<Tabs.Root value="Settings">
 													<Tabs.List variant="line" class="*:after:bg-brand-primary">
 														<Tabs.Trigger value="Settings">Settings</Tabs.Trigger>
-														<Tabs.Trigger value="Tools">Tools</Tabs.Trigger>
-														<Tabs.Trigger value="Groups">Groups</Tabs.Trigger>
 													</Tabs.List>
 													<Tabs.Content value="Settings" class="p-2">
-															<AgentPane />
-													</Tabs.Content>
-													<Tabs.Content value="Tools" class="p-2">
-														<ToolsPane />
-													</Tabs.Content>
-													<Tabs.Content value="Groups" class="p-2">
-														<GroupsPane />
+														<AgentPane />
 													</Tabs.Content>
 												</Tabs.Root>
 												<!-- {/key} -->
 											</Tabs.Content>
 											<Tabs.Content value="Session" class="p-2">
 												<SessionPane />
+											</Tabs.Content>
+											<Tabs.Content value="Tools" class="p-2">
+												<ToolsPane />
+											</Tabs.Content>
+											<Tabs.Content value="Groups" class="p-2">
+												<GroupsPane />
 											</Tabs.Content>
 										</Tabs.Root>
 									</Resizable.Pane>

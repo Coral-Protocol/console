@@ -15,6 +15,7 @@
 	import { buttonVariants } from '@coral-os/component-library/ui/button/index.js';
 	import IconXRegular from 'phosphor-icons-svelte/IconXRegular.svelte';
 	import IconTrash from 'phosphor-icons-svelte/IconTrashRegular.svelte';
+	import { activeFile } from '$lib/activeFile.svelte';
 
 	let ctx = getSessionContext();
 	let formData = $derived(ctx.formData);
@@ -38,7 +39,7 @@
 		<Button
 			class="w-fit gap-1 px-3"
 			onclick={() => {
-				$formData.groups = [...$formData.groups, []];
+				activeFile.addGroup({ name: '', agentClientIds: [] });
 			}}>Create a new group</Button
 		>
 		<!-- <Button
@@ -51,35 +52,39 @@
 	</section>
 </header>
 <ul class=" flex flex-col">
-	{#if Object.keys($formData.groups).length == 0}
+	{#if activeFile?.current?.groups.length == 0}
 		<p class="text-muted-foreground flex w-full place-items-center justify-center pt-8">
 			No groups to display.
 		</p>
 	{/if}
 	<ol class="flex flex-col gap-1 p-2">
-		{#each $formData.groups as group, i}
+		{#each activeFile?.current?.groups as group, i}
 			<li
-				class="flex h-full w-full grid-cols-2 items-center gap-2 border {group.length == 0
+				class="flex w-full items-stretch gap-2 border p-2 {group.agentClientIds.length == 0
 					? 'border-dashed'
 					: ''} p-2"
 			>
 				<div
 					style="background-color: oklch(0.7 0.1 {53 * i})"
-					class="h-full w-2 transition-all"
+					class="w-2 self-stretch transition-all"
 				></div>
 				<section class="flex w-full">
 					<ol class="flex w-full grow flex-wrap gap-2">
-						{#each group as agentName, agentI}
+						{#each group.agentClientIds as agentClientId, agentI}
+							{@const agent = activeFile.current?.agents.find(
+								(agent) => agent.clientId === agentClientId
+							)}
 							<li>
 								<Badge variant="outline" class="h-fit justify-start pr-0.5"
-									>{agentName}
+									>{agent?.name}
 									<Button
 										variant="ghost"
 										size="xs"
 										class="h-5 w-5"
 										onclick={() => {
-											$formData.groups[i]?.splice(agentI, 1);
-											$formData.groups = $formData.groups;
+											activeFile.updateGroup(group.clientId, {
+												agentClientIds: group.agentClientIds.filter((id) => id !== agentClientId)
+											});
 										}}
 									>
 										<IconXRegular class="h-2 w-2" />
@@ -99,16 +104,17 @@
 									<Command.Input placeholder="Search agents..." />
 									<Command.List onscroll={handleScroll}>
 										<Command.Group heading="Available agents">
-											{#each new Set($formData.agents.map((agent) => agent.name)) as agent}
-												{#if !$formData.groups[i]?.includes(agent)}
+											{#each activeFile.current?.agents as agent}
+												{#if !group.agentClientIds.includes(agent.clientId)}
 													<Command.Item
-														value={agent}
+														value={agent.name}
 														onSelect={() => {
-															$formData.groups[i]?.push(agent);
-															$formData.groups = $formData.groups;
+															activeFile.updateGroup(group.clientId, {
+																agentClientIds: [...group.agentClientIds, agent.clientId]
+															});
 														}}
 													>
-														{agent}</Command.Item
+														{agent.name}</Command.Item
 													>
 												{/if}
 											{/each}
@@ -121,8 +127,7 @@
 						<Button
 							variant="outline"
 							onclick={() => {
-								$formData.groups.splice(i, 1);
-								$formData.groups = $formData.groups;
+								activeFile.removeGroup(group.clientId);
 							}}><IconTrash /></Button
 						>
 					</section>

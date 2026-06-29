@@ -69,6 +69,14 @@ class ActiveFileStore {
 		this.#commit({ ...this.current, groups: [...this.current.groups, newGroup] });
 	}
 
+	updateGroup(clientId: string, patch: Partial<Omit<Group, 'clientId'>>) {
+		if (!this.current) return;
+		this.#commit({
+			...this.current,
+			groups: this.current.groups.map((g) => (g.clientId === clientId ? { ...g, ...patch } : g))
+		});
+	}
+
 	removeGroup(clientId: string) {
 		if (!this.current) return;
 		this.#commit({
