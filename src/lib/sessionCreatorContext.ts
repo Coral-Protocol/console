@@ -15,7 +15,7 @@ export type SessionCreatorContext = {
 	importSession: (options: { success?: string; from: string }) => boolean;
 	addAgent: (name: string, source: AgentSource, version: string) => Promise<void>;
 
-	selectedAgent: number | null;
+	selectedAgent: string | undefined | null;
 	detailedAgent: Awaited<ReturnType<CoralServer['lookupAgent']>> | null;
 	selectedAgentError: string | null;
 

@@ -8,10 +8,10 @@
 
 	type Props = OptionProps<'bool'>;
 
-	let { meta, value, props }: Props = $props();
+	let { meta, value }: Props = $props();
 </script>
 
-<ButtonGroup.Root {...props} class="m-0 justify-start">
+<ButtonGroup.Root class="m-0 justify-start">
 	<Button
 		class={cn(($value ?? meta.default) === true && 'bg-accent text-accent-foreground')}
 		onclick={() => {

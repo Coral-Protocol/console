@@ -41,512 +41,213 @@
 	import { getSessionContext } from '$lib/sessionCreatorContext';
 	import { cn } from '$lib/utils';
 	import CurrencyInput from '../options/CurrencyInput.svelte';
+	import { activeFile } from '$lib/activeFile.svelte';
+	import type { RuntimeId } from '$lib/sessionSchema/types';
+	import type { Agent } from '$lib/fileStorage';
 
-	let appCtx = appContext.get();
+	let ctx = appContext.get();
 
-	let ctx = getSessionContext();
-	let serverCtx = appContext.get();
-
-	let form = $derived(ctx.form);
-	let formData = $derived(ctx.formData);
+	let sessCtx = getSessionContext();
 
 	let curAgent = $derived(
-		ctx.selectedAgent !== null ? $formData.agents[ctx.selectedAgent] : undefined
+		sessCtx.selectedAgent !== null
+			? activeFile.current?.agents.find((agent) => agent.clientId === sessCtx.selectedAgent)
+			: undefined
 	);
 	let curCatalog = $derived(
-		curAgent && appCtx.server.catalogs[registryIdOf(curAgent.id.registrySourceId)]
+		curAgent && ctx.server.catalogs[registryIdOf(curAgent.id.registrySourceId)]
 	);
 
 	const UNGROUPED = '__ungrouped';
 
 	let curAgentId = $derived(curAgent ? agentIdOf(curAgent.id) : null);
 	let groupedOptions = $derived.by(() => {
-		const metaId = ctx.detailedAgent?.registryAgent?.info?.identifier;
+		const metaId = curAgent?.id;
 		const currentId = curAgentId;
 
 		if (!metaId || !currentId || agentIdOf(metaId) !== currentId) {
 			return {};
 		}
 
-		return Object.entries(ctx.detailedAgent?.registryAgent?.options ?? {}).reduce<
-			Record<string, [string, any][]>
-		>((acc, [name, opt]) => {
-			const group = opt?.display?.group ?? UNGROUPED;
-			(acc[group] ??= []).push([name, opt]);
-			return acc;
-		}, {});
+		return Object.entries(getOptions(currentId) ?? {}).reduce<Record<string, [string, any][]>>(
+			(acc, [name, opt]) => {
+				const group = opt?.display?.group ?? UNGROUPED;
+				(acc[group] ??= []).push([name, opt]);
+				return acc;
+			},
+			{}
+		);
 	});
 
-	// Type-safe helpers for exhaustion behavior
-	function getAgentExhaustionBehavior(agentIdx: number) {
-		return $formData.agents[agentIdx]?.budgetSettings?.exhaustionBehavior;
-	}
+	const getOptions = async (agentId: any) => {
+		try {
+			return await ctx.server.lookupAgent(agentId);
+		} catch (error) {
+			sessCtx.selectedAgentError = error as string;
+			return null;
+		}
+	};
 
-	const agentBehavior = $derived(
-		$formData.agents[ctx.selectedAgent!]?.budgetSettings?.exhaustionBehavior
-	);
+	$inspect(getOptions(curAgent?.id));
+
+	// // Type-safe helpers for exhaustion behavior
+	// function getAgentExhaustionBehavior(agentIdx: number) {
+	// 	return $formData.agents[agentIdx]?.budgetSettings?.exhaustionBehavior;
+	// }
+
+	// const agentBehavior = $derived(
+	// 	$formData.agents[sessCtx.selectedAgent!]?.budgetSettings?.exhaustionBehavior
+	// );
 
 	let mounted = $state(false);
 
 	onMount(() => {
 		setTimeout(() => (mounted = true), 400);
 	});
+
+	async function yoink(event: MouseEvent & { currentTarget: EventTarget & HTMLButtonElement }) {
+		const hmm = await getOptions(curAgent?.id);
+		console.log(hmm);
+	}
 </script>
 
-{#if ctx.selectedAgent !== null && curAgent && curCatalog}
-	{#await ctx.detailedAgent}
+<button onclick={yoink}>aaa</button>
+
+{#if sessCtx.selectedAgent !== null && curAgent}
+	{#await curAgent?.id}
 		<Spinner class="m-auto my-8" />
 	{:then}
+		{@const id = curAgent.id}
+		{@const reg = curCatalog?.agents[id.name]!}
+		{@const provider = curAgent.provider}
+		{@const items = Object.keys(sessCtx.detailedAgent?.registryAgent?.runtimes ?? {})}
+		{@const tools = curAgent.customToolAccess!}
+
 		<header class="grid w-full grid-cols-2 gap-2 px-2">
 			<section class="col-span-1 flex flex-col gap-2">
-				<Form.ElementField
-					{form}
-					name="agents[{ctx.selectedAgent}].name"
-					class="flex w-full flex-col gap-2"
-				>
-					<Form.Control>
-						{#snippet children({ props })}
-							<TooltipLabel tooltip={'Name of the agent in this session'} class="m-0  w-fit"
-								>Name
-							</TooltipLabel>
-							<Input
-								{...props}
-								bind:value={$formData.agents[ctx.selectedAgent!]!.name}
-								disabled={!ctx.detailedAgent}
-							/>
-						{/snippet}
-					</Form.Control>
-				</Form.ElementField>
-				<Form.ElementField
-					{form}
-					name="agents[{ctx.selectedAgent}].description"
-					class="flex w-full grow flex-col gap-2"
-				>
-					<Form.Control>
-						{#snippet children({ props })}
-							<TooltipLabel
-								tooltip={'Optional agent description shared with other agents'}
-								class="m-0  w-fit"
-								>Description
-							</TooltipLabel>
-							<Textarea
-								disabled={!ctx.detailedAgent}
-								{...props}
-								class="relative m-0 grow resize-y"
-								bind:value={$formData.agents[ctx.selectedAgent!]!.description}
-							/>
-						{/snippet}
-					</Form.Control>
-				</Form.ElementField>
+				<TooltipLabel tooltip={'Name of the agent in this session'} class="m-0  w-fit"
+					>Name
+				</TooltipLabel>
+				<Input
+					value={curAgent.name}
+					onchange={(e: Event) => {
+						const input = e.currentTarget as HTMLInputElement;
+						activeFile.updateAgent(curAgent.clientId, { name: input.value });
+					}}
+				/>
+				<TooltipLabel
+					tooltip={'Optional agent description shared with other agents'}
+					class="m-0  w-fit"
+					>Description
+				</TooltipLabel>
+				<Textarea
+					class="relative m-0 grow resize-y"
+					value={curAgent.description}
+					onchange={(e: Event) => {
+						const input = e.currentTarget as HTMLInputElement;
+						activeFile.updateAgent(curAgent.clientId, { description: input.value });
+					}}
+				/>
 			</section>
 			<section class="col-span-1 flex h-fit flex-col gap-2">
-				<Form.ElementField
-					{form}
-					name="agents[{ctx.selectedAgent}].id.version"
-					class="flex grow flex-col gap-2"
+				<TooltipLabel
+					tooltip={'Version to use from the server agent registry'}
+					class="w m-0  w-fit truncate">Version</TooltipLabel
 				>
-					<Form.Control>
-						{#snippet children({ props })}
-							{@const id = curAgent.id}
-							{@const reg = curCatalog.agents[id.name]!}
-							<TooltipLabel
-								tooltip={'Version to use from the server agent registry'}
-								class="w m-0  w-fit truncate">Version</TooltipLabel
-							>
-							{#if reg?.versions != null}
-								<Combobox
-									{...props}
-									class="w-auto grow pr-[2px] "
-									side="right"
-									align="start"
-									disabled={reg.versions.length <= 1}
-									bind:selected={() => id.version, () => {}}
-									options={[{ items: reg.versions }]}
-									searchPlaceholder="Search versions..."
-									onValueChange={(value: string) => {
-										$formData.agents[ctx.selectedAgent!]!.id.version = value;
-										$formData.agents = $formData.agents;
-										tick().then(() => {
-											$formData.agents = $formData.agents;
-										});
-									}}
-								/>
-							{:else}
-								<Combobox
-									{...props}
-									class="w-auto grow pr-[2px] {!ctx.detailedAgent
-										? 'pointer-events-auto! cursor-not-allowed!'
-										: ''}"
-									side="right"
-									align="start"
-									disabled
-								/>
-							{/if}
-						{/snippet}
-					</Form.Control>
-				</Form.ElementField>
-				<Form.ElementField
-					{form}
-					name="agents[{ctx.selectedAgent}].provider.runtime"
-					class="flex grow flex-col gap-2 "
+				{#if reg?.versions != null}
+					<Combobox
+						class="w-auto grow pr-[2px] "
+						side="right"
+						align="start"
+						disabled={reg.versions.length <= 1}
+						bind:selected={() => id.version, () => {}}
+						options={[{ items: reg.versions }]}
+						searchPlaceholder="Search versions..."
+						onValueChange={(value: string) => {
+							activeFile.updateAgent(curAgent.clientId, { id: { ...id, version: value } });
+						}}
+					/>
+				{:else}
+					<Combobox
+						class="w-auto grow pr-[2px] {!sessCtx.detailedAgent
+							? 'pointer-events-auto! cursor-not-allowed!'
+							: ''}"
+						side="right"
+						align="start"
+						disabled
+					/>
+				{/if}
+
+				<TooltipLabel
+					tooltip={'Will only show available options for the selected agent type'}
+					class="m-0  w-fit">Runtime</TooltipLabel
 				>
-					<Form.Control>
-						{#snippet children({ props })}
-							{@const runtime = $formData.agents[ctx.selectedAgent!]!.provider.runtime}
-							{@const items = Object.keys(ctx.detailedAgent?.registryAgent?.runtimes ?? {})}
-							<TooltipLabel
-								tooltip={'Will only show available options for the selected agent type'}
-								class="m-0  w-fit">Runtime</TooltipLabel
-							>
-							<Combobox
-								{...props}
-								class="w-auto grow pr-[2px] {!ctx.detailedAgent
-									? 'pointer-events-auto! cursor-not-allowed!'
-									: ''}"
-								side="right"
-								align="start"
-								disabled={items.length <= 1 || !ctx.detailedAgent}
-								options={[
-									{
-										items
-									}
-								]}
-								searchPlaceholder="Search runtimes..."
-								bind:selected={
-									() => runtime || Object.keys(ctx.detailedAgent?.registryAgent?.runtimes ?? {})[0],
-									() => {}
-								}
-								onValueChange={(selected: string) => {
-									$formData.agents[ctx.selectedAgent!]!.provider.runtime = selected as any;
-								}}
-							/>
-						{/snippet}
-					</Form.Control>
-				</Form.ElementField>
-				<Form.ElementField
-					{form}
-					name="agents[{ctx.selectedAgent}].provider.runtime"
-					class="flex grow flex-col gap-2"
+				<Combobox
+					class="w-auto grow pr-[2px] {!sessCtx.detailedAgent
+						? 'pointer-events-auto! cursor-not-allowed!'
+						: ''}"
+					side="right"
+					align="start"
+					disabled={items.length <= 1 || !sessCtx.detailedAgent}
+					options={[
+						{
+							items
+						}
+					]}
+					searchPlaceholder="Search runtimes..."
+					bind:selected={
+						() =>
+							provider.runtime ||
+							Object.keys(sessCtx.detailedAgent?.registryAgent?.runtimes ?? {})[0],
+						() => {}
+					}
+					onValueChange={(selected: RuntimeId) => {
+						activeFile.updateAgent(curAgent.clientId, {
+							provider: { ...provider, runtime: selected }
+						});
+					}}
+				/>
+				<TooltipLabel tooltip={'What custom tools this agent has access to.'} class="m-0 w-fit "
+					>Custom Tools</TooltipLabel
 				>
-					<Form.Control>
-						{#snippet children({ props })}
-							{@const tools = $formData.agents[ctx.selectedAgent!]!.customToolAccess}
-							<TooltipLabel
-								tooltip={'What custom tools this agent has access to.'}
-								class="m-0 w-fit ">Custom Tools</TooltipLabel
+				<Select.Root
+					type="multiple"
+					value={tools}
+					disabled={!sessCtx.detailedAgent}
+					onValueChange={(value) => {
+						activeFile.updateAgent(curAgent.clientId, {
+							customToolAccess: value
+						});
+					}}
+				>
+					<Select.Trigger class="m-0 w-full grow">
+						<span>{tools.length} tools</span>
+					</Select.Trigger>
+					<Select.Content>
+						{#if !activeFile.current?.sessionSettings.customTools || Object.keys(activeFile.current.sessionSettings.customTools).length == 0}
+							<span class="text-muted-foreground h-9 px-2 text-sm italic"
+								>No tools found, add some in the tools pane</span
 							>
-							<Select.Root
-								{...props}
-								type="multiple"
-								value={Array.from(tools.keys())}
-								disabled={!ctx.detailedAgent}
-								onValueChange={(value) => {
-									if (ctx.selectedAgent === null || !$formData.agents[ctx.selectedAgent]) return;
-									$formData.agents[ctx.selectedAgent!]!.customToolAccess = new Set(value);
-									$formData.agents = $formData.agents;
-								}}
-							>
-								<Select.Trigger class="m-0 w-full grow">
-									<span>{tools.size} tools</span>
-								</Select.Trigger>
-								<Select.Content>
-									{#if Object.keys($formData.tools).length == 0}
-										<span class="text-muted-foreground h-9 px-2 text-sm italic"
-											>No tools found, add some in the tools pane</span
-										>
-									{/if}
-									{#each Object.values($formData.tools) as tool}
-										<Select.Item value={tool.id}>{tool.name}</Select.Item>
-									{/each}
-								</Select.Content>
-							</Select.Root>
-						{/snippet}
-					</Form.Control>
-				</Form.ElementField>
+						{/if}
+						{#each Object.values(activeFile.current?.sessionSettings.customTools ?? {}) as tool}
+							<Select.Item value={tool}>{tool}</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
 			</section>
 		</header>
-		{#if ctx.selectedAgentError}
+		{#if sessCtx.selectedAgentError}
 			<section class="flex flex-col gap-2 p-2">
 				<Alert.Root variant="destructive">
 					<IconAlertCircle />
 					<Alert.Title>Agent Error</Alert.Title>
 					<Alert.Description>
-						<p>{ctx.selectedAgentError}</p>
+						<p>{sessCtx.selectedAgentError}</p>
 					</Alert.Description>
 				</Alert.Root>
 			</section>
 		{:else}
 			<ol class="border-t">
-				<li class="">
-					<Card.Root class="m-2 p-0">
-						<Card.Content class="bg-muted/50 p-0">
-							<Accordion.Root type="multiple" value={['budget']} class="border-0 ">
-								<Accordion.Item
-									value="budget"
-									class="*:px-0 {mounted ? '' : 'animation-duration-0'}"
-								>
-									<Accordion.Trigger>Budget</Accordion.Trigger>
-
-									<Accordion.Content class="flex flex-col gap-2 border-t px-4 pb-4">
-										{@const agentIdx = ctx.selectedAgent!}
-										<Form.ElementField
-											{form}
-											name="agents[{agentIdx}].budgetSettings.budget"
-											class="flex items-center gap-2 py-2 "
-										>
-											<Form.Control>
-												{#snippet children({ props })}
-													<TooltipLabel
-														title="Session budget"
-														tooltip="This budget is shared across all agents in the session and can be used by any agent configured to consume the shared budget."
-														extra={{
-															type: 'integer'
-														}}
-														class="max-w-1/4 min-w-1/4"
-													>
-														<div class="flex flex-col">
-															<span class="truncate wrap-break-word">Agent budget</span>
-
-															<span class="text-muted-foreground truncate text-xs"
-																>This budget is shared across all agents in the session and can be
-																used by any agent configured to consume the shared budget.</span
-															>
-														</div>
-													</TooltipLabel>
-
-													<CurrencyInput
-														{...props}
-														value={$formData.agents[agentIdx]?.budgetSettings?.budget ?? 0}
-														onchange={(micro) => {
-															const agent = $formData.agents[agentIdx];
-															if (!agent) return;
-															agent.budgetSettings ??= {};
-															if (micro === 0) {
-																delete $formData.agents[agentIdx]?.budgetSettings?.budget;
-																$formData.agents = $formData.agents;
-															} else {
-																agent.budgetSettings.budget = micro;
-																$formData.agents = $formData.agents;
-															}
-														}}
-													/>
-												{/snippet}
-											</Form.Control>
-										</Form.ElementField>
-										<Separator class="mb-2" />
-
-										<Form.ElementField
-											{form}
-											name="agents[{agentIdx}].budgetSettings.exhaustionBehavior.type"
-											class="flex w-full items-center gap-2 "
-										>
-											<Form.Control>
-												{#snippet children()}
-													{@const exhaustionBehavior = getAgentExhaustionBehavior(agentIdx)}
-													<TooltipLabel
-														title="Exhaustion Behavior"
-														tooltip="What happens once the budget has been drained"
-														extra={{}}
-														class="max-w-1/4 min-w-1/4"
-													>
-														<div class="flex flex-col">
-															<span class="truncate wrap-break-word">Exhaustion Behavior</span>
-
-															<span class="text-muted-foreground truncate text-xs"
-																>What happens once the budget has been drained</span
-															>
-														</div>
-													</TooltipLabel>
-													<ToggleGroup.Root
-														type="single"
-														class="w-full grow"
-														variant="outline"
-														value={exhaustionBehavior?.type}
-													>
-														<Tooltip.Root delayDuration={400}>
-															<Tooltip.Trigger>
-																{#snippet child({ props }: { props: any })}
-																	<ToggleGroup.Item
-																		{...props}
-																		onclick={() => {
-																			if (
-																				$formData.agents[agentIdx]!.budgetSettings!
-																					.exhaustionBehavior!.type !== 'kill'
-																			) {
-																				$formData.agents[
-																					agentIdx
-																				]!.budgetSettings!.exhaustionBehavior = {
-																					type: 'kill',
-																					minimum: 0,
-																					force: false
-																				};
-																			}
-																		}}
-																		class={exhaustionBehavior?.type === 'kill' ? 'bg-accent' : ''}
-																	>
-																		Kill
-																	</ToggleGroup.Item>
-																{/snippet}
-															</Tooltip.Trigger>
-															<Tooltip.Content
-																class="flex w-fit max-w-64 flex-col gap-2 wrap-break-word"
-															>
-																<p>
-																	Once the agent's budget is less than the specified minimum amount,
-																	the agent will be killed. The higher the minimum is the lower the
-																	chance of overclaiming. This behavior will stop the agent claiming
-																	from the session's budget
-																</p>
-															</Tooltip.Content>
-														</Tooltip.Root>
-														<Tooltip.Root delayDuration={400}>
-															<Tooltip.Trigger>
-																{#snippet child({ props }: { props: any })}
-																	<ToggleGroup.Item
-																		{...props}
-																		onclick={() => {
-																			$formData.agents[
-																				agentIdx
-																			]!.budgetSettings!.exhaustionBehavior = {
-																				type: 'consume_session',
-																				minimum: 0
-																			} as any;
-																		}}
-																		class={exhaustionBehavior?.type === 'consume_session'
-																			? 'bg-accent'
-																			: ''}
-																	>
-																		Consume session
-																	</ToggleGroup.Item>
-																{/snippet}
-															</Tooltip.Trigger>
-															<Tooltip.Content
-																class="flex w-fit max-w-64 flex-col gap-2 wrap-break-word"
-															>
-																<p>
-																	Once's the agent's budget is exhausted, it will consume the
-																	session's budget. If the session's budget is also exhausted, the
-																	session's exhaustion behavior will be applied. If a claim is made
-																	that cannot be fully fulfilled by the agent's budget, the
-																	remainder will be taken from the session's budget.
-																</p>
-															</Tooltip.Content>
-														</Tooltip.Root>
-													</ToggleGroup.Root>
-												{/snippet}
-											</Form.Control>
-										</Form.ElementField>
-
-										{#if agentBehavior?.type !== 'consume_session' && agentBehavior}
-											{@const killBehavior = getAgentExhaustionBehavior(agentIdx)}
-											{@const force = killBehavior?.type === 'kill' ? killBehavior.force : false}
-											<Separator class="my-2" />
-
-											<Form.ElementField
-												{form}
-												name="agents[{agentIdx}].budgetSettings.exhaustionBehavior.force"
-												class="flex w-full items-center gap-2 "
-											>
-												<Form.Control>
-													{#snippet children({ props })}
-														<TooltipLabel
-															title="Force kill agent"
-															tooltip="If this is true, the agent will be killed immediately. If this is false, the agent will only be killed if the claim requests for automatic closing."
-															extra={{
-																required: true,
-																type: 'boolean'
-															}}
-															class="max-w-1/4 min-w-1/4"
-														>
-															<div class="flex flex-col">
-																<span class="truncate wrap-break-word">Force kill agent</span>
-
-																<span class="text-muted-foreground truncate text-xs"
-																	>If this is true, the agent will be killed immediately. If this is
-																	false, the agent will only be killed if the claim requests for
-																	automatic closing</span
-																>
-															</div>
-														</TooltipLabel>
-														<ToggleGroup.Root
-															{...props}
-															type="single"
-															class="w-full grow"
-															variant="outline"
-															value={String(force)}
-															onValueChange={(v: string) => {
-																if (!v) return;
-
-																const agent = $formData.agents[agentIdx];
-																if (!agent) return;
-
-																agent.budgetSettings ??= {};
-
-																const existing = agent.budgetSettings.exhaustionBehavior;
-
-																agent.budgetSettings.exhaustionBehavior = {
-																	type: 'kill',
-																	force: v === 'true',
-																	minimum: existing?.type === 'kill' ? existing.minimum : 0
-																};
-
-																$formData.agents = $formData.agents;
-															}}
-														>
-															<ToggleGroup.Item value="true">True</ToggleGroup.Item>
-
-															<ToggleGroup.Item value="false">False</ToggleGroup.Item>
-														</ToggleGroup.Root>
-													{/snippet}
-												</Form.Control>
-											</Form.ElementField>
-											{#if killBehavior?.type === 'kill'}
-												<Separator class="my-2" />
-
-												<Form.ElementField
-													{form}
-													name="agents[{agentIdx}].budgetSettings.exhaustionBehavior.minimum"
-													class="flex items-center gap-2 "
-												>
-													<Form.Control>
-														{#snippet children({ props })}
-															<TooltipLabel
-																title="Minimum threshold"
-																tooltip="If the session budget drops below this, it will trigger the exhaustion behavior. This is used to prevent overclaiming."
-																extra={{
-																	required: true,
-																	type: 'integer'
-																}}
-																class="max-w-1/4 min-w-1/4"
-															>
-																<div class="flex flex-col">
-																	<span class="truncate wrap-break-word">Minimum</span>
-
-																	<span class="text-muted-foreground truncate text-xs"
-																		>If the session budget drops below this, it will trigger the
-																		exhaustion behavior. This is used to prevent overclaiming</span
-																	>
-																</div>
-															</TooltipLabel>
-															<CurrencyInput
-																value={killBehavior.minimum ?? 0}
-																onchange={(micro) => {
-																	killBehavior.minimum = micro;
-																	$formData.agents = $formData.agents;
-																}}
-															/>
-														{/snippet}
-													</Form.Control>
-												</Form.ElementField>
-											{/if}
-										{/if}
-									</Accordion.Content>
-								</Accordion.Item>
-							</Accordion.Root>
-						</Card.Content>
-					</Card.Root>
-				</li>
-
 				{#each Object.entries(groupedOptions) as [group, entries]}
 					<li>
 						{#if group !== '__ungrouped'}
@@ -564,13 +265,7 @@
 											<Accordion.Content class="border-t ">
 												<ol>
 													{#each entries as [name, opt] (name)}
-														<OptionField
-															superform={form}
-															agent={ctx.selectedAgent!}
-															{name}
-															meta={opt}
-															class="px-4"
-														/>
+														<OptionField agent={curAgent} {name} meta={opt} class="px-4" />
 													{/each}
 												</ol>
 											</Accordion.Content>
@@ -583,7 +278,7 @@
 								{#each entries as [name, opt] (name)}
 									<Card.Root class="bg-muted/50 m-2 p-0">
 										<Card.Content class="p-0">
-											<OptionField superform={form} agent={ctx.selectedAgent!} {name} meta={opt} />
+											<OptionField agent={curAgent} {name} meta={opt} />
 										</Card.Content>
 									</Card.Root>
 								{/each}
@@ -598,7 +293,7 @@
 	{/await}
 {:else}
 	<section
-		class="text-muted-foreground m-auto flex w-full h-full grow flex-col items-center justify-center gap-6 text-center"
+		class="text-muted-foreground m-auto flex h-full w-full grow flex-col items-center justify-center gap-6 text-center"
 	>
 		<AgentPanelIcon class="w-4/5 py-8 " />
 	</section>
