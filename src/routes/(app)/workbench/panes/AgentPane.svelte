@@ -27,6 +27,7 @@
 	import OptionField from '../OptionField.svelte';
 
 	import { appContext } from '$lib/context';
+	import type { CoralServer, RegistryAgentIdentifier } from '$lib/CoralServer.svelte';
 	import { agentIdOf, registryIdOf } from '$lib/CoralServer.svelte';
 	import { onMount, tick } from 'svelte';
 	import { Textarea } from '@coral-os/component-library/ui/textarea/index.js';
@@ -41,26 +42,62 @@
 	import { getSessionContext } from '$lib/sessionCreatorContext';
 	import { cn } from '$lib/utils';
 	import CurrencyInput from '../options/CurrencyInput.svelte';
-	import { activeFile } from '$lib/activeFile.svelte';
+	import { activeFile } from '../../../../lib/activeFile.svelte';
 	import type { RuntimeId } from '$lib/sessionSchema/types';
 	import type { Agent } from '$lib/fileStorage';
 
 	let ctx = appContext.get();
-
 	let sessCtx = getSessionContext();
 
 	let curAgent = $derived(
 		sessCtx.selectedAgent !== null
-			? activeFile.current?.agents.find((agent) => agent.clientId === sessCtx.selectedAgent)
+			? normalizeAgent(
+					activeFile.current?.agents.find((agent) => agent.clientId === sessCtx.selectedAgent)
+				)
 			: undefined
 	);
+
+	let curAgentId = $derived(curAgent ? agentIdOf(curAgent.id) : null);
 	let curCatalog = $derived(
 		curAgent && ctx.server.catalogs[registryIdOf(curAgent.id.registrySourceId)]
 	);
 
+	function normalizeAgent(agent?: Agent) {
+		if (!agent) return undefined;
+		agent.options ??= {};
+		return agent;
+	}
+
+	const getDetails = async (agentId?: RegistryAgentIdentifier | null) => {
+		if (!agentId) return null;
+
+		try {
+			return await ctx.server.lookupAgent(agentId);
+		} catch (error) {
+			console.error('lookupAgent failed:', error);
+			sessCtx.selectedAgentError = error instanceof Error ? error : new Error(String(error));
+
+			return null;
+		}
+	};
+
+	let agentDetails = $state<Awaited<ReturnType<CoralServer['lookupAgent']>> | null>(null);
+	let agentDetailsFor = $state<string | null>(null);
+
+	$effect(() => {
+		const id = curAgent?.id;
+		(async () => {
+			const result = await getDetails(id);
+			// guard against race: only commit if this is still the current agent
+			if (id === curAgent?.id) {
+				agentDetails = result;
+				agentDetailsFor = id ? agentIdOf(id) : null;
+			}
+		})();
+	});
+
 	const UNGROUPED = '__ungrouped';
 
-	let curAgentId = $derived(curAgent ? agentIdOf(curAgent.id) : null);
 	let groupedOptions = $derived.by(() => {
 		const metaId = curAgent?.id;
 		const currentId = curAgentId;
@@ -68,27 +105,18 @@
 		if (!metaId || !currentId || agentIdOf(metaId) !== currentId) {
 			return {};
 		}
-
-		return Object.entries(getOptions(currentId) ?? {}).reduce<Record<string, [string, any][]>>(
-			(acc, [name, opt]) => {
-				const group = opt?.display?.group ?? UNGROUPED;
-				(acc[group] ??= []).push([name, opt]);
-				return acc;
-			},
-			{}
-		);
-	});
-
-	const getOptions = async (agentId: any) => {
-		try {
-			return await ctx.server.lookupAgent(agentId);
-		} catch (error) {
-			sessCtx.selectedAgentError = error as string;
-			return null;
+		if (!curAgentId || agentDetailsFor !== curAgentId) {
+			return {};
 		}
-	};
 
-	$inspect(getOptions(curAgent?.id));
+		return Object.entries(agentDetails?.registryAgent.options ?? {}).reduce<
+			Record<string, [string, any][]>
+		>((acc, [name, opt]) => {
+			const group = opt?.display?.group ?? UNGROUPED;
+			(acc[group] ??= []).push([name, opt]);
+			return acc;
+		}, {});
+	});
 
 	// // Type-safe helpers for exhaustion behavior
 	// function getAgentExhaustionBehavior(agentIdx: number) {
@@ -104,14 +132,7 @@
 	onMount(() => {
 		setTimeout(() => (mounted = true), 400);
 	});
-
-	async function yoink(event: MouseEvent & { currentTarget: EventTarget & HTMLButtonElement }) {
-		const hmm = await getOptions(curAgent?.id);
-		console.log(hmm);
-	}
 </script>
-
-<button onclick={yoink}>aaa</button>
 
 {#if sessCtx.selectedAgent !== null && curAgent}
 	{#await curAgent?.id}
@@ -120,7 +141,7 @@
 		{@const id = curAgent.id}
 		{@const reg = curCatalog?.agents[id.name]!}
 		{@const provider = curAgent.provider}
-		{@const items = Object.keys(sessCtx.detailedAgent?.registryAgent?.runtimes ?? {})}
+		{@const items = Object.keys(agentDetails?.registryAgent?.runtimes ?? {})}
 		{@const tools = curAgent.customToolAccess!}
 
 		<header class="grid w-full grid-cols-2 gap-2 px-2">
@@ -169,7 +190,7 @@
 					/>
 				{:else}
 					<Combobox
-						class="w-auto grow pr-[2px] {!sessCtx.detailedAgent
+						class="w-auto grow pr-[2px] {!agentDetails
 							? 'pointer-events-auto! cursor-not-allowed!'
 							: ''}"
 						side="right"
@@ -183,12 +204,12 @@
 					class="m-0  w-fit">Runtime</TooltipLabel
 				>
 				<Combobox
-					class="w-auto grow pr-[2px] {!sessCtx.detailedAgent
+					class="w-auto grow pr-[2px] {!agentDetails
 						? 'pointer-events-auto! cursor-not-allowed!'
 						: ''}"
 					side="right"
 					align="start"
-					disabled={items.length <= 1 || !sessCtx.detailedAgent}
+					disabled={items.length <= 1 || !agentDetails}
 					options={[
 						{
 							items
@@ -196,14 +217,12 @@
 					]}
 					searchPlaceholder="Search runtimes..."
 					bind:selected={
-						() =>
-							provider.runtime ||
-							Object.keys(sessCtx.detailedAgent?.registryAgent?.runtimes ?? {})[0],
+						() => provider.runtime || Object.keys(agentDetails?.registryAgent?.runtimes ?? {})[0],
 						() => {}
 					}
-					onValueChange={(selected: RuntimeId) => {
+					onValueChange={(selected: string) => {
 						activeFile.updateAgent(curAgent.clientId, {
-							provider: { ...provider, runtime: selected }
+							provider: { ...provider, runtime: selected as RuntimeId }
 						});
 					}}
 				/>
@@ -213,7 +232,7 @@
 				<Select.Root
 					type="multiple"
 					value={tools}
-					disabled={!sessCtx.detailedAgent}
+					disabled={!agentDetails}
 					onValueChange={(value) => {
 						activeFile.updateAgent(curAgent.clientId, {
 							customToolAccess: value
@@ -230,7 +249,7 @@
 							>
 						{/if}
 						{#each Object.values(activeFile.current?.sessionSettings.customTools ?? {}) as tool}
-							<Select.Item value={tool}>{tool}</Select.Item>
+							<!-- <Select.Item value={tool}>{tool}</Select.Item> -->
 						{/each}
 					</Select.Content>
 				</Select.Root>
@@ -247,7 +266,7 @@
 				</Alert.Root>
 			</section>
 		{:else}
-			<ol class="border-t">
+			<ol>
 				{#each Object.entries(groupedOptions) as [group, entries]}
 					<li>
 						{#if group !== '__ungrouped'}
@@ -265,7 +284,9 @@
 											<Accordion.Content class="border-t ">
 												<ol>
 													{#each entries as [name, opt] (name)}
-														<OptionField agent={curAgent} {name} meta={opt} class="px-4" />
+														{#key curAgent.clientId}
+															<OptionField agent={curAgent} {name} meta={opt} class="px-4" />
+														{/key}
 													{/each}
 												</ol>
 											</Accordion.Content>

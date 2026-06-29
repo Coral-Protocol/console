@@ -35,7 +35,7 @@
 	import { getSessionContext, type SessionCreatorContext } from '$lib/sessionCreatorContext';
 	import { useDnD } from '$lib/components/DndProvider.svelte';
 	const { setCenter } = useSvelteFlow();
-	import { activeFile } from '$lib/activeFile.svelte';
+	import { activeFile } from '../../activeFile.svelte';
 	let sessCtx = getSessionContext();
 
 	useOnSelectionChange(({ nodes, edges }) => {

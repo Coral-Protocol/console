@@ -35,10 +35,9 @@
 	import GroupsPane from './panes/GroupsPane.svelte';
 	import SessionPane from './panes/SessionPane.svelte';
 	import { filesMeta, deleteFileData, loadCodeDraft, saveCodeDraft } from '$lib/fileStorage.js';
-	import DndProvider from '$lib/components/DndProvider.svelte';
-	import { useDnD } from '$lib/components/DnDProvider.svelte';
+	import DndProvider, { useDnD } from '$lib/components/DndProvider.svelte';
 	import { toSessionRequest, fromSessionRequest } from '$lib/payloadConstructor';
-	import { activeFile } from '$lib/activeFile.svelte';
+	import { activeFile } from '../../../lib/activeFile.svelte';
 
 	let ctx = appContext.get();
 	let formSchema = $derived(makeFormSchema(ctx.server));
@@ -58,8 +57,7 @@
 		// svelte-ignore state_referenced_locally
 		errors,
 		form,
-		selectedAgent: null,
-		detailedAgent: null
+		selectedAgent: null
 	}) as SessionCreatorContext;
 
 	setSessionContext(sessCtx);
@@ -483,7 +481,7 @@
 														<Tabs.Trigger value="Groups">Groups</Tabs.Trigger>
 													</Tabs.List>
 													<Tabs.Content value="Settings" class="p-2">
-														<AgentPane />
+															<AgentPane />
 													</Tabs.Content>
 													<Tabs.Content value="Tools" class="p-2">
 														<ToolsPane />

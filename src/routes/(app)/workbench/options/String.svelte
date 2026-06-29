@@ -16,17 +16,17 @@
 {#if meta.display?.multiline === true}
 	<Textarea
 		class={cn('relative m-0 resize-y', !!meta.default && 'h-30')}
-		bind:value={$value}
+		value={$value}
 		defaultValue={meta.default}
-		aria-invalid={errors}
+		aria-invalid={false}
 	/>
 {:else}
 	<Input
 		type={meta.secret ? 'password' : 'string'}
-		bind:value={$value}
+		value={$value}
 		class="m-0 w-full"
 		defaultValue={meta.default}
-		aria-invalid={errors}
+		aria-invalid={false}
 		autocomplete={meta.secret ? `section-${name} one-time-code` : undefined}
 		data-1p-ignore={meta.secret ? 'true' : undefined}
 		spellcheck={meta.secret ? 'false' : undefined}

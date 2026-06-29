@@ -16,8 +16,8 @@ export type SessionCreatorContext = {
 	addAgent: (name: string, source: AgentSource, version: string) => Promise<void>;
 
 	selectedAgent: string | undefined | null;
-	detailedAgent: Awaited<ReturnType<CoralServer['lookupAgent']>> | null;
-	selectedAgentError: string | null;
+	// detailedAgent: Awaited<ReturnType<CoralServer['lookupAgent']>> | null;
+	selectedAgentError: string | Error | null;
 
 	form: SuperForm<z.output<FormSchema>>;
 	formData: SuperFormData<z.output<FormSchema>>;

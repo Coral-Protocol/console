@@ -54,7 +54,7 @@
 						}
 					)}
 					{#if O}
-						<O type={subtype} value={subval} {meta} {name} errors={[]} />
+						<O type={subtype} value={subval} {meta} {name} />
 					{:else}
 						Unknown option type - {subtype}
 					{/if}

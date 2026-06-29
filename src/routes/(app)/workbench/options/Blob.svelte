@@ -12,8 +12,8 @@
 
 <Input
 	type="file"
-	bind:value={$value}
+	value={$value}
 	class="m-0"
-	aria-invalid={errors}
+	aria-invalid={false}
 	placeholder={meta.default?.toString()}
 />
