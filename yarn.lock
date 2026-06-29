@@ -4590,6 +4590,11 @@ svelte-sonner@^1.0.5:
   dependencies:
     runed "^0.28.0"
 
+svelte-textfit@^1.1.4:
+  version "1.1.4"
+  resolved "https://registry.yarnpkg.com/svelte-textfit/-/svelte-textfit-1.1.4.tgz#8f740c9bbf0f427d0cb46624d74cef8cb880df66"
+  integrity sha512-V9M+MVtbMgVUOVL5e+aBfbu+WC9ov6gLXxHB1LRaeUXbCL6LoKEMzCPg1txG7U/1J4exG46eI8HDt3T3bwd22w==
+
 svelte-toolbelt@^0.10.6:
   version "0.10.6"
   resolved "https://registry.yarnpkg.com/svelte-toolbelt/-/svelte-toolbelt-0.10.6.tgz#573e25a69cdef3c3eb2bb6762e6c63b4db2d3355"

@@ -17,8 +17,7 @@
 		meta: Extract<components['schemas']['RegistryAgent']['options'][string], { type: Type }>;
 		type: Type;
 		value: store.Writable<Extract<Option, { type: Type }>['value'] | undefined>;
-		props: Expand<ControlAttrs>;
-		errors: string[];
+		errors?: string[];
 		name: string;
 	};
 
@@ -80,28 +79,27 @@
 	import type { components } from '$generated/api';
 	import { TooltipLabel } from '@coral-os/component-library';
 	import { Separator } from '@coral-os/component-library/components/ui/separator/index.js';
+	import type { Agent } from '$lib/fileStorage';
 
 	type Props = {
-		superform: SuperForm<Schema>;
-		agent: number;
+		agent: Agent;
 		name: string;
 		class?: string;
 		meta: components['schemas']['RegistryAgent']['options'][string];
 	};
 
-	let { superform: form, agent, name, meta, class: className }: Props = $props();
-	const { form: formData, errors } = form;
+	let { agent, name, meta, class: className }: Props = $props();
 
 	let type = $derived(meta.type);
 	let value = $derived(
 		store.toStore(
 			() => {
-				return $formData.agents[agent]?.options?.[name]?.value;
+				return agent.options?.[name]?.value;
 			},
 			(value) => {
-				if (!$formData.agents[agent]) return;
-				$formData.agents[agent].options ??= {};
-				$formData.agents[agent].options[name] = { type, value } as any; // Safety: trust me
+				if (!agent) return;
+				agent.options ??= {};
+				agent.options[name] = { type, value } as any; // Safety: trust me
 			}
 		)
 	);
@@ -120,62 +118,54 @@
 </script>
 
 <li class={cn('hover:bg-muted/50 group px-2 py-2', className)}>
-	<Form.ElementField class=" space-y-0" {form} name="agents[{agent}].options.{name}.value">
-		<Form.Control>
-			{#snippet children({ props })}
-				<Resizable.PaneGroup direction="horizontal" class="w-full grow">
-					<Resizable.Pane
-						class="grid grid-cols-[auto_min-content] items-start gap-1 truncate"
-						defaultSize={25}
-						minSize={10}
-					>
-						<TooltipLabel
-							title={name}
-							for={props.id}
-							tooltip={meta.display?.description ?? 'No description provided.'}
-							extra={{
-								required: meta.required ?? false,
-								type: meta.type
-							}}
-						>
-							<div class="flex flex-col">
-								<span class="truncate wrap-break-word">{meta.display?.label ?? name}</span>
+	<Resizable.PaneGroup direction="horizontal" class="w-full grow">
+		<Resizable.Pane
+			class="grid grid-cols-[auto_min-content] items-start gap-1 truncate"
+			defaultSize={25}
+			minSize={10}
+		>
+			<TooltipLabel
+				title={name}
+				tooltip={meta.display?.description ?? 'No description provided.'}
+				extra={{
+					required: meta.required ?? false,
+					type: meta.type
+				}}
+			>
+				<div class="flex flex-col">
+					<span class="truncate wrap-break-word">{meta.display?.label ?? name}</span>
 
-								<span class="text-muted-foreground truncate text-xs"
-									>{meta.display?.description ?? ''}</span
-								>
-							</div>
-						</TooltipLabel>
-						{#if meta.default !== undefined && $value !== undefined && !valuesEqual($value, meta.default)}
-							<Tooltip.Root>
-								<Tooltip.Trigger
-									class={cn(buttonVariants({ size: 'icon' }))}
-									onclick={() => {
-										$value = meta.default as any;
-									}}
-								>
-									<IconArrowUUpLeft />
-								</Tooltip.Trigger>
-								<Tooltip.Content>Revert to default</Tooltip.Content>
-							</Tooltip.Root>
-						{/if}
-					</Resizable.Pane>
-					<Resizable.Handle class="w-1 bg-transparent" />
-					<Resizable.Pane minSize={15}>
-						{#if type}
-							{@const O = componentMap[type] as Component<OptionProps>}
-							{@const errs = $errors.agents?.[agent]?.options?.[name]?.value ?? []}
-							{#if O}
-								<O {type} {props} {value} {meta} {name} errors={errs} />
-							{:else}
-								Unknown option type - {type}
-							{/if}
-						{/if}
-					</Resizable.Pane>
-				</Resizable.PaneGroup>
-			{/snippet}
-		</Form.Control>
-	</Form.ElementField>
+					<span class="text-muted-foreground truncate text-xs"
+						>{meta.display?.description ?? ''}</span
+					>
+				</div>
+			</TooltipLabel>
+			{#if meta.default !== undefined && $value !== undefined && !valuesEqual($value, meta.default)}
+				<Tooltip.Root>
+					<Tooltip.Trigger
+						class={cn(buttonVariants({ size: 'icon' }))}
+						onclick={() => {
+							$value = meta.default as any;
+						}}
+					>
+						<IconArrowUUpLeft />
+					</Tooltip.Trigger>
+					<Tooltip.Content>Revert to default</Tooltip.Content>
+				</Tooltip.Root>
+			{/if}
+		</Resizable.Pane>
+		<Resizable.Handle class="w-1 bg-transparent" />
+		<Resizable.Pane minSize={15}>
+			{#if type}
+				{@const O = componentMap[type] as Component<OptionProps>}
+				{#if O}
+					<O {type} {value} {meta} {name} />
+				{:else}
+					Unknown option type - {type}
+				{/if}
+			{/if}
+		</Resizable.Pane>
+	</Resizable.PaneGroup>
 
 	<!-- FIXME: error prop -->
 	<!-- {#if JSON.stringify($errors?.agents?.[selectedAgent!]?.options?.[name]) !== '{}' && JSON.stringify($errors?.agents?.[selectedAgent!]?.options?.[name])} -->

@@ -34,27 +34,15 @@
 	import ToolsPane from './panes/ToolsPane.svelte';
 	import GroupsPane from './panes/GroupsPane.svelte';
 	import SessionPane from './panes/SessionPane.svelte';
-	import {
-		filesMeta,
-		loadFileData,
-		saveFileData,
-		deleteFileData,
-		defaultPayload
-	} from '$lib/fileStorage.js';
+	import { filesMeta, deleteFileData, loadCodeDraft, saveCodeDraft } from '$lib/fileStorage.js';
 	import DndProvider from '$lib/components/DndProvider.svelte';
 	import { useDnD } from '$lib/components/DnDProvider.svelte';
-
-	const onDragStart = (event: DragEvent) => {
-		if (!event.dataTransfer) {
-			return null;
-		}
-		event.dataTransfer.effectAllowed = 'move';
-	};
+	import { toSessionRequest, fromSessionRequest } from '$lib/payloadConstructor';
+	import { activeFile } from '$lib/activeFile.svelte';
 
 	let ctx = appContext.get();
 	let formSchema = $derived(makeFormSchema(ctx.server));
 	// svelte-ignore state_referenced_locally
-
 	let form = superForm(defaults(zod4(formSchema)), {
 		SPA: true,
 		dataType: 'json',
@@ -74,9 +62,6 @@
 		detailedAgent: null
 	}) as SessionCreatorContext;
 
-	// formData: form input from the UI! populated by the file data from the indexedDB storage, then validated upon blur, and then returned back into the indexedDB storage for the appropriate file,
-	// indexedDB file data: a string of json!
-
 	setSessionContext(sessCtx);
 
 	const isMobile = new IsMobile();
@@ -94,31 +79,86 @@
 		activeTab.current = openTabs.current[0].id;
 	}
 
-	let activeFileContent = $state(JSON.stringify(defaultPayload(), null, 4));
-
+	// Open the active tab's file into the shared store whenever activeTab
+	// changes. Every component reading `activeFile.current` updates
+	// automatically - no prop threading needed.
 	$effect(() => {
 		const id = activeTab.current;
 		if (!id) {
-			activeFileContent = '';
+			activeFile.close();
 			return;
 		}
+		activeFile.open(id);
+	});
 
-		loadFileData(id).then((data) => {
+	// Code pane draft text, kept independent of activeFile.current so
+	// in-progress/invalid JSON typed in the pane never gets lost or
+	// clobbered. Synced from activeFile.current whenever it changes from
+	// somewhere OTHER than the Code pane itself (Graph, panes, etc).
+	let codePaneContent = $state('');
+	let suppressCodePaneSync = false;
+
+	$effect(() => {
+		const id = activeTab.current;
+		if (!id) return;
+
+		loadCodeDraft(id, () => {
+			const file = activeFile.current;
+			if (!file) return '';
+			try {
+				return JSON.stringify(toSessionRequest(file), null, 2);
+			} catch {
+				return '';
+			}
+		}).then((draft) => {
 			if (activeTab.current !== id) return;
-
-			activeFileContent = data;
+			codePaneContent = draft;
 		});
 	});
 
 	$effect(() => {
+		const file = activeFile.current;
 		const id = activeTab.current;
-		const content = activeFileContent;
+		if (!id || !file) return; // <- this guard already existed, good
 
-		if (!id) return;
-		if (content === null) return;
+		if (suppressCodePaneSync) {
+			suppressCodePaneSync = false;
+			return;
+		}
 
-		saveFileData(id, content);
+		try {
+			const next = JSON.stringify(toSessionRequest(file), null, 2);
+			codePaneContent = next;
+			saveCodeDraft(id, next);
+		} catch {
+			// file isn't convertible yet - leave the Code pane draft alone.
+		}
 	});
+
+	function onCodePaneChange(newCode: string) {
+		const id = activeTab.current;
+		const file = activeFile.current;
+		if (!id || !file) return;
+
+		// Always persist the raw text, valid or not - protects against
+		// losing in-progress edits on refresh.
+		saveCodeDraft(id, newCode);
+
+		let request;
+		try {
+			request = JSON.parse(newCode);
+		} catch {
+			return;
+		}
+
+		try {
+			const next = fromSessionRequest(request, file);
+			suppressCodePaneSync = true;
+			activeFile.replace(next);
+		} catch (err) {
+			console.error('Failed to apply code pane edit', err);
+		}
+	}
 
 	function uniqueName(base: string, existingNames: string[]): string {
 		if (!existingNames.includes(base)) return base;
@@ -146,8 +186,6 @@
 		filesMeta.current.push({ name, description: '', id, created: Date.now() });
 		openTabs.current.push({ id, dirty: true });
 		activeTab.current = id;
-		activeFileContent = '';
-		saveFileData(id, JSON.stringify(defaultPayload(), null, 4));
 	}
 
 	function openFile(id: string) {
@@ -162,18 +200,12 @@
 		const tabIndex = openTabs.current.findIndex((tab) => tab.id === id);
 		if (tabIndex === -1) return;
 
-		const tabData = await loadFileData(id);
-
 		const wasActive = activeTab.current === id;
 		const nextActiveId =
 			(tabIndex > 0 ? openTabs.current[tabIndex - 1] : openTabs.current[1])?.id ?? '';
 
 		openTabs.current.splice(tabIndex, 1);
 		if (wasActive) activeTab.current = nextActiveId;
-
-		if (tabData === '') {
-			await deleteFile(id);
-		}
 	}
 
 	async function deleteFile(id: string) {
@@ -183,26 +215,23 @@
 		await deleteFileData(id);
 	}
 
-	let activeFile = $derived(filesMeta.current.find((file) => file.id === activeTab.current));
+	let activeFileMeta = $derived(filesMeta.current.find((file) => file.id === activeTab.current));
 	let filesById = $derived(new Map(filesMeta.current.map((f) => [f.id, f])));
 
-	// Local draft state for the editable name/description fields, kept in sync
-	// with the active file. These are plain $state (not $derived) because the
-	// inputs need to write back to them on every keystroke/blur.
 	let draftName = $state('');
 	let draftDescription = $state('');
 
 	$effect(() => {
-		draftName = activeFile?.name ?? '';
-		draftDescription = activeFile?.description ?? '';
+		draftName = activeFileMeta?.name ?? '';
+		draftDescription = activeFileMeta?.description ?? '';
 	});
 
 	function commitName() {
-		if (activeFile) activeFile.name = draftName;
+		if (activeFileMeta) activeFileMeta.name = draftName;
 	}
 
 	function commitDescription() {
-		if (activeFile) activeFile.description = draftDescription;
+		if (activeFileMeta) activeFileMeta.description = draftDescription;
 	}
 </script>
 
@@ -230,13 +259,6 @@
 							{/each}
 						</Menubar.SubContent>
 					</Menubar.Sub>
-					<Menubar.Item
-						onclick={() => {
-							if (activeFile) {
-								deleteFile(activeFile.id);
-							}
-						}}>Delete file</Menubar.Item
-					>
 					<Menubar.Separator />
 					<Menubar.Item onclick={() => ((openTabs.current = []), (activeTab.current = ''))}
 						>Close all tabs</Menubar.Item
@@ -250,7 +272,11 @@
 				<Menubar.Content>
 					<Menubar.Item
 						disabled={!activeFile}
-						onclick={() => activeFile && deleteFile(activeFile.id)}>Delete File</Menubar.Item
+						onclick={() => {
+							if (activeFileMeta?.id) {
+								activeFile && deleteFile(activeFileMeta.id);
+							}
+						}}>Delete File</Menubar.Item
 					>
 				</Menubar.Content>
 			</Menubar.Menu>
@@ -339,8 +365,8 @@
 								<Tabs.Root value="Diagram" class="h-full grow gap-0 overflow-hidden">
 									<header class="flex w-full items-center gap-4 border-b p-4">
 										<section class="flex min-w-0 flex-1 flex-col">
-											{#if activeFile}
-												{#key activeFile.id}
+											{#if activeFileMeta}
+												{#key activeFileMeta.id}
 													<form
 														class="relative inline-flex w-max max-w-full min-w-0 items-center gap-1"
 													>
@@ -372,6 +398,7 @@
 											<Tabs.Trigger value="Diagram"><IconGraphRegular /> Diagram</Tabs.Trigger>
 											<Tabs.Trigger value="Outline"><IconTableRegular /> Outline</Tabs.Trigger>
 											<Tabs.Trigger value="Code"><IconCodeRegular /> Code</Tabs.Trigger>
+											<Tabs.Trigger value="Raw"><IconCodeRegular /> Raw</Tabs.Trigger>
 										</Tabs.List>
 										<section class="flex shrink-0 gap-0">
 											<Button variant="outline" size="icon" class="border-r-0"
@@ -383,38 +410,38 @@
 											>
 										</section>
 									</header>
+
+									<!-- Diagram tab: Graph now needs no rawPayload prop at all -->
 									<Tabs.Content value="Diagram" class="p-0">
-										{#key activeFile?.id}
-											<Graph
-												bind:rawPayload={activeFileContent}
-												controls
-												fitDefault={false}
-												enableContext
-											/>
-										{/key}
+										<Graph controls enableContext />
 									</Tabs.Content>
+
 									<Tabs.Content value="Outline" class="overflow-y-auto p-4">
-										<!-- {#if activeFileContent?.agentGraphRequest?.agents?.length}
-									<ul class="flex flex-col gap-2">
-										{#each activeFileContent.agentGraphRequest.agents as agent}
-											<li class="rounded-md border p-2">
-												<p class="font-medium">{agent.name}</p>
-												<p class="text-foreground/70 text-sm">{agent.description}</p>
-											</li>
-										{/each}
-									</ul>
-								{:else} -->
-										<p class="text-foreground/50">No agents in this graph yet.</p>
-										<!-- TEMP DEBUG: remove once we confirm the real shape of activeFileContent -->
-										<pre class="text-foreground/40 mt-4 overflow-auto text-xs">{JSON.stringify(
-												activeFileContent
-											)}</pre>
-										<!-- {/if} -->
+										{#if activeFile.current?.agents.length}
+											<ul class="flex flex-col gap-2">
+												{#each activeFile.current.agents as agent}
+													<li class="rounded-md border p-2">
+														<p class="font-medium">{agent.name}</p>
+														<p class="text-foreground/70 text-sm">{agent.description}</p>
+													</li>
+												{/each}
+											</ul>
+										{:else}
+											<p class="text-foreground/50">No agents in this graph yet.</p>
+										{/if}
 									</Tabs.Content>
 
 									<Tabs.Content value="Code" class="relative flex min-h-0 flex-1 overflow-hidden">
-										{#key activeFile?.id}
-											<CodePane bind:data={activeFileContent} />
+										{#key activeFileMeta}
+											<CodePane bind:data={codePaneContent} onchange={onCodePaneChange} />
+										{/key}
+									</Tabs.Content>
+									<Tabs.Content value="Raw" class="relative flex min-h-0 flex-1 overflow-hidden">
+										{#key activeFileMeta}
+											<CodePane
+												data={JSON.stringify(activeFile.current, null, 4)}
+												onchange={() => {}}
+											/>
 										{/key}
 									</Tabs.Content>
 								</Tabs.Root>
@@ -423,7 +450,10 @@
 							<Resizable.Pane defaultSize={25} minSize={10}>
 								<Resizable.PaneGroup direction="vertical">
 									<Resizable.Pane defaultSize={25} minSize={10}>
-										<Tabs.Root value="Agents" class="h-full grow">
+										<Tabs.Root
+											value={sessCtx.selectedAgent ? 'Inspector' : 'Agents'}
+											class="h-full grow"
+										>
 											<Tabs.List variant="line" class="*:after:bg-brand-primary">
 												<Tabs.Trigger value="Agents">Agents</Tabs.Trigger>
 												<Tabs.Trigger value="Inspector">Inspector</Tabs.Trigger>
@@ -445,6 +475,7 @@
 												value="Inspector"
 												class="flex min-h-0 grow flex-col overflow-y-auto"
 											>
+												<!-- {#key sessCtx.selectedAgent} -->
 												<Tabs.Root value="Settings">
 													<Tabs.List variant="line" class="*:after:bg-brand-primary">
 														<Tabs.Trigger value="Settings">Settings</Tabs.Trigger>
@@ -461,6 +492,7 @@
 														<GroupsPane />
 													</Tabs.Content>
 												</Tabs.Root>
+												<!-- {/key} -->
 											</Tabs.Content>
 											<Tabs.Content value="Session" class="p-2">
 												<SessionPane />

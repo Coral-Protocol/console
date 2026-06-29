@@ -55,7 +55,10 @@
 
 	const agentData = useDnD();
 
-	const onDragStart = (event: DragEvent, agent: { name: string; id: string }) => {
+	const onDragStart = (
+		event: DragEvent,
+		agent: { name: string; version: string; source: string }
+	) => {
 		if (!event.dataTransfer) {
 			return null;
 		}
@@ -90,7 +93,12 @@
 								selectedAgent = { agent, details };
 								dialogOpen = true;
 							}}
-							ondragstart={(event) => onDragStart(event, { name: agent.name, id: '' })}
+							ondragstart={(event) =>
+								onDragStart(event, {
+									name: agent.name,
+									version: agent.versions[0]!,
+									source: catalog.identifier.type
+								})}
 							draggable={true}
 							type="button"
 							class="h-full w-full grow"
@@ -154,7 +162,7 @@
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Content class="bg-card h-full max-h-4/5 max-w-4/5! overflow-hidden" showClose={false}>
 		{#if selectedAgent}
-			<!-- <AgentMarketView agent={selectedAgent.agent} {sessCtx} /> -->
+			<AgentMarketView agent={selectedAgent.agent} />
 		{/if}
 	</Dialog.Content>
 </Dialog.Root>
