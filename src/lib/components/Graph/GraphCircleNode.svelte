@@ -1,19 +1,27 @@
 <script lang="ts">
 	import { Handle, Position, type NodeProps } from '@xyflow/svelte';
+	import { textfit } from 'svelte-textfit';
+	let parent: any = $state();
 
 	let { data, selected }: NodeProps = $props();
 </script>
 
 <div class="handle-container {data.viewOnly ? 'cursor-pointer' : ''}">
 	<div
-		class="bg-card text-card-foreground @container relative flex h-16 w-16 items-center justify-center rounded-full border-2 {data.selectedAgent ==
-			data.index && !data.viewOnly
+		bind:this={parent}
+		class="bg-card text-card-foreground @container relative flex h-32 w-32 items-center justify-center rounded-full border-4 {selected &&
+		!data.viewOnly
 			? 'border-brand-primary/80'
 			: 'border-border'} "
 	>
-		<span class="m-2 text-center text-xs">{data.label} </span>
+		<span class="m-2 p-4 text-center text-xs" use:textfit={{ parent, mode: 'multi', max: 25 }}
+			>{data.label}
+		</span>
 	</div>
 	<Handle type="source" position={Position.Bottom} class="pointer-events-none" />
+	<span class="text-muted-foreground absolute bottom-0 w-full translate-y-full text-center text-xs"
+		>{data.type}</span
+	>
 </div>
 
 <style>
