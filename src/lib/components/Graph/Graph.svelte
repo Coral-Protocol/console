@@ -379,7 +379,18 @@
 		}
 	};
 
-	const addAgent = (agent: any) => {
+	const addAgent = async (agent: any) => {
+		const lookupDetails = await ctx.server.lookupAgent({
+			name: agent.name,
+			version: agent.version,
+			registrySourceId: { type: agent.source }
+		});
+		const runtime = (Object.keys(lookupDetails.registryAgent.runtimes).at(0) ?? undefined) as
+			| 'function'
+			| 'executable'
+			| 'docker'
+			| 'prototype';
+
 		activeFile.addAgent({
 			id: {
 				name: agent.name,
@@ -387,8 +398,8 @@
 				registrySourceId: agent.registrySourceId ?? { type: agent.source }
 			},
 			name: `${randomAdjective()} ${randomAnimal()}`,
-			description: agent.description ?? '',
-			provider: { type: 'local', runtime: 'prototype' },
+			description: lookupDetails.registryAgent.info.description ?? '',
+			provider: { type: 'local', runtime },
 			blocking: false,
 			customToolAccess: [],
 			plugins: [],
@@ -397,6 +408,7 @@
 			options: {}
 		});
 	};
+	// todo: ^^ sort out the other provider types because they are not all 'local', but seafra has stated its not currently important
 
 	const onDrop = (event: DragEvent) => {
 		event.preventDefault();
