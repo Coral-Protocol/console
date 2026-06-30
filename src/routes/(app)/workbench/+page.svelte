@@ -71,7 +71,7 @@
 	const openTabs = new PersistedState<Tab[]>('openTabs', []);
 	const activeTab = new PersistedState<string>('activeTab', '', { storage: 'session' });
 
-	const debugMode = new PersistedState<boolean>('debugMode', true, { storage: 'session' });
+	const debugMode = new PersistedState<boolean>('debugMode', false, { storage: 'session' });
 
 	if (openTabs.current.length === 0 && filesMeta.current[0]) {
 		openTabs.current.push({ id: filesMeta.current[0].id, dirty: false });
@@ -397,7 +397,7 @@
 											<Tabs.Trigger value="Outline"><IconTableRegular /> Outline</Tabs.Trigger>
 											<Tabs.Trigger
 												value="Code"
-												onclick={(e) => {
+												onclick={(e: { shiftKey: any }) => {
 													if (e.shiftKey) {
 														debugMode.current = !debugMode.current;
 													}
