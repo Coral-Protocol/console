@@ -57,7 +57,8 @@
 		// svelte-ignore state_referenced_locally
 		errors,
 		form,
-		selectedAgent: null
+		selectedAgent: null,
+		availableAgents: null
 	}) as SessionCreatorContext;
 
 	setSessionContext(sessCtx);
@@ -77,9 +78,7 @@
 		activeTab.current = openTabs.current[0].id;
 	}
 
-	// Open the active tab's file into the shared store whenever activeTab
-	// changes. Every component reading `activeFile.current` updates
-	// automatically - no prop threading needed.
+
 	$effect(() => {
 		const id = activeTab.current;
 		if (!id) {
@@ -89,10 +88,6 @@
 		activeFile.open(id);
 	});
 
-	// Code pane draft text, kept independent of activeFile.current so
-	// in-progress/invalid JSON typed in the pane never gets lost or
-	// clobbered. Synced from activeFile.current whenever it changes from
-	// somewhere OTHER than the Code pane itself (Graph, panes, etc).
 	let codePaneContent = $state('');
 	let suppressCodePaneSync = false;
 
@@ -117,7 +112,7 @@
 	$effect(() => {
 		const file = activeFile.current;
 		const id = activeTab.current;
-		if (!id || !file) return; // <- this guard already existed, good
+		if (!id || !file) return; 
 
 		if (suppressCodePaneSync) {
 			suppressCodePaneSync = false;
@@ -129,17 +124,16 @@
 			codePaneContent = next;
 			saveCodeDraft(id, next);
 		} catch {
-			// file isn't convertible yet - leave the Code pane draft alone.
 		}
 	});
+
+	// todo: not a fan of the way this is done but i will fix it later !
 
 	function onCodePaneChange(newCode: string) {
 		const id = activeTab.current;
 		const file = activeFile.current;
 		if (!id || !file) return;
 
-		// Always persist the raw text, valid or not - protects against
-		// losing in-progress edits on refresh.
 		saveCodeDraft(id, newCode);
 
 		let request;
@@ -475,16 +469,17 @@
 												value="Inspector"
 												class="flex min-h-0 grow flex-col overflow-y-auto"
 											>
-												<!-- {#key sessCtx.selectedAgent} -->
 												<Tabs.Root value="Settings">
 													<Tabs.List variant="line" class="*:after:bg-brand-primary">
 														<Tabs.Trigger value="Settings">Settings</Tabs.Trigger>
+														<Tabs.Trigger value="Budget">Budget</Tabs.Trigger>
 													</Tabs.List>
+
 													<Tabs.Content value="Settings" class="p-2">
 														<AgentPane />
 													</Tabs.Content>
+													<Tabs.Content value="Budget" class="p-2">Budget settings</Tabs.Content>
 												</Tabs.Root>
-												<!-- {/key} -->
 											</Tabs.Content>
 											<Tabs.Content value="Session" class="p-2">
 												<SessionPane />

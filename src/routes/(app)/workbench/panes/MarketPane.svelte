@@ -23,8 +23,10 @@
 	import AgentMarketView from '$lib/components/dialogs/AgentMarketView.svelte';
 
 	import { useDnD } from '$lib/components/DndProvider.svelte';
+	import { getSessionContext } from '$lib/sessionCreatorContext';
 
 	let ctx = appContext.get();
+	let sessCtx = getSessionContext();
 
 	let search = $state('');
 	let loading = $state(true);
@@ -36,11 +38,17 @@
 			return {
 				...catalog,
 				agents: Object.values(catalog.agents).filter(
-					(agent) => agent.name.toLocaleLowerCase().indexOf(search) !== -1
+					(agent) => agent.name.toLocaleLowerCase().indexOf(searchLower) !== -1
 				)
 			};
 		})
 	);
+
+	$effect(() => {
+		sessCtx.availableAgents = filtered.flatMap((catalog) => catalog.agents);
+	});
+
+
 	let filteredCount = $derived(filtered.reduce((acc, cur) => acc + cur.agents.length, 0));
 	loading = false;
 

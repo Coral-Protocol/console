@@ -34,13 +34,6 @@ export function toSessionRequest(file: FileData): SessionRequest {
 	};
 }
 
-/**
- * Reverse of toSessionRequest. Converts a server-shape SessionRequest back
- * into FileData, reusing clientIds from `previous` wherever an agent/group
- * can be matched (by name), so editing in the Code pane doesn't reshuffle
- * diagram node identity. New entries get fresh clientIds; group names are
- * synthesized since the server doesn't store them.
- */
 export function fromSessionRequest(request: SessionRequest, previous: FileData): FileData {
 	const prevAgentByName = new Map(previous.agents.map((a) => [a.name, a]));
 
@@ -54,8 +47,6 @@ export function fromSessionRequest(request: SessionRequest, previous: FileData):
 
 	const nameToClientId = new Map(agents.map((a) => [a.name, a.clientId]));
 
-	// Match groups by their resolved member-name set, so reordering members
-	// or untouched groups keep their identity across edits.
 	const prevGroupByMemberKey = new Map(
 		previous.groups.map((g) => {
 			const names = g.agentClientIds

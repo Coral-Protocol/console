@@ -88,7 +88,6 @@
 		const id = curAgent?.id;
 		(async () => {
 			const result = await getDetails(id);
-			// guard against race: only commit if this is still the current agent
 			if (id === curAgent?.id) {
 				agentDetails = result;
 				agentDetailsFor = id ? agentIdOf(id) : null;
@@ -118,7 +117,6 @@
 		}, {});
 	});
 
-	// // Type-safe helpers for exhaustion behavior
 	// function getAgentExhaustionBehavior(agentIdx: number) {
 	// 	return $formData.agents[agentIdx]?.budgetSettings?.exhaustionBehavior;
 	// }

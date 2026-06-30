@@ -8,7 +8,9 @@
 		type Node,
 		type Edge,
 		ConnectionMode,
-		useOnSelectionChange
+		useOnSelectionChange,
+		type NodeEventWithPointer,
+		type PaneEvents
 	} from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
 
@@ -37,6 +39,7 @@
 	const { setCenter } = useSvelteFlow();
 	import { activeFile } from '../../activeFile.svelte';
 	let sessCtx = getSessionContext();
+	let ctx = appContext.get();
 
 	useOnSelectionChange(({ nodes, edges }) => {
 		sessCtx.selectedAgent = nodes[0]?.id;
@@ -74,6 +77,9 @@
 
 	import { type Agent, type Group } from '$lib/fileStorage';
 	import { randomAdjective, randomAnimal } from '$lib/words';
+	import { appContext } from '$lib/context';
+	import { add } from 'date-fns';
+	import { PressedKeys } from 'runed';
 
 	const agents = $derived(activeFile.current?.agents ?? []);
 	const groups = $derived(activeFile.current?.groups ?? []);
@@ -341,20 +347,27 @@
 		draggingNode = null;
 	}
 
-	function handleContextMenu({ event }: { event: MouseEvent }) {
+	let contextedNode = $state<Node>();
+	let contextPos = $state({ x: 0, y: 0 });
+	let openPaneContext = $state(false);
+	let customAnchor = $state<HTMLElement>(null!);
+
+	const handleContextMenu = ({ event }: { event: MouseEvent }) => {
 		if (!enableContext) return;
 		event.preventDefault();
-		openPaneContext = !openPaneContext;
-		if (!openPaneContext) return;
+		openPaneContext = true;
 		contextPos = {
 			x: event.clientX,
 			y: event.clientY
 		};
-	}
+		contextedNode = undefined;
+	};
 
-	let contextPos = $state({ x: 0, y: 0 });
-	let openPaneContext = $state(false);
-	let customAnchor = $state<HTMLElement>(null!);
+	const handleNodeContextMenu: NodeEventWithPointer<MouseEvent> = ({ event, node }) => {
+		event.preventDefault();
+		handleContextMenu({ event });
+		contextedNode = node;
+	};
 
 	const agentData = useDnD();
 
@@ -366,13 +379,13 @@
 		}
 	};
 
-	const onDrop = (event: DragEvent) => {
-		event.preventDefault();
-		const agent = agentData.agent;
-		if (!agent) return;
-
+	const addAgent = (agent: any) => {
 		activeFile.addAgent({
-			id: { name: agent.name, version: agent.version, registrySourceId: { type: agent.source } },
+			id: {
+				name: agent.name,
+				version: agent.version,
+				registrySourceId: agent.registrySourceId ?? { type: agent.source }
+			},
 			name: `${randomAdjective()} ${randomAnimal()}`,
 			description: agent.description ?? '',
 			provider: { type: 'local', runtime: 'prototype' },
@@ -384,6 +397,17 @@
 			options: {}
 		});
 	};
+
+	const onDrop = (event: DragEvent) => {
+		event.preventDefault();
+		const agent = agentData.agent;
+		if (!agent) return;
+
+		addAgent(agent);
+	};
+
+	const keys = new PressedKeys();
+	const IsShiftPressed = $derived(keys.has('Shift'));
 </script>
 
 {#if mode.current}
@@ -396,6 +420,7 @@
 		fitView
 		ondrop={onDrop}
 		onpanecontextmenu={handleContextMenu}
+		onnodecontextmenu={handleNodeContextMenu}
 		onnodedragstart={handleNodeDragStart}
 		onnodedrag={handleNodeDrag}
 		onnodeclick={(nodes) => {
@@ -439,27 +464,68 @@
 				</Tooltip.Root>
 			</Panel>
 		{/if}
-		<div
-			style="position: fixed; left: {contextPos.x}px !important; top: {contextPos.y}px !important;"
-			bind:this={customAnchor}
-		></div>
-		{#if enableContext}
-			<Popover.Root bind:open={openPaneContext}>
-				<Popover.Content align="start" sideOffset={1} {customAnchor} class="p-0">
-					<Command.Root>
-						<Command.Input placeholder="Search available agents" />
-						<Command.List>
-							<Command.Empty>No results found.</Command.Empty>
-							<Command.Group heading="Available agents">
-								<!-- {#each array as item} -->
-								<Command.Item>Profile</Command.Item>
-								<!-- {/each} -->
-							</Command.Group>
-						</Command.List>
-					</Command.Root>
-				</Popover.Content>
-			</Popover.Root>
-		{/if}
+		{#key contextPos}
+			<div
+				style="position: fixed; left: {contextPos.x}px !important; top: {contextPos.y}px !important;"
+				bind:this={customAnchor}
+			></div>
+			{#if enableContext}
+				{@const availableAgents = Object.values(ctx.server.catalogs).flatMap((catalog) =>
+					Object.values(catalog.agents ?? {}).map((agent) => ({
+						...agent,
+						type: catalog.identifier.type
+					}))
+				)}
+				<Popover.Root bind:open={openPaneContext}>
+					<Popover.Content align="start" sideOffset={1} {customAnchor} class="p-0">
+						<Command.Root>
+							<Command.Input placeholder="Quick actions" />
+							<Command.List>
+								<Command.Empty>No results found.</Command.Empty>
+								{#if contextedNode}
+									<Command.Group heading={String(contextedNode.data.label ?? '')}>
+										<Command.Item
+											keywords={['delete', 'remove']}
+											onclick={() => {
+												activeFile.removeAgent(contextedNode!.id);
+												openPaneContext = false;
+											}}>Delete agent</Command.Item
+										>
+									</Command.Group>
+								{/if}
+								<Command.Group heading="Add agents">
+									{#each availableAgents as agent, i}
+										<Command.Item
+											class="flex grow justify-between"
+											keywords={['add', 'create']}
+											value={agent.name + i}
+											onclick={() => {
+												const details = {
+													name: agent.name,
+													version: agent.versions[0]!,
+													registrySourceId: { type: 'marketplace' }
+												};
+
+												addAgent(details);
+
+												if (!IsShiftPressed) {
+													openPaneContext = false;
+												}
+											}}
+											><span>{agent.name}</span>
+											<span class="text-muted-foreground! text-xs"
+												>{agent.type === 'local' ? 'local' : ''}</span
+											></Command.Item
+										>
+									{/each}
+								</Command.Group>
+								<Command.Group heading="Actions"></Command.Group>
+							</Command.List>
+						</Command.Root>
+					</Popover.Content>
+				</Popover.Root>
+			{/if}
+		{/key}
 
 		<Background {id} />
 	</SvelteFlow>

@@ -17,6 +17,12 @@ export type SessionCreatorContext = {
 
 	selectedAgent: string | undefined | null;
 	// detailedAgent: Awaited<ReturnType<CoralServer['lookupAgent']>> | null;
+	availableAgents:
+		| {
+				name: string;
+				versions: string[];
+		  }[]
+		| null;
 	selectedAgentError: string | Error | null;
 
 	form: SuperForm<z.output<FormSchema>>;
@@ -26,7 +32,6 @@ export type SessionCreatorContext = {
 
 export const createSessionContext = new Context<SessionCreatorContext>('sessionCreator');
 
-// Module-level store that survives HMR
 let _current: SessionCreatorContext | null = null;
 
 export function setSessionContext(ctx: SessionCreatorContext) {
@@ -36,5 +41,5 @@ export function setSessionContext(ctx: SessionCreatorContext) {
 
 export function getSessionContext(): SessionCreatorContext {
 	if (_current) return _current;
-	return createSessionContext.get(); // throws if truly not set
+	return createSessionContext.get();
 }

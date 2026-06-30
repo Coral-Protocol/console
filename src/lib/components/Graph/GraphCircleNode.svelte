@@ -14,9 +14,11 @@
 			? 'border-brand-primary/80'
 			: 'border-border'} "
 	>
-		<span class="m-2 p-4 text-center text-xs" use:textfit={{ parent, mode: 'multi', max: 25 }}
-			>{data.label}
-		</span>
+		{#key data.label}
+			<span class="m-2 p-4 text-center text-xs" use:textfit={{ parent, mode: 'multi', max: 25 }}
+				>{data.label}
+			</span>
+		{/key}
 	</div>
 	<Handle type="source" position={Position.Bottom} class="pointer-events-none" />
 	<span class="text-muted-foreground absolute bottom-0 w-full translate-y-full text-center text-xs"
