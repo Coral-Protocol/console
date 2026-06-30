@@ -12,7 +12,7 @@
 	import IconCircuity from 'phosphor-icons-svelte/IconCircuitryRegular.svelte';
 	import * as Resizable from '@coral-os/component-library/ui/resizable/index.js';
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
-	import { PersistedState } from 'runed';
+	import { PersistedState, PressedKeys } from 'runed';
 
 	import IconCodeRegular from 'phosphor-icons-svelte/IconCodeRegular.svelte';
 	import IconTableRegular from 'phosphor-icons-svelte/IconTableRegular.svelte';
@@ -38,6 +38,7 @@
 	import DndProvider, { useDnD } from '$lib/components/DndProvider.svelte';
 	import { toSessionRequest, fromSessionRequest } from '$lib/payloadConstructor';
 	import { activeFile } from '../../../lib/activeFile.svelte';
+	import type { length } from 'zod';
 
 	let ctx = appContext.get();
 	let formSchema = $derived(makeFormSchema(ctx.server));
@@ -70,6 +71,8 @@
 	const openTabs = new PersistedState<Tab[]>('openTabs', []);
 	const activeTab = new PersistedState<string>('activeTab', '', { storage: 'session' });
 
+	const debugMode = new PersistedState<boolean>('debugMode', true, { storage: 'session' });
+
 	if (openTabs.current.length === 0 && filesMeta.current[0]) {
 		openTabs.current.push({ id: filesMeta.current[0].id, dirty: false });
 	}
@@ -77,7 +80,6 @@
 	if (!activeTab.current && openTabs.current[0]) {
 		activeTab.current = openTabs.current[0].id;
 	}
-
 
 	$effect(() => {
 		const id = activeTab.current;
@@ -99,7 +101,7 @@
 			const file = activeFile.current;
 			if (!file) return '';
 			try {
-				return JSON.stringify(toSessionRequest(file), null, 2);
+				return JSON.stringify(toSessionRequest(file), null, 4);
 			} catch {
 				return '';
 			}
@@ -112,7 +114,7 @@
 	$effect(() => {
 		const file = activeFile.current;
 		const id = activeTab.current;
-		if (!id || !file) return; 
+		if (!id || !file) return;
 
 		if (suppressCodePaneSync) {
 			suppressCodePaneSync = false;
@@ -120,11 +122,10 @@
 		}
 
 		try {
-			const next = JSON.stringify(toSessionRequest(file), null, 2);
+			const next = JSON.stringify(toSessionRequest(file), null, 4);
 			codePaneContent = next;
 			saveCodeDraft(id, next);
-		} catch {
-		}
+		} catch {}
 	});
 
 	// todo: not a fan of the way this is done but i will fix it later !
@@ -342,7 +343,12 @@
 						</Tooltip.Provider>
 					</div>
 				{/each}
-				<div class="flex h-full w-full min-w-0 flex-1 grow items-center border-y! border-r!">
+				<div
+					class="flex h-full w-full min-w-0 flex-1 grow items-center border-y! border-r!"
+					onauxclick={(e: MouseEvent) => {
+						if (e.button === 1) newTab();
+					}}
+				>
 					<Button variant="ghost" onclick={newTab}><IconPlusRegular class="size-4 " /></Button>
 				</div>
 			</Tabs.List>
@@ -389,8 +395,17 @@
 										<Tabs.List class="shrink-0 gap-2 bg-transparent pr-4">
 											<Tabs.Trigger value="Diagram"><IconGraphRegular /> Diagram</Tabs.Trigger>
 											<Tabs.Trigger value="Outline"><IconTableRegular /> Outline</Tabs.Trigger>
-											<Tabs.Trigger value="Code"><IconCodeRegular /> Code</Tabs.Trigger>
-											<Tabs.Trigger value="Raw"><IconCodeRegular /> Raw</Tabs.Trigger>
+											<Tabs.Trigger
+												value="Code"
+												onclick={(e) => {
+													if (e.shiftKey) {
+														debugMode.current = !debugMode.current;
+													}
+												}}
+											>
+												<IconCodeRegular />
+												Code
+											</Tabs.Trigger>
 										</Tabs.List>
 										<section class="flex shrink-0 gap-0">
 											<Button variant="outline" size="icon" class="border-r-0"
@@ -402,6 +417,10 @@
 											>
 										</section>
 									</header>
+
+									{#if debugMode.current === true}
+										<span class="text-destructive py-2 text-center">Debug mode!</span>
+									{/if}
 
 									<!-- Diagram tab: Graph now needs no rawPayload prop at all -->
 									<Tabs.Content value="Diagram" class="p-0">
@@ -423,17 +442,19 @@
 										{/if}
 									</Tabs.Content>
 
-									<Tabs.Content value="Code" class="relative flex min-h-0 flex-1 overflow-hidden">
+									<Tabs.Content
+										value="Code"
+										class="relative flex min-h-0 flex-1 flex-col overflow-hidden"
+									>
 										{#key activeFileMeta}
-											<CodePane bind:data={codePaneContent} onchange={onCodePaneChange} />
-										{/key}
-									</Tabs.Content>
-									<Tabs.Content value="Raw" class="relative flex min-h-0 flex-1 overflow-hidden">
-										{#key activeFileMeta}
-											<CodePane
-												data={JSON.stringify(activeFile.current, null, 4)}
-												onchange={() => {}}
-											/>
+											{#if debugMode.current === true}
+												<CodePane
+													data={JSON.stringify(activeFile.current, null, 4)}
+													onchange={() => {}}
+												/>
+											{:else}
+												<CodePane bind:data={codePaneContent} onchange={onCodePaneChange} />
+											{/if}
 										{/key}
 									</Tabs.Content>
 								</Tabs.Root>
