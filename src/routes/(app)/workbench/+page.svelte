@@ -58,7 +58,7 @@
 		// svelte-ignore state_referenced_locally
 		errors,
 		form,
-		selectedAgent: null,
+		selectedAgentClientId: null,
 		availableAgents: null
 	}) as SessionCreatorContext;
 
@@ -464,7 +464,7 @@
 								<Resizable.PaneGroup direction="vertical">
 									<Resizable.Pane defaultSize={35} minSize={10}>
 										<Tabs.Root
-											value={sessCtx.selectedAgent ? 'Inspector' : 'Agents'}
+											value={sessCtx.selectedAgentClientId ? 'Inspector' : 'Agents'}
 											class="h-full grow"
 										>
 											<Tabs.List variant="line" class="*:after:bg-brand-primary">

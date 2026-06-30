@@ -19,6 +19,8 @@
 		value={$value}
 		defaultValue={meta.default}
 		aria-invalid={false}
+		onchange={(e: { currentTarget: HTMLInputElement }) =>
+			($value = (e.currentTarget as HTMLInputElement).value)}
 	/>
 {:else}
 	<Input
@@ -33,5 +35,7 @@
 		{readonly}
 		onfocus={() => (readonly = false)}
 		onblur={() => (readonly = true)}
+		onchange={(e: { currentTarget: HTMLInputElement }) =>
+			($value = (e.currentTarget as HTMLInputElement).value)}
 	/>
 {/if}

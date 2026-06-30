@@ -17,4 +17,6 @@
 	defaultValue={meta.default}
 	aria-invalid={false}
 	placeholder={meta.default?.toString()}
+	onchange={(e: { currentTarget: HTMLInputElement }) =>
+		($value = (e.currentTarget as HTMLInputElement).value)}
 />

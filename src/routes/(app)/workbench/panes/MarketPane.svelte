@@ -48,11 +48,10 @@
 		sessCtx.availableAgents = filtered.flatMap((catalog) => catalog.agents);
 	});
 
-
 	let filteredCount = $derived(filtered.reduce((acc, cur) => acc + cur.agents.length, 0));
 	loading = false;
 
-	let selectedAgent = $state<{
+	let selectedAgentClientId = $state<{
 		agent: { name: string; versions: string[] };
 		details: Awaited<ReturnType<typeof ctx.server.lookupAgent>>;
 	} | null>(null);
@@ -98,7 +97,7 @@
 					<li class="w-full grow cursor-pointer">
 						<button
 							onclick={() => {
-								selectedAgent = { agent, details };
+								selectedAgentClientId = { agent, details };
 								dialogOpen = true;
 							}}
 							ondragstart={(event) =>
@@ -169,8 +168,8 @@
 
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Content class="bg-card h-full max-h-4/5 max-w-4/5! overflow-hidden" showClose={false}>
-		{#if selectedAgent}
-			<AgentMarketView agent={selectedAgent.agent} />
+		{#if selectedAgentClientId}
+			<AgentMarketView agent={selectedAgentClientId.agent} />
 		{/if}
 	</Dialog.Content>
 </Dialog.Root>

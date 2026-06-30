@@ -42,7 +42,7 @@
 	let ctx = appContext.get();
 
 	useOnSelectionChange(({ nodes, edges }) => {
-		sessCtx.selectedAgent = nodes[0]?.id;
+		sessCtx.selectedAgentClientId = nodes[0]?.id;
 	});
 	const nodeTypes = {
 		circleNode: GraphCircleNode
@@ -132,7 +132,7 @@
 			},
 			type: 'circleNode',
 			draggable: !viewOnly,
-			selected: agent.clientId === sessCtx.selectedAgent
+			selected: agent.clientId === sessCtx.selectedAgentClientId
 		}));
 
 		const edges = edgesFromGroups(groups);
@@ -380,11 +380,19 @@
 	};
 
 	const addAgent = async (agent: any) => {
+		const registrySourceId = agent.registrySourceId ?? { type: agent.source };
+
 		const lookupDetails = await ctx.server.lookupAgent({
 			name: agent.name,
 			version: agent.version,
-			registrySourceId: { type: agent.source }
+			registrySourceId
 		});
+
+		if (!lookupDetails) {
+			console.error('Failed to look up agent details for', agent);
+			return;
+		}
+
 		const runtime = (Object.keys(lookupDetails.registryAgent.runtimes).at(0) ?? undefined) as
 			| 'function'
 			| 'executable'
@@ -395,7 +403,7 @@
 			id: {
 				name: agent.name,
 				version: agent.version,
-				registrySourceId: agent.registrySourceId ?? { type: agent.source }
+				registrySourceId
 			},
 			name: `${randomAdjective()} ${randomAnimal()}`,
 			description: lookupDetails.registryAgent.info.description ?? '',
@@ -436,7 +444,7 @@
 		onnodedragstart={handleNodeDragStart}
 		onnodedrag={handleNodeDrag}
 		onnodeclick={(nodes) => {
-			sessCtx.selectedAgent = nodes.node.id;
+			sessCtx.selectedAgentClientId = nodes.node.id;
 		}}
 		edgesFocusable={false}
 		panOnDrag={[1]}
@@ -444,7 +452,7 @@
 		defaultEdgeOptions={{ selectable: false, focusable: false }}
 		autoPanOnNodeDrag={false}
 		onedgeclick={() => {
-			sessCtx.selectedAgent = null;
+			sessCtx.selectedAgentClientId = null;
 		}}
 		connectionMode={'loose' as ConnectionMode}
 		colorMode={mode.current}

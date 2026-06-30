@@ -80,6 +80,7 @@
 	import { TooltipLabel } from '@coral-os/component-library';
 	import { Separator } from '@coral-os/component-library/components/ui/separator/index.js';
 	import type { Agent } from '$lib/fileStorage';
+	import { activeFile } from '$lib/activeFile.svelte';
 
 	type Props = {
 		agent: Agent;
@@ -93,13 +94,15 @@
 	let type = $derived(meta.type);
 	let value = $derived(
 		store.toStore(
-			() => {
-				return agent.options?.[name]?.value;
-			},
+			() => agent.options?.[name]?.value,
 			(value) => {
 				if (!agent) return;
-				agent.options ??= {};
-				agent.options[name] = { type, value } as any; // Safety: trust me
+				activeFile.updateAgent(agent.clientId, {
+					options: {
+						...agent.options,
+						[name]: { type, value } as any // Safety: trust me (this sadly remains)
+					}
+				});
 			}
 		)
 	);
