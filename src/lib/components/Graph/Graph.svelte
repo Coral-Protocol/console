@@ -36,8 +36,13 @@
 	import * as Popover from '@coral-os/component-library/ui/popover/index.js';
 	import { getSessionContext, type SessionCreatorContext } from '$lib/sessionCreatorContext';
 	import { useDnD } from '$lib/components/DndProvider.svelte';
-	const { setCenter } = useSvelteFlow();
 	import { activeFile } from '../../activeFile.svelte';
+	const { setCenter, screenToFlowPosition } = useSvelteFlow();
+
+	// consume-once map: clientId -> spawn position
+	const pendingPositions = new Map<string, { x: number; y: number }>();
+	let contextFlowPosition: { x: number; y: number } | null = null;
+
 	let sessCtx = getSessionContext();
 	let ctx = appContext.get();
 
@@ -76,7 +81,7 @@
 	} = $props();
 
 	import { type Agent, type Group } from '$lib/fileStorage';
-	import { randomAdjective, randomAnimal } from '$lib/words';
+	import { randomAdjective, randomAnimal, randomPlant } from '$lib/words';
 	import { appContext } from '$lib/context';
 	import { add } from 'date-fns';
 	import { PressedKeys } from 'runed';
@@ -118,25 +123,32 @@
 	};
 
 	let data: GraphData = $derived.by(() => {
-		const nodes: AgentNode[] = agents.map((agent, index) => ({
-			id: agent.clientId,
-			position: {
-				x: viewOnly ? index * 120 : Math.cos(index * 2.4) * (40 + index * 6),
-				y: viewOnly ? index * 60 : Math.sin(index * 2.4) * (40 + index * 6)
-			},
-			data: {
-				label: agent.name,
-				type: agent.id.name,
-				viewOnly,
-				index
-			},
-			type: 'circleNode',
-			draggable: !viewOnly,
-			selected: agent.clientId === sessCtx.selectedAgentClientId
-		}));
+		const nodes: AgentNode[] = agents.map((agent, index) => {
+			let position: { x: number; y: number };
+			const pending = pendingPositions.get(agent.clientId);
+			if (pending) {
+				position = pending;
+				pendingPositions.delete(agent.clientId); // consume once
+			} else {
+				position = viewOnly
+					? { x: index * 120, y: index * 60 }
+					: {
+							x: Math.cos(index * 2.4) * (40 + index * 6),
+							y: Math.sin(index * 2.4) * (40 + index * 6)
+						};
+			}
+
+			return {
+				id: agent.clientId,
+				position,
+				data: { label: agent.name, type: agent.id.name, viewOnly, index },
+				type: 'circleNode',
+				draggable: !viewOnly,
+				selected: agent.clientId === sessCtx.selectedAgentClientId
+			};
+		});
 
 		const edges = edgesFromGroups(groups);
-
 		return { nodes, edges };
 	});
 
@@ -356,10 +368,8 @@
 		if (!enableContext) return;
 		event.preventDefault();
 		openPaneContext = true;
-		contextPos = {
-			x: event.clientX,
-			y: event.clientY
-		};
+		contextPos = { x: event.clientX, y: event.clientY };
+		contextFlowPosition = screenToFlowPosition({ x: event.clientX, y: event.clientY });
 		contextedNode = undefined;
 	};
 
@@ -379,7 +389,7 @@
 		}
 	};
 
-	const addAgent = async (agent: any) => {
+	const addAgent = async (agent: any, spawnPos: { x: number; y: number } | null = null) => {
 		const registrySourceId = agent.registrySourceId ?? { type: agent.source };
 
 		const lookupDetails = await ctx.server.lookupAgent({
@@ -399,13 +409,11 @@
 			| 'docker'
 			| 'prototype';
 
+		const beforeIds = new Set((activeFile.current?.agents ?? []).map((a) => a.clientId));
+
 		activeFile.addAgent({
-			id: {
-				name: agent.name,
-				version: agent.version,
-				registrySourceId
-			},
-			name: `${randomAdjective()} ${randomAnimal()}`,
+			id: { name: agent.name, version: agent.version, registrySourceId },
+			name: `${randomAdjective()} ${randomPlant()}`,
 			description: lookupDetails.registryAgent.info.description ?? '',
 			provider: { type: 'local', runtime },
 			blocking: false,
@@ -415,6 +423,11 @@
 			x402Budgets: [],
 			options: {}
 		});
+
+		if (spawnPos) {
+			const newAgent = (activeFile.current?.agents ?? []).find((a) => !beforeIds.has(a.clientId));
+			if (newAgent) pendingPositions.set(newAgent.clientId, spawnPos);
+		}
 	};
 	// todo: ^^ sort out the other provider types because they are not all 'local', but seafra has stated its not currently important
 
@@ -423,7 +436,8 @@
 		const agent = agentData.agent;
 		if (!agent) return;
 
-		addAgent(agent);
+		const dropPos = screenToFlowPosition({ x: event.clientX, y: event.clientY });
+		addAgent(agent, dropPos);
 	};
 
 	const keys = new PressedKeys();
@@ -526,7 +540,7 @@
 													registrySourceId: { type: 'marketplace' }
 												};
 
-												addAgent(details);
+												addAgent(details, contextFlowPosition);
 
 												if (!IsShiftPressed) {
 													openPaneContext = false;
@@ -550,3 +564,4 @@
 		<Background {id} />
 	</SvelteFlow>
 {/if}
+
