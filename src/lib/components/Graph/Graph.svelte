@@ -260,8 +260,8 @@
 				node.fx = node.x;
 				node.fy = node.y;
 			} else {
-				delete node.fx;
-				delete node.fy;
+				node.fx = undefined;
+				node.fy = undefined;
 			}
 		});
 
