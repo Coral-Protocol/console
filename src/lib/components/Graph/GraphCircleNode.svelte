@@ -1,36 +1,57 @@
 <script lang="ts">
-	import { Handle, Position, type NodeProps } from '@xyflow/svelte';
+	import { Handle, NodeToolbar, Position, type NodeProps } from '@xyflow/svelte';
 	import * as Tooltip from '@coral-os/component-library/ui/tooltip/index.js';
 	import { textfit } from 'svelte-textfit';
 	import IconLockOpen from 'phosphor-icons-svelte/IconLockOpenRegular.svelte';
 	import IconLock from 'phosphor-icons-svelte/IconLockRegular.svelte';
+	import IconTrash from 'phosphor-icons-svelte/IconTrashRegular.svelte';
+	import IconRobot from '$lib/icons/robot.svelte';
 
 	import { activeFile } from '$lib/activeFile.svelte';
+	import { Button } from '@coral-os/component-library/components/ui/button/index.js';
 	let parent: any = $state();
 
 	let { data, id, positionAbsoluteX, positionAbsoluteY }: NodeProps = $props();
+
+	const initials = $derived.by(() => {
+		if (!data.type) return '';
+		const type = data.type as string;
+		const words = type.split('-');
+		if (words.length === 1) {
+			return words[0]?.slice(0, 2).toUpperCase();
+		} else {
+			return words
+				.map((word) => word[0])
+				.join('')
+				.slice(0, 2)
+				.toUpperCase();
+		}
+	});
 </script>
 
-<div class="handle-container flyIn {data.viewOnly ? 'cursor-pointer' : ''}">
+<div
+	class="handle-container flyIn {data.viewOnly
+		? 'cursor-pointer'
+		: ''}  bg-secondary text-card-foreground @container relative flex h-35 w-35 flex-col items-center justify-center gap-0 rounded-full outline-4 {data.selected &&
+	!data.viewOnly
+		? 'outline-brand-primary/80'
+		: 'outline-accent'} "
+>
 	<div
 		bind:this={parent}
 		style:--delay="100ms"
-		class=" bg-card text-card-foreground @container relative flex h-32 w-32 items-center justify-center rounded-full outline-4 {data.selected &&
-		!data.viewOnly
-			? 'outline-brand-primary/80'
-			: 'outline-border'} "
+		class="flex h-2/3 w-2/3 flex-col items-center justify-center text-center"
 	>
-		{#key data.label}
-			<span class="m-2 p-4 text-center text-xs" use:textfit={{ parent, mode: 'multi', max: 25 }}
-				>{data.label}
-			</span>
-		{/key}
+		<IconRobot class="text-ring h-3/5 w-3/5" />
+		<span use:textfit={{ parent, mode: 'multi', max: 10 }}>{data.label}</span>
 	</div>
 	{#if data.alert}
 		<Tooltip.Root>
 			<Tooltip.Trigger class="absolute top-0 right-0"
 				><div
-					class="bg-destructive/80 border-destructive flex h-6 w-6 items-center justify-center rounded-full border-4 text-center"
+					class="flyIn
+						bg-destructive/80 border-destructive
+						 flex h-8 w-8 items-center justify-center rounded-full border-4 text-center"
 				>
 					!
 				</div></Tooltip.Trigger
@@ -38,36 +59,45 @@
 			<Tooltip.Content>{data.errors ?? 'error displaying error'}</Tooltip.Content>
 		</Tooltip.Root>
 	{/if}
-	{#if data.locked}
+
+	{#if data.selected || data.locked}
 		<Tooltip.Root>
 			<Tooltip.Trigger
-				class="absolute top-0 left-0"
+				class="group absolute top-0 left-0 "
+				data-locked={data.locked}
+				data-selected={data.selected}
 				onclick={() => {
-					activeFile.updateAgent(id, {
-						nodeData: { position: { positionAbsoluteX, positionAbsoluteY }, locked: false }
-					});
+					if (data.selected) {
+						activeFile.updateAgent(id, {
+							nodeData: {
+								position: { x: positionAbsoluteX, y: positionAbsoluteY },
+								locked: !data.locked
+							}
+						});
+					}
 				}}
-				>{#if data.selected}
-					<div
-						class=" bg-card flex h-8 w-8 items-center justify-center rounded-full border-4 text-center transition-opacity hover:opacity-100"
-					>
-						<IconLockOpen class="h-4 w-4" />
-					</div>
-				{:else}
-					<div
-						class=" flyIn text-foreground/50 m-1 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--xy-background-color-default)] text-center"
-					>
-						<IconLock class="h-4 w-4" />
-					</div>
-				{/if}</Tooltip.Trigger
 			>
-			<Tooltip.Content>{data.selected ? 'unlock position' : 'position locked'}</Tooltip.Content>
+				<div
+					class=" {data.selected
+						? 'bg-secondary border-4 '
+						: 'text-muted-foreground/70 bg-white dark:bg-[var(--xy-background-color-default)] '}  flyIn flex h-8 w-8 items-center justify-center rounded-full text-center"
+				>
+					{#if data.locked}
+						<IconLock />
+					{:else}
+						<IconLockOpen />
+					{/if}
+				</div>
+				<div
+					class=" flyIn flexitems-center justify-center rounded-full text-center transition-opacity hover:opacity-100"
+				></div>
+			</Tooltip.Trigger>
+			<Tooltip.Content class={data.selected ? 'opacity-100' : 'opacity-0'}
+				>{data.locked ? 'Unlock position' : 'Lock position'}</Tooltip.Content
+			>
 		</Tooltip.Root>
 	{/if}
 	<Handle type="source" position={Position.Bottom} class="pointer-events-none" />
-	<span class="text-muted-foreground absolute bottom-0 w-full translate-y-full text-center text-xs"
-		>{data.type}</span
-	>
 </div>
 
 <style>
@@ -83,6 +113,11 @@
 
 	:global(.svelte-flow__node) {
 		border-radius: 100%;
+		cursor: pointer !important;
+	}
+
+	:global(.svelte-flow__node.dragging) {
+		cursor: grabbing !important;
 	}
 
 	@media (prefers-reduced-motion: no-preference) {

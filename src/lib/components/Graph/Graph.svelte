@@ -11,7 +11,9 @@
 		useOnSelectionChange,
 		type NodeEventWithPointer,
 		type PaneEvents,
-		useStore
+		useStore,
+		MiniMap,
+		Controls
 	} from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
 
@@ -156,7 +158,7 @@
 				},
 				type: 'circleNode',
 				draggable: !viewOnly,
-				selectable: false,
+				selected: agent.clientId === sessCtx.selectedAgentClientId,
 				locked: nodeData?.locked ?? false
 			};
 		});
@@ -165,22 +167,8 @@
 		return { nodes, edges };
 	});
 
-	let nodes = $state.raw<Node[]>([]);
-	let edges = $state.raw<Edge[]>([]);
-
-	const safeNodes = (nodes: Node[]) =>
-		nodes.filter((n) => typeof n.id === 'string' && n.id.trim().length > 0);
-
-	$effect(() => {
-		const fresh = structuredClone(safeNodes(data.nodes));
-
-		const prevNodes = untrack(() => nodes);
-		nodes = fresh.map((n) => {
-			const existing = prevNodes.find((prev) => prev.id === n.id);
-			return existing ? { ...n, position: existing.position } : n;
-		});
-		edges = structuredClone(data.edges);
-	});
+	let nodes = $derived<AgentNode[]>(data.nodes);
+	let edges = $derived<GroupEdge[]>(data.edges);
 
 	let simulation: d3Force.Simulation<d3Force.SimulationNodeDatum, undefined>;
 	let running = $state.raw(false);
@@ -249,6 +237,13 @@
 		)
 	);
 
+	let lockedIdsSnapshot = new Set<string>();
+	$effect(() => {
+		lockedIdsSnapshot = lockedIds; // reads the $derived once per actual change
+	});
+
+	const POSITION_EPSILON = 0.25; // px — skip writes below this, avoids sub-pixel reactivity churn
+
 	function tick() {
 		if (!running) return;
 
@@ -256,7 +251,7 @@
 
 		simNodes.forEach((node) => {
 			const dragging = draggingNode?.id === node.id;
-			const locked = lockedIds.has(node.id);
+			const locked = lockedIdsSnapshot.has(node.id); // plain Set read, not reactive
 
 			if (dragging && draggingNode) {
 				node.fx = draggingNode.position.x;
@@ -272,26 +267,38 @@
 
 		simulation.tick();
 
-		nodes = simNodes
-			.map((simNode) => {
-				const originalNode = nodes.find((n) => n.id === simNode.id);
+		// O(n) lookup via Map instead of O(n) .find() per node (O(n²) total)
+		const nodeById = new Map(untrack(() => nodes).map((n) => [n.id, n]));
 
-				if (!originalNode) return null;
-				return {
-					...originalNode,
-					position: {
-						x: simNode.fx ?? simNode.x ?? 0,
-						y: simNode.fy ?? simNode.y ?? 0
-					}
-				};
-			})
-			.filter((n): n is Node => n !== null);
+		let changed = false;
+		const next: AgentNode[] = new Array(simNodes.length);
+
+		for (let i = 0; i < simNodes.length; i++) {
+			const simNode = simNodes[i];
+			const original = nodeById.get(simNode?.id as string);
+			if (!original) continue;
+
+			const x = simNode?.fx ?? simNode?.x ?? 0;
+			const y = simNode?.fy ?? simNode?.y ?? 0;
+			const dx = Math.abs(original.position.x - x);
+			const dy = Math.abs(original.position.y - y);
+
+			if (dx > POSITION_EPSILON || dy > POSITION_EPSILON) {
+				changed = true;
+				next[i] = { ...original, position: { x, y } };
+			} else {
+				next[i] = original;
+			}
+		}
+
+		if (changed) {
+			nodes = next.filter((n): n is AgentNode => n !== undefined);
+		}
 
 		window.requestAnimationFrame(() => {
 			if (running) tick();
 		});
 	}
-
 	$effect(() => {
 		if (viewOnly) return;
 		if (initialized) return;
@@ -394,7 +401,7 @@
 		draggingNode = null;
 	}
 
-	let contextedNode = $state<Node>();
+	let contextedNode = $state<AgentNode>();
 	let contextPos = $state({ x: 0, y: 0 });
 	let openPaneContext = $state(false);
 	let customAnchor = $state<HTMLElement>(null!);
@@ -411,7 +418,7 @@
 	const handleNodeContextMenu: NodeEventWithPointer<MouseEvent> = ({ event, node }) => {
 		event.preventDefault();
 		handleContextMenu({ event });
-		contextedNode = node;
+		contextedNode = node as AgentNode;
 	};
 
 	const agentData = useDnD();
@@ -481,10 +488,10 @@
 
 {#if mode.current}
 	<SvelteFlow
-		bind:nodes
-		bind:edges
+		{nodes}
+		{edges}
 		{nodeTypes}
-		class={cn('svelte-flow__pane.selection [&_.svelte-flow__edge-wrapper]:z-10!', className)}
+		class={cn('svelte-flow__pane.selection ', className)}
 		ondragover={onDragOver}
 		fitView
 		ondrop={onDrop}
@@ -495,13 +502,17 @@
 		onnodeclick={(nodes) => {
 			sessCtx.selectedAgentClientId = nodes.node.id;
 		}}
+		selectNodesOnDrag={true}
 		onpaneclick={() => {
+			sessCtx.selectedAgentClientId = null;
+		}}
+		snapGrid={[20, 20]}
+		onselectionend={() => {
 			sessCtx.selectedAgentClientId = null;
 		}}
 		selectionOnDrag={true}
 		edgesFocusable={false}
 		panOnDrag={[1]}
-		selectNodesOnDrag={false}
 		elevateNodesOnSelect={true}
 		onnodedragstop={handleNodeDragStop}
 		defaultEdgeOptions={{ selectable: false, focusable: false }}
@@ -515,8 +526,10 @@
 			hideAttribution: true
 		}}
 	>
+		<MiniMap pannable zoomable nodeBorderRadius={100} />
+		<Controls />
 		{#if controls}
-			<Panel position="top-right" class="flex gap-4">
+			<Panel position="top-right" class="flex gap-4 ">
 				<Tooltip.Root>
 					<Tooltip.Trigger
 						onclick={() => fitView()}
@@ -609,5 +622,9 @@
 <style>
 	:global(.svelte-flow__pane.selection) {
 		cursor: default;
+	}
+
+	:global(.svelte-flow__pane.dragging) {
+		cursor: grabbing;
 	}
 </style>
