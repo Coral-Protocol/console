@@ -7,7 +7,7 @@ type SessionRequest = components['schemas']['SessionRequest'];
 export function toSessionRequest(file: FileData): SessionRequest {
 	const clientIdToName = new Map(file.agents.map((agent) => [agent.clientId, agent.name]));
 
-	const agents: AgentGraphRequest['agents'] = file.agents.map(({ clientId, ...rest }) => rest);
+	const agents: AgentGraphRequest['agents'] = file.agents.map(({ clientId, nodeData, ...rest }) => rest);
 
 	const groups: AgentGraphRequest['groups'] = file.groups.map((group) =>
 		group.agentClientIds.map((clientId) => {

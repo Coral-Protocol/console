@@ -22,7 +22,7 @@ export const filesMeta = new PersistedState<FileMeta[]>('filesMeta', [
 type AgentGraphRequest = SessionCreatorContext['payload']['agentGraphRequest'];
 type ServerAgent = AgentGraphRequest['agents'][number];
 
-export type Agent = ServerAgent & { clientId: string };
+export type Agent = ServerAgent & { clientId: string; nodeData?: Record<string, any> };
 
 export type Group = {
 	clientId: string;
@@ -45,12 +45,6 @@ export type FileData = {
 	sessionSettings: SessionSettings;
 };
 
-/**
- * Generic debounced/cached string store keyed by a prefix + id. Used for
- * both the persisted FileData and the raw code-pane draft text. Tracks all
- * pending timers globally so they can be force-flushed on page unload -
- * otherwise a refresh shortly after an edit can lose the write entirely.
- */
 function createDebouncedStore(prefix: string) {
 	const cache = new Map<string, string>();
 	const pending = new Map<string, ReturnType<typeof setTimeout>>();
@@ -125,11 +119,6 @@ export async function deleteFileData(id: string) {
 	await codeDraftStore.remove(id);
 }
 
-/**
- * The Code pane's raw text is persisted independently of FileData, since it
- * may be invalid/mid-edit JSON that shouldn't be discarded on refresh, and
- * shouldn't be written into FileData until it actually parses.
- */
 export function loadCodeDraft(id: string, fallback: () => string): Promise<string> {
 	return codeDraftStore.load(id, fallback);
 }
@@ -138,10 +127,6 @@ export function saveCodeDraft(id: string, data: string, debounceMs = 300) {
 	codeDraftStore.save(id, data, debounceMs);
 }
 
-// Best-effort flush of any pending debounced writes before the page
-// unloads/refreshes. Not a guarantee (indexedDB writes are async and the
-// browser may not wait), but it closes most of the window where a quick
-// refresh right after an edit would otherwise lose data.
 if (typeof window !== 'undefined') {
 	window.addEventListener('pagehide', () => {
 		fileDataStore.flushAll();

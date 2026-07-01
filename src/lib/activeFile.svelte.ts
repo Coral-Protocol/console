@@ -54,7 +54,15 @@ class ActiveFileStore {
 		if (!this.current) return;
 		this.#commit({
 			...this.current,
-			agents: this.current.agents.map((a) => (a.clientId === clientId ? { ...a, ...patch } : a))
+			agents: this.current.agents.map((a) =>
+				a.clientId === clientId
+					? {
+							...a,
+							...patch,
+							nodeData: patch.nodeData ? { ...a.nodeData, ...patch.nodeData } : a.nodeData
+						}
+					: a
+			)
 		});
 	}
 

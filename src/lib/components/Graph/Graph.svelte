@@ -10,7 +10,8 @@
 		ConnectionMode,
 		useOnSelectionChange,
 		type NodeEventWithPointer,
-		type PaneEvents
+		type PaneEvents,
+		useStore
 	} from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
 
@@ -39,16 +40,11 @@
 	import { activeFile } from '../../activeFile.svelte';
 	const { setCenter, screenToFlowPosition } = useSvelteFlow();
 
-	// consume-once map: clientId -> spawn position
 	const pendingPositions = new Map<string, { x: number; y: number }>();
 	let contextFlowPosition: { x: number; y: number } | null = null;
 
 	let sessCtx = getSessionContext();
 	let ctx = appContext.get();
-
-	useOnSelectionChange(({ nodes, edges }) => {
-		sessCtx.selectedAgentClientId = nodes[0]?.id;
-	});
 	const nodeTypes = {
 		circleNode: GraphCircleNode
 	};
@@ -84,12 +80,18 @@
 	import { randomAdjective, randomAnimal, randomPlant } from '$lib/words';
 	import { appContext } from '$lib/context';
 	import { add } from 'date-fns';
-	import { PressedKeys } from 'runed';
+	import { PersistedState, PressedKeys } from 'runed';
 
 	const agents = $derived(activeFile.current?.agents ?? []);
 	const groups = $derived(activeFile.current?.groups ?? []);
 
-	type AgentNode = Node<{ label: string; type: string; index: number }>;
+	type AgentNode = Node<{
+		label: string;
+		type: string;
+		index: number;
+		locked: boolean;
+		selected: boolean;
+	}>;
 	type GroupEdge = Edge;
 
 	type GraphData = {
@@ -126,9 +128,12 @@
 		const nodes: AgentNode[] = agents.map((agent, index) => {
 			let position: { x: number; y: number };
 			const pending = pendingPositions.get(agent.clientId);
-			if (pending) {
+			const nodeData = agent.nodeData ? $state.snapshot(agent.nodeData) : undefined;
+			if (nodeData) {
+				position = nodeData.position;
+			} else if (pending) {
 				position = pending;
-				pendingPositions.delete(agent.clientId); // consume once
+				pendingPositions.delete(agent.clientId);
 			} else {
 				position = viewOnly
 					? { x: index * 120, y: index * 60 }
@@ -141,10 +146,18 @@
 			return {
 				id: agent.clientId,
 				position,
-				data: { label: agent.name, type: agent.id.name, viewOnly, index },
+				data: {
+					label: agent.name,
+					type: agent.id.name,
+					viewOnly,
+					index,
+					locked: nodeData?.locked ?? false,
+					selected: agent.clientId === sessCtx.selectedAgentClientId
+				},
 				type: 'circleNode',
 				draggable: !viewOnly,
-				selected: agent.clientId === sessCtx.selectedAgentClientId
+				selectable: false,
+				locked: nodeData?.locked ?? false
 			};
 		});
 
@@ -173,7 +186,6 @@
 	let running = $state.raw(false);
 	let initialized = $state.raw(false);
 	let draggingNode = $state.raw<DraggingNode | null>(null);
-	let lockedNodeIds = $state.raw(new Set<string>());
 
 	const { fitView } = useSvelteFlow();
 
@@ -231,6 +243,12 @@
 		);
 	}
 
+	let lockedIds = $derived(
+		new Set(
+			(activeFile.current?.agents ?? []).filter((a) => a.nodeData?.locked).map((a) => a.clientId)
+		)
+	);
+
 	function tick() {
 		if (!running) return;
 
@@ -238,12 +256,14 @@
 
 		simNodes.forEach((node) => {
 			const dragging = draggingNode?.id === node.id;
-			const locked = lockedNodeIds.has(node.id);
+			const locked = lockedIds.has(node.id);
 
 			if (dragging && draggingNode) {
 				node.fx = draggingNode.position.x;
 				node.fy = draggingNode.position.y;
 			} else if (locked) {
+				node.fx = node.x;
+				node.fy = node.y;
 			} else {
 				delete node.fx;
 				delete node.fy;
@@ -367,7 +387,9 @@
 				simNode.fx = targetNode.position.x;
 				simNode.fy = targetNode.position.y;
 			}
-			lockedNodeIds = new Set(lockedNodeIds).add(targetNode.id);
+			activeFile.updateAgent(targetNode.id, {
+				nodeData: { position: targetNode.position, locked: true }
+			});
 		}
 		draggingNode = null;
 	}
@@ -462,7 +484,7 @@
 		bind:nodes
 		bind:edges
 		{nodeTypes}
-		class={cn('[&_.svelte-flow__edge-wrapper]:z-10!', className)}
+		class={cn('svelte-flow__pane.selection [&_.svelte-flow__edge-wrapper]:z-10!', className)}
 		ondragover={onDragOver}
 		fitView
 		ondrop={onDrop}
@@ -473,6 +495,10 @@
 		onnodeclick={(nodes) => {
 			sessCtx.selectedAgentClientId = nodes.node.id;
 		}}
+		onpaneclick={() => {
+			sessCtx.selectedAgentClientId = null;
+		}}
+		selectionOnDrag={true}
 		edgesFocusable={false}
 		panOnDrag={[1]}
 		selectNodesOnDrag={false}
@@ -579,3 +605,9 @@
 		<Background {id} />
 	</SvelteFlow>
 {/if}
+
+<style>
+	:global(.svelte-flow__pane.selection) {
+		cursor: default;
+	}
+</style>
