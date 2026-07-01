@@ -11,10 +11,10 @@
 	<div
 		bind:this={parent}
 		style:--delay="100ms"
-		class=" bg-card text-card-foreground @container relative flex h-32 w-32 items-center justify-center rounded-full border-4 {selected &&
+		class=" bg-card text-card-foreground @container relative flex h-32 w-32 items-center justify-center rounded-full outline-4 {selected &&
 		!data.viewOnly
-			? 'border-brand-primary/80'
-			: 'border-border'} "
+			? 'outline-brand-primary/80'
+			: 'outline-border'} "
 	>
 		{#key data.label}
 			<span class="m-2 p-4 text-center text-xs" use:textfit={{ parent, mode: 'multi', max: 25 }}
@@ -52,7 +52,6 @@
 	}
 
 	:global(.svelte-flow__node) {
-		z-index: 1001 !important;
 		border-radius: 100%;
 	}
 

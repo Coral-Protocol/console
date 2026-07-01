@@ -173,6 +173,7 @@
 	let running = $state.raw(false);
 	let initialized = $state.raw(false);
 	let draggingNode = $state.raw<DraggingNode | null>(null);
+	let lockedNodeIds = $state.raw(new Set<string>());
 
 	const { fitView } = useSvelteFlow();
 
@@ -237,9 +238,12 @@
 
 		simNodes.forEach((node) => {
 			const dragging = draggingNode?.id === node.id;
+			const locked = lockedNodeIds.has(node.id);
+
 			if (dragging && draggingNode) {
 				node.fx = draggingNode.position.x;
 				node.fy = draggingNode.position.y;
+			} else if (locked) {
 			} else {
 				delete node.fx;
 				delete node.fy;
@@ -319,7 +323,7 @@
 			simulation.alphaTarget(0.15).restart();
 			if (cooldownFrame !== null) cancelAnimationFrame(cooldownFrame);
 			cooldownFrame = window.requestAnimationFrame(function cooldown() {
-				simulation.alphaTarget(0);
+				simulation.alphaTarget(0.15);
 				cooldownFrame = null;
 			});
 		}
@@ -355,7 +359,16 @@
 		if (targetNode) draggingNode = { id: targetNode.id, position: targetNode.position };
 	}
 
-	function handleNodeDragStop() {
+	function handleNodeDragStop({ targetNode }: { targetNode: Node | null }) {
+		if (targetNode) {
+			const simNodes = simulation.nodes() as SimNode[];
+			const simNode = simNodes.find((n) => n.id === targetNode.id);
+			if (simNode) {
+				simNode.fx = targetNode.position.x;
+				simNode.fy = targetNode.position.y;
+			}
+			lockedNodeIds = new Set(lockedNodeIds).add(targetNode.id);
+		}
 		draggingNode = null;
 	}
 
@@ -462,6 +475,8 @@
 		}}
 		edgesFocusable={false}
 		panOnDrag={[1]}
+		selectNodesOnDrag={false}
+		elevateNodesOnSelect={true}
 		onnodedragstop={handleNodeDragStop}
 		defaultEdgeOptions={{ selectable: false, focusable: false }}
 		autoPanOnNodeDrag={false}
@@ -564,4 +579,3 @@
 		<Background {id} />
 	</SvelteFlow>
 {/if}
-

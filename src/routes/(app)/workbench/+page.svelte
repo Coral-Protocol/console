@@ -361,7 +361,7 @@
 						>
 							<Resizable.Pane defaultSize={75} minSize={40} class="min-h-0 min-w-0 overflow-hidden">
 								<Tabs.Root value="Diagram" class="h-full grow gap-0 overflow-hidden">
-									<header class="flex w-full items-center gap-4 border-b p-4">
+									<header class="flex h-[85px] w-full items-center gap-4 border-b p-4">
 										<section class="flex min-w-0 flex-1 flex-col">
 											{#if activeFileMeta}
 												{#key activeFileMeta.id}
