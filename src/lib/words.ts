@@ -343,7 +343,6 @@ const plants = [
 	'lotus',
 	'venus flytrap',
 	'pitcher plant',
-	'morning glory',
 	'foxglove',
 	'snapdragon',
 	'honeysuckle'
