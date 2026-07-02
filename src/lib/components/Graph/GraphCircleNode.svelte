@@ -32,19 +32,29 @@
 <div
 	class="handle-container flyIn {data.viewOnly
 		? 'cursor-pointer'
-		: ''}  bg-secondary text-card-foreground @container relative flex h-35 w-35 flex-col items-center justify-center gap-0 rounded-full outline-4 {data.selected &&
+		: ''}  bg-secondary text-card-foreground relative flex h-35 w-35 flex-col items-center justify-center gap-0 rounded-full outline-4 {data.selected &&
 	!data.viewOnly
-		? 'outline-brand-primary/80'
+		? 'outline-brand-primary'
 		: 'outline-accent'} "
 >
 	<div
 		bind:this={parent}
 		style:--delay="100ms"
-		class="flex h-2/3 w-2/3 flex-col items-center justify-center text-center"
+		class="flex h-2/3 w-2/3 flex-col items-center justify-center text-center {data.selected
+			? 'text-card-foreground'
+			: 'text-muted-foreground'}"
 	>
-		<IconRobot class="text-ring h-3/5 w-3/5" />
-		<span use:textfit={{ parent, mode: 'multi', max: 10 }}>{data.label}</span>
+		<IconRobot class="h-3/5 w-3/5 " />
+		<span use:textfit={{ parent, mode: 'single', max: 10 }}>{data.label}</span>
+		<span
+			use:textfit={{ parent, mode: 'single', max: 10 }}
+			class="text-foreground/20 text-xs transition">{data.type}</span
+		>
 	</div>
+	<!-- {#if debugMode === 'true'}
+		{positionAbsoluteX}
+		{positionAbsoluteY}
+	{/if} -->
 	{#if data.alert}
 		<Tooltip.Root>
 			<Tooltip.Trigger class="absolute top-0 right-0"
@@ -83,9 +93,9 @@
 						: 'text-muted-foreground/70 bg-white dark:bg-[var(--xy-background-color-default)] '}  flyIn flex h-8 w-8 items-center justify-center rounded-full text-center"
 				>
 					{#if data.locked}
-						<IconLock />
+						<IconLock class="h-5 w-5" />
 					{:else}
-						<IconLockOpen />
+						<IconLockOpen class="h-5 w-5" />
 					{/if}
 				</div>
 				<div

@@ -237,21 +237,25 @@
 		)
 	);
 
-	let lockedIdsSnapshot = new Set<string>();
-	$effect(() => {
-		lockedIdsSnapshot = lockedIds; // reads the $derived once per actual change
-	});
+	let lockedIdsSnapshot = $derived(lockedIds);
 
-	const POSITION_EPSILON = 0.25; // px — skip writes below this, avoids sub-pixel reactivity churn
+	const POSITION_EPSILON = 0.25;
 
 	function tick() {
 		if (!running) return;
 
-		const simNodes = simulation.nodes() as SimNode[];
+		const simNodes = nodes.map((node) => ({
+			...node,
+			x: node.position.x,
+			y: node.position.y,
+			fx: node.data.locked ? node.position.x : undefined,
+			fy: node.data.locked ? node.position.y : undefined,
+			measured: { width: node.width ?? 32, height: node.height ?? 32 }
+		})) as SimNode[];
 
 		simNodes.forEach((node) => {
 			const dragging = draggingNode?.id === node.id;
-			const locked = lockedIdsSnapshot.has(node.id); // plain Set read, not reactive
+			const locked = lockedIdsSnapshot.has(node.id);
 
 			if (dragging && draggingNode) {
 				node.fx = draggingNode.position.x;
@@ -267,7 +271,6 @@
 
 		simulation.tick();
 
-		// O(n) lookup via Map instead of O(n) .find() per node (O(n²) total)
 		const nodeById = new Map(untrack(() => nodes).map((n) => [n.id, n]));
 
 		let changed = false;
@@ -526,7 +529,12 @@
 			hideAttribution: true
 		}}
 	>
-		<MiniMap pannable zoomable nodeBorderRadius={100} />
+		<MiniMap
+			class="border opacity-70 transition-opacity hover:opacity-100"
+			pannable
+			zoomable
+			nodeBorderRadius={100}
+		/>
 		<Controls />
 		{#if controls}
 			<Panel position="top-right" class="flex gap-4 ">
