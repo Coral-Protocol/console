@@ -19,5 +19,8 @@ export const tips = [
 	},
 	{
 		tip: 'Hold Shift while entering the Code view to enable debug mode and display internal data.'
+	},
+	{
+		tip: 'Holding Shift while dragging a node will lock its position, preventing it from being moved by the simulation.'
 	}
 ];

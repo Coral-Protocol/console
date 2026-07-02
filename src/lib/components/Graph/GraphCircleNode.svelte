@@ -6,12 +6,17 @@
 	import IconLock from 'phosphor-icons-svelte/IconLockRegular.svelte';
 	import IconTrash from 'phosphor-icons-svelte/IconTrashRegular.svelte';
 	import IconRobot from '$lib/icons/robot.svelte';
+	import IconRobotClosedEyes from '$lib/icons/robot-closed-eyes.svelte';
 
-	import { activeFile } from '$lib/activeFile.svelte';
+	import { activeFile, debugMode } from '$lib/activeFile.svelte';
 	import { Button } from '@coral-os/component-library/components/ui/button/index.js';
+	import { keys } from '$lib/keyHandler.svelte';
+
+	const isShiftPressed = $derived(keys.has('Shift'));
+
 	let parent: any = $state();
 
-	let { data, id, positionAbsoluteX, positionAbsoluteY }: NodeProps = $props();
+	let { data, id, positionAbsoluteX, positionAbsoluteY, dragging }: NodeProps = $props();
 
 	const initials = $derived.by(() => {
 		if (!data.type) return '';
@@ -44,17 +49,54 @@
 			? 'text-card-foreground'
 			: 'text-muted-foreground'}"
 	>
-		<IconRobot class="h-3/5 w-3/5 " />
+		{#if !data.alert}
+			<IconRobot class="h-3/5 w-3/5" />
+		{:else}
+			<IconRobotClosedEyes class="animation-duration-500 h-3/5 w-3/5 animate-bounce " />
+		{/if}
 		<span use:textfit={{ parent, mode: 'single', max: 10 }}>{data.label}</span>
 		<span
 			use:textfit={{ parent, mode: 'single', max: 10 }}
 			class="text-foreground/20 text-xs transition">{data.type}</span
 		>
 	</div>
-	<!-- {#if debugMode === 'true'}
+	{#if dragging && isShiftPressed}
+		<div
+			class=" flyIn absolute top-0 left-0 flex h-8 w-8 items-center justify-center rounded-full text-center opacity-0 dark:bg-[var(--xy-background-color-default)]"
+		>
+			{#if data.locked}
+				<IconLockOpen class="h-5 w-5" />
+			{:else}
+				<IconLock class="h-5 w-5" />
+			{/if}
+		</div>
+	{/if}
+	{#if debugMode.current === true}
 		{positionAbsoluteX}
 		{positionAbsoluteY}
-	{/if} -->
+		{#if data.selected}
+			<NodeToolbar class="mb-8 bg-[var(--xy-background-color-default)] p-2 ">
+				{#each Object.entries(data) as [key, dataItem]}
+					<div class="flex flex-row justify-between gap-5 border-b">
+						<strong>{key}:</strong>
+						{dataItem}
+					</div>
+				{/each}
+				<div class="flex flex-row justify-between gap-5 border-b">
+					<strong>dragging:</strong>
+					{dragging}
+				</div>
+				<div class="flex flex-row justify-between gap-5 border-b">
+					<strong>id:</strong>
+					{id}
+				</div>
+				<div class="flex flex-row justify-between gap-5 border-b">
+					<strong>shift key:</strong>
+					{isShiftPressed}
+				</div>
+			</NodeToolbar>
+		{/if}
+	{/if}
 	{#if data.alert}
 		<Tooltip.Root>
 			<Tooltip.Trigger class="absolute top-0 right-0"
@@ -71,41 +113,43 @@
 	{/if}
 
 	{#if data.selected || data.locked}
-		<Tooltip.Root>
-			<Tooltip.Trigger
-				class="group absolute top-0 left-0 "
-				data-locked={data.locked}
-				data-selected={data.selected}
-				onclick={() => {
-					if (data.selected) {
-						activeFile.updateAgent(id, {
-							nodeData: {
-								position: { x: positionAbsoluteX, y: positionAbsoluteY },
-								locked: !data.locked
-							}
-						});
-					}
-				}}
-			>
-				<div
-					class=" {data.selected
-						? 'bg-secondary border-4 '
-						: 'text-muted-foreground/70 bg-white dark:bg-[var(--xy-background-color-default)] '}  flyIn flex h-8 w-8 items-center justify-center rounded-full text-center"
+		{#if !dragging || !isShiftPressed}
+			<Tooltip.Root>
+				<Tooltip.Trigger
+					class="group absolute top-0 left-0 "
+					data-locked={data.locked}
+					data-selected={data.selected}
+					onclick={() => {
+						if (data.selected) {
+							activeFile.updateAgent(id, {
+								nodeData: {
+									position: { x: positionAbsoluteX, y: positionAbsoluteY },
+									locked: !data.locked
+								}
+							});
+						}
+					}}
 				>
-					{#if data.locked}
-						<IconLock class="h-5 w-5" />
-					{:else}
-						<IconLockOpen class="h-5 w-5" />
-					{/if}
-				</div>
-				<div
-					class=" flyIn flexitems-center justify-center rounded-full text-center transition-opacity hover:opacity-100"
-				></div>
-			</Tooltip.Trigger>
-			<Tooltip.Content class={data.selected ? 'opacity-100' : 'opacity-0'}
-				>{data.locked ? 'Unlock position' : 'Lock position'}</Tooltip.Content
-			>
-		</Tooltip.Root>
+					<div
+						class=" {data.selected
+							? 'bg-secondary  '
+							: 'text-muted-foreground/70 bg-white dark:bg-[var(--xy-background-color-default)] '}  flyIn flex h-8 w-8 items-center justify-center rounded-full text-center"
+					>
+						{#if data.locked}
+							<IconLock class="h-5 w-5" />
+						{:else}
+							<IconLockOpen class="h-5 w-5" />
+						{/if}
+					</div>
+					<div
+						class=" flyIn flexitems-center justify-center rounded-full text-center transition-opacity hover:opacity-100"
+					></div>
+				</Tooltip.Trigger>
+				<Tooltip.Content class={data.selected ? 'opacity-100' : 'opacity-0'}
+					>{data.locked ? 'Unlock position' : 'Lock position'}</Tooltip.Content
+				>
+			</Tooltip.Root>
+		{/if}
 	{/if}
 	<Handle type="source" position={Position.Bottom} class="pointer-events-none" />
 </div>

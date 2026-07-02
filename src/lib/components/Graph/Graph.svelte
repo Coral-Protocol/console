@@ -13,7 +13,9 @@
 		type PaneEvents,
 		useStore,
 		MiniMap,
-		Controls
+		Controls,
+		type OnSelectionDrag,
+		type NodesEventWithPointer
 	} from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
 
@@ -166,8 +168,12 @@
 		const edges = edgesFromGroups(groups);
 		return { nodes, edges };
 	});
+	let nodes = $state.raw<AgentNode[]>([]);
 
-	let nodes = $derived<AgentNode[]>(data.nodes);
+	$effect(() => {
+		nodes = data.nodes;
+	});
+
 	let edges = $derived<GroupEdge[]>(data.edges);
 
 	let simulation: d3Force.Simulation<d3Force.SimulationNodeDatum, undefined>;
@@ -244,14 +250,7 @@
 	function tick() {
 		if (!running) return;
 
-		const simNodes = nodes.map((node) => ({
-			...node,
-			x: node.position.x,
-			y: node.position.y,
-			fx: node.data.locked ? node.position.x : undefined,
-			fy: node.data.locked ? node.position.y : undefined,
-			measured: { width: node.width ?? 32, height: node.height ?? 32 }
-		})) as SimNode[];
+		const simNodes = simulation.nodes() as SimNode[];
 
 		simNodes.forEach((node) => {
 			const dragging = draggingNode?.id === node.id;
@@ -272,30 +271,28 @@
 		simulation.tick();
 
 		const nodeById = new Map(untrack(() => nodes).map((n) => [n.id, n]));
-
 		let changed = false;
-		const next: AgentNode[] = new Array(simNodes.length);
+		const next: AgentNode[] = [];
 
-		for (let i = 0; i < simNodes.length; i++) {
-			const simNode = simNodes[i];
-			const original = nodeById.get(simNode?.id as string);
+		for (const simNode of simNodes) {
+			const original = nodeById.get(simNode.id);
 			if (!original) continue;
 
-			const x = simNode?.fx ?? simNode?.x ?? 0;
-			const y = simNode?.fy ?? simNode?.y ?? 0;
+			const x = simNode.fx ?? simNode.x ?? 0;
+			const y = simNode.fy ?? simNode.y ?? 0;
 			const dx = Math.abs(original.position.x - x);
 			const dy = Math.abs(original.position.y - y);
 
 			if (dx > POSITION_EPSILON || dy > POSITION_EPSILON) {
 				changed = true;
-				next[i] = { ...original, position: { x, y } };
+				next.push({ ...original, position: { x, y } });
 			} else {
-				next[i] = original;
+				next.push(original);
 			}
 		}
 
 		if (changed) {
-			nodes = next.filter((n): n is AgentNode => n !== undefined);
+			nodes = next;
 		}
 
 		window.requestAnimationFrame(() => {
@@ -389,7 +386,13 @@
 		if (targetNode) draggingNode = { id: targetNode.id, position: targetNode.position };
 	}
 
-	function handleNodeDragStop({ targetNode }: { targetNode: Node | null }) {
+	function handleNodeDragStop({
+		targetNode,
+		event
+	}: {
+		targetNode: Node | null;
+		event: MouseEvent | TouchEvent;
+	}) {
 		if (targetNode) {
 			const simNodes = simulation.nodes() as SimNode[];
 			const simNode = simNodes.find((n) => n.id === targetNode.id);
@@ -397,14 +400,29 @@
 				simNode.fx = targetNode.position.x;
 				simNode.fy = targetNode.position.y;
 			}
-			activeFile.updateAgent(targetNode.id, {
-				nodeData: { position: targetNode.position, locked: true }
-			});
+			if (event.shiftKey) {
+				activeFile.updateAgent(targetNode.id, {
+					nodeData: { position: targetNode.position, locked: !targetNode.data.locked }
+				});
+			} else {
+				activeFile.updateAgent(targetNode.id, {
+					nodeData: { position: targetNode.position, locked: targetNode.data.locked ?? false }
+				});
+			}
 		}
 		draggingNode = null;
 	}
 
-	let contextedNode = $state<AgentNode>();
+	function handleSelectionDragStop(event: MouseEvent, nodes: AgentNode[]) {
+		if (nodes.length === 0) return;
+		for (const node of nodes) {
+			activeFile.updateAgent(node.id, {
+				nodeData: { position: node.position, locked: node.data.locked ?? false }
+			});
+		}
+	}
+
+	let contextedNodes = $state<AgentNode[]>([]);
 	let contextPos = $state({ x: 0, y: 0 });
 	let openPaneContext = $state(false);
 	let customAnchor = $state<HTMLElement>(null!);
@@ -415,13 +433,22 @@
 		openPaneContext = true;
 		contextPos = { x: event.clientX, y: event.clientY };
 		contextFlowPosition = screenToFlowPosition({ x: event.clientX, y: event.clientY });
-		contextedNode = undefined;
+		contextedNodes = [];
 	};
 
 	const handleNodeContextMenu: NodeEventWithPointer<MouseEvent> = ({ event, node }) => {
 		event.preventDefault();
 		handleContextMenu({ event });
-		contextedNode = node as AgentNode;
+		contextedNodes = [node as AgentNode];
+	};
+
+	const handleSelectionContextMenu: NodesEventWithPointer<MouseEvent, AgentNode> = ({
+		event,
+		nodes
+	}) => {
+		event.preventDefault();
+		handleContextMenu({ event });
+		contextedNodes = nodes as AgentNode[];
 	};
 
 	const agentData = useDnD();
@@ -491,8 +518,8 @@
 
 {#if mode.current}
 	<SvelteFlow
-		{nodes}
-		{edges}
+		bind:nodes
+		bind:edges
 		{nodeTypes}
 		class={cn('svelte-flow__pane.selection ', className)}
 		ondragover={onDragOver}
@@ -505,6 +532,8 @@
 		onnodeclick={(nodes) => {
 			sessCtx.selectedAgentClientId = nodes.node.id;
 		}}
+		onselectiondragstop={handleSelectionDragStop}
+		onselectioncontextmenu={handleSelectionContextMenu}
 		selectNodesOnDrag={true}
 		onpaneclick={() => {
 			sessCtx.selectedAgentClientId = null;
@@ -578,16 +607,34 @@
 							<Command.Input placeholder="Quick actions" />
 							<Command.List>
 								<Command.Empty>No results found.</Command.Empty>
-								{#if contextedNode}
-									<Command.Group heading={String(contextedNode.data.label ?? '')}>
-										<Command.Item
-											keywords={['delete', 'remove']}
-											onclick={() => {
-												activeFile.removeAgent(contextedNode!.id);
-												openPaneContext = false;
-											}}>Delete agent</Command.Item
-										>
-									</Command.Group>
+								{#if contextedNodes}
+									{#if contextedNodes.length === 1}
+										{@const node = contextedNodes[0] ?? ({} as AgentNode)}
+										<Command.Group heading={String(node.data.label ?? '')}>
+											<Command.Item
+												keywords={['delete', 'remove']}
+												onclick={() => {
+													activeFile.removeAgent(node.id);
+													openPaneContext = false;
+												}}>Delete agent</Command.Item
+											>
+										</Command.Group>
+									{:else if contextedNodes.length > 1}
+										{@const node = contextedNodes[0] ?? ({} as AgentNode)}
+										<Command.Group heading="{contextedNodes.length} Selected agents">
+											<Command.Item
+												keywords={['delete', 'remove']}
+												onclick={() => {
+													for (const node of contextedNodes) {
+														activeFile.removeAgent(node.id);
+													}
+													openPaneContext = false;
+												}}
+											>
+												Delete selected agents
+											</Command.Item>
+										</Command.Group>
+									{/if}
 								{/if}
 								<Command.Group heading="Add agents">
 									{#each availableAgents as agent, i}
