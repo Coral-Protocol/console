@@ -80,7 +80,7 @@
 		enableContext?: boolean;
 	} = $props();
 
-	import { type Agent, type Group } from '$lib/fileStorage';
+	import { type Agent, type Group } from '$lib/fileStorage.svelte';
 	import { randomAdjective, randomAnimal, randomPlant } from '$lib/words';
 	import { appContext } from '$lib/context';
 	import { add } from 'date-fns';
@@ -404,9 +404,9 @@
 				activeFile.updateAgent(targetNode.id, {
 					nodeData: { position: targetNode.position, locked: !targetNode.data.locked }
 				});
-			} else {
+			} else if (targetNode.data.locked) {
 				activeFile.updateAgent(targetNode.id, {
-					nodeData: { position: targetNode.position, locked: targetNode.data.locked ?? false }
+					nodeData: { position: targetNode.position }
 				});
 			}
 		}
@@ -416,9 +416,11 @@
 	function handleSelectionDragStop(event: MouseEvent, nodes: AgentNode[]) {
 		if (nodes.length === 0) return;
 		for (const node of nodes) {
-			activeFile.updateAgent(node.id, {
-				nodeData: { position: node.position, locked: node.data.locked ?? false }
-			});
+			if (node.data.locked) {
+				activeFile.updateAgent(node.id, {
+					nodeData: { position: node.position, locked: node.data.locked }
+				});
+			}
 		}
 	}
 

@@ -8,9 +8,10 @@
 	import IconRobot from '$lib/icons/robot.svelte';
 	import IconRobotClosedEyes from '$lib/icons/robot-closed-eyes.svelte';
 
-	import { activeFile, debugMode } from '$lib/activeFile.svelte';
+	import { activeFile } from '$lib/activeFile.svelte';
 	import { Button } from '@coral-os/component-library/components/ui/button/index.js';
 	import { keys } from '$lib/keyHandler.svelte';
+	import { debugMode } from '$lib/debugMode.svelte';
 
 	const isShiftPressed = $derived(keys.has('Shift'));
 

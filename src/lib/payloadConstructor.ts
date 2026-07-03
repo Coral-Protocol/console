@@ -1,4 +1,4 @@
-import type { FileData, Agent, Group } from './fileStorage';
+import type { FileData, Agent, Group } from './fileStorage.svelte';
 import type { components } from '$generated/api.ts'; // adjust path
 
 type AgentGraphRequest = components['schemas']['AgentGraphRequest'];

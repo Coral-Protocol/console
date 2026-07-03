@@ -6,7 +6,7 @@ export const tips = [
 		tip: 'You can also drag and drop agents in to your request from the Market tab!'
 	},
 	{
-		tip: 'Scroll click empty space in the files tab to create a new tab, and scroll click a tab, to quickly close it.'
+		tip: 'Middle click with your scroll wheel on the workbench tabs list, to quickly close, or open a new tab.'
 	},
 	{
 		tip: 'Files are always saved! pick up where you left off at any time.'

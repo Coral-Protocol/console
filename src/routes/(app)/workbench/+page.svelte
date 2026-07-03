@@ -1,18 +1,22 @@
 <script lang="ts">
+	import DeleteWarning from './DeleteWarning.svelte';
+
 	import * as Tabs from '@coral-os/component-library/ui/tabs/index.js';
 	import * as Menubar from '@coral-os/component-library/ui/menubar/index.js';
 	import * as Card from '@coral-os/component-library/ui/card/index.js';
 	import Header from '$lib/components/header.svelte';
 	import { Button, buttonVariants } from '@coral-os/component-library/ui/button/index.js';
 	import IconXRegular from 'phosphor-icons-svelte/IconXRegular.svelte';
+	import IconCircle from 'phosphor-icons-svelte/IconCircleFill.svelte';
 	import IconPlusRegular from 'phosphor-icons-svelte/IconPlusRegular.svelte';
 	import IconMinusRegular from 'phosphor-icons-svelte/IconMinusRegular.svelte';
+	import { Separator } from '@coral-os/component-library/ui/separator/index.js';
 
 	import * as Tooltip from '@coral-os/component-library/ui/tooltip/index.js';
 	import IconCircuity from 'phosphor-icons-svelte/IconCircuitryRegular.svelte';
 	import * as Resizable from '@coral-os/component-library/ui/resizable/index.js';
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
-	import { PersistedState, PressedKeys } from 'runed';
+	import { PersistedState } from 'runed';
 
 	import IconCodeRegular from 'phosphor-icons-svelte/IconCodeRegular.svelte';
 	import IconTableRegular from 'phosphor-icons-svelte/IconTableRegular.svelte';
@@ -23,7 +27,7 @@
 	import Graph from '$lib/components/Graph/Graph.svelte';
 	import CodePane from './panes/CodePane.svelte';
 	import { Input } from '@coral-os/component-library/ui/input/index.js';
-	import { formatDistanceToNow } from 'date-fns';
+	import { format, formatDistanceToNow } from 'date-fns';
 	import MarketPane from './panes/MarketPane.svelte';
 	import { appContext } from '$lib/context';
 	import { makeFormSchema } from '$lib/sessionSchema/types';
@@ -34,11 +38,26 @@
 	import ToolsPane from './panes/ToolsPane.svelte';
 	import GroupsPane from './panes/GroupsPane.svelte';
 	import SessionPane from './panes/SessionPane.svelte';
-	import { filesMeta, deleteFileData, loadCodeDraft, saveCodeDraft } from '$lib/fileStorage.js';
+	import {
+		filesMeta,
+		deleteFileData,
+		deleteFileDataDelta,
+		updateFileDataFromDelta,
+		hasFileDataDelta,
+		hasFileData
+	} from '$lib/fileStorage.svelte.js';
 	import DndProvider, { useDnD } from '$lib/components/DndProvider.svelte';
 	import { toSessionRequest, fromSessionRequest } from '$lib/payloadConstructor';
-	import { activeFile } from '../../../lib/activeFile.svelte';
-	import type { length } from 'zod';
+	import { activeFile } from '$lib/activeFile.svelte';
+	import { file, type length } from 'zod';
+	import { keys } from '$lib/keyHandler.svelte';
+	import { toast } from 'svelte-sonner';
+	import { debugMode } from '$lib/debugMode.svelte';
+
+	type Tab = { id: string };
+
+	const isShiftPressed = $derived(keys.has('Shift'));
+	const isMobile = new IsMobile();
 
 	let ctx = appContext.get();
 	let formSchema = $derived(makeFormSchema(ctx.server));
@@ -64,94 +83,17 @@
 
 	setSessionContext(sessCtx);
 
-	const isMobile = new IsMobile();
-
-	type Tab = { id: string; dirty: boolean };
-
-	const openTabs = new PersistedState<Tab[]>('openTabs', []);
-	const activeTab = new PersistedState<string>('activeTab', '', { storage: 'session' });
-
-	const debugMode = new PersistedState<boolean>('debugMode', false, { storage: 'session' });
-
-	if (openTabs.current.length === 0 && filesMeta.current[0]) {
-		openTabs.current.push({ id: filesMeta.current[0].id, dirty: false });
-	}
-
-	if (!activeTab.current && openTabs.current[0]) {
-		activeTab.current = openTabs.current[0].id;
-	}
+	const tabs = new PersistedState<Tab[]>('workbench:tabs', []);
+	const activeTab = new PersistedState<string>('workbench:activeTab', '');
 
 	$effect(() => {
-		const id = activeTab.current;
-		if (!id) {
+		const tabId = activeTab.current;
+		if (!tabId) {
 			activeFile.close();
 			return;
 		}
-		activeFile.open(id);
+		activeFile.open(tabId);
 	});
-
-	let codePaneContent = $state('');
-	let suppressCodePaneSync = false;
-
-	$effect(() => {
-		const id = activeTab.current;
-		if (!id) return;
-
-		loadCodeDraft(id, () => {
-			const file = activeFile.current;
-			if (!file) return '';
-			try {
-				return JSON.stringify(toSessionRequest(file), null, 4);
-			} catch {
-				return '';
-			}
-		}).then((draft) => {
-			if (activeTab.current !== id) return;
-			codePaneContent = draft;
-		});
-	});
-
-	$effect(() => {
-		const file = activeFile.current;
-		const id = activeTab.current;
-		if (!id || !file) return;
-
-		if (suppressCodePaneSync) {
-			suppressCodePaneSync = false;
-			return;
-		}
-
-		try {
-			const next = JSON.stringify(toSessionRequest(file), null, 4);
-			codePaneContent = next;
-			saveCodeDraft(id, next);
-		} catch {}
-	});
-
-	// todo: not a fan of the way this is done but i will fix it later !
-
-	function onCodePaneChange(newCode: string) {
-		const id = activeTab.current;
-		const file = activeFile.current;
-		if (!id || !file) return;
-
-		saveCodeDraft(id, newCode);
-
-		let request;
-		try {
-			request = JSON.parse(newCode);
-		} catch {
-			return;
-		}
-
-		try {
-			const next = fromSessionRequest(request, file);
-			suppressCodePaneSync = true;
-			activeFile.replace(next);
-		} catch (err) {
-			console.error('Failed to apply code pane edit', err);
-		}
-	}
 
 	function uniqueName(base: string, existingNames: string[]): string {
 		if (!existingNames.includes(base)) return base;
@@ -171,62 +113,117 @@
 	}
 
 	function newTab() {
-		const id = crypto.randomUUID();
-		const name = uniqueName(
+		const fileId = crypto.randomUUID();
+
+		const fileName = uniqueName(
 			'Untitled',
-			filesMeta.current.map((f) => f.name)
+			Object.values(filesMeta.current).map((f) => f.name)
 		);
-		filesMeta.current.push({ name, description: '', id, created: Date.now() });
-		openTabs.current.push({ id, dirty: true });
-		activeTab.current = id;
+
+		filesMeta.current = {
+			...filesMeta.current,
+			[fileId]: {
+				name: fileName,
+				created: Date.now()
+			}
+		};
+
+		tabs.current.push({ id: fileId });
+		activeTab.current = fileId;
 	}
 
+	let showDeleteConfirmation = $state(false);
+	let tabToClose = $state<string | null>(null);
+
+	const tabToCloseName = $derived(tabToClose ? (filesMeta.current[tabToClose]?.name ?? '') : '');
+
+	async function closeTab(id: string, force?: boolean) {
+		let delta;
+		let data;
+		try {
+			delta = await hasFileDataDelta(id);
+			data = await hasFileData(id);
+		} catch (error) {
+			console.error(error);
+			return;
+		}
+
+		if (delta && !force) {
+			tabToClose = id;
+			showDeleteConfirmation = true;
+			return;
+		}
+
+		if (!data) {
+			const { [id]: _removed, ...rest } = filesMeta.current;
+			filesMeta.current = rest;
+			deleteFileDataDelta(id);
+		}
+
+		showDeleteConfirmation = false;
+		goodbyeTab(id);
+	}
+
+	async function goodbyeTab(id: string) {
+		const tabIndex = tabs.current.findIndex((tab) => tab.id === id);
+		if (tabIndex === -1) return;
+
+		const wasActive = activeTab.current === id;
+		const nextActiveId = (tabIndex > 0 ? tabs.current[tabIndex - 1] : tabs.current[1])?.id ?? '';
+
+		tabs.current.splice(tabIndex, 1);
+		if (wasActive) activeTab.current = nextActiveId;
+
+		tabToClose = null;
+	}
+
+	// new tab order function: (i should make this more obvious):
+	// 1: create new id
+	// 2: create unique name
+	// 3: create new file metadata entry in filesMeta containg the name, description, id, and when it was created
+	// 4: open new tab, setting the tab ID to the new file ID
+	// 5: sets the current tab to the ID of the newly created tab ID
+	// 6: an $effect that is listening to the current tab id, uses the activeFile.open function to parse the json from a file with the provided ID, this func has a fallback function which in this case just passes the default body if it fails, which it will, if there is no id found when called
+
 	function openFile(id: string) {
-		const alreadyOpen = openTabs.current.some((tab) => tab.id === id);
+		const alreadyOpen = tabs.current.some((tab) => tab.id === id);
 		if (!alreadyOpen) {
-			openTabs.current.push({ id, dirty: false });
+			tabs.current.push({ id });
 		}
 		activeTab.current = id;
 	}
 
-	async function closeTab(id: string) {
-		const tabIndex = openTabs.current.findIndex((tab) => tab.id === id);
-		if (tabIndex === -1) return;
-
-		const wasActive = activeTab.current === id;
-		const nextActiveId =
-			(tabIndex > 0 ? openTabs.current[tabIndex - 1] : openTabs.current[1])?.id ?? '';
-
-		openTabs.current.splice(tabIndex, 1);
-		if (wasActive) activeTab.current = nextActiveId;
-	}
-
-	async function deleteFile(id: string) {
-		const fileIndex = filesMeta.current.findIndex((f) => f.id === id);
-		if (fileIndex !== -1) filesMeta.current.splice(fileIndex, 1);
-		await closeTab(id);
-		await deleteFileData(id);
-	}
-
-	let activeFileMeta = $derived(filesMeta.current.find((file) => file.id === activeTab.current));
-	let filesById = $derived(new Map(filesMeta.current.map((f) => [f.id, f])));
+	// async function deleteFile(id: string) {
+	// 	const fileIndex = filesMeta.current.findIndex((f) => f.id === id);
+	// 	if (fileIndex !== -1) filesMeta.current.splice(fileIndex, 1);
+	// 	await closeTab(id);
+	// 	await deleteFileData(id);
+	// }
 
 	let draftName = $state('');
 	let draftDescription = $state('');
 
 	$effect(() => {
-		draftName = activeFileMeta?.name ?? '';
-		draftDescription = activeFileMeta?.description ?? '';
+		draftName = activeFile.meta?.name ?? '';
+		draftDescription = activeFile.meta?.description ?? '';
 	});
 
 	function commitName() {
-		if (activeFileMeta) activeFileMeta.name = draftName;
+		if (activeFile.meta) activeFile.meta.name = draftName;
 	}
 
 	function commitDescription() {
-		if (activeFileMeta) activeFileMeta.description = draftDescription;
+		if (activeFile.meta) activeFile.meta.description = draftDescription;
 	}
 </script>
+
+<DeleteWarning
+	bind:showDeleteConfirmation
+	name={tabToCloseName}
+	id={tabToClose}
+	save={updateFileDataFromDelta}
+	{closeTab}
+/>
 
 <section class=" flex h-full min-h-0 grow flex-col overflow-hidden p-2">
 	<header class="bg-card">
@@ -242,35 +239,48 @@
 							align="start"
 							class="max-h-96 max-w-64 overflow-x-hidden overflow-y-auto"
 						>
-							{#each [...filesMeta.current].sort((a, b) => b.created - a.created) as file}
-								<Menubar.Item class="flex w-full justify-between" onclick={() => openFile(file.id)}
-									><span class=" truncate">{file.name}</span><span
-										class="text-foreground/50 w-max text-xs text-nowrap"
-										>{formatDistanceToNow(file.created, { addSuffix: true })}</span
-									></Menubar.Item
-								>
+							{#each Object.entries(filesMeta.current)
+								.map(([id, file]) => ({ ...file, id }))
+								.sort((a, b) => b.created - a.created) as file}
+								<Menubar.Item class="flex w-full justify-between" onclick={() => openFile(file.id)}>
+									<span class="truncate">{file.name}</span>
+									<span class="text-foreground/50 w-max text-xs text-nowrap">
+										{formatDistanceToNow(file.created, { addSuffix: true })}
+									</span>
+								</Menubar.Item>
 							{/each}
 						</Menubar.SubContent>
 					</Menubar.Sub>
 					<Menubar.Separator />
-					<Menubar.Item onclick={() => ((openTabs.current = []), (activeTab.current = ''))}
+					<Menubar.Item onclick={() => ((tabs.current = []), (activeTab.current = ''))}
 						>Close all tabs</Menubar.Item
 					>
 					<Menubar.Separator />
+					<Menubar.Item
+						onclick={() => {
+							if (activeFile.current?.id) {
+								toast.promise(activeFile.save());
+							}
+						}}>Save</Menubar.Item
+					>
+					<Menubar.Item disabled>Save as</Menubar.Item>
+
+					<Menubar.Separator />
+
 					<Menubar.Item onclick={() => window.print()}>Print</Menubar.Item>
 				</Menubar.Content>
 			</Menubar.Menu>
 			<Menubar.Menu>
 				<Menubar.Trigger>Edit</Menubar.Trigger>
 				<Menubar.Content>
-					<Menubar.Item
+					<!-- <Menubar.Item
 						disabled={!activeFile}
 						onclick={() => {
-							if (activeFileMeta?.id) {
-								activeFile && deleteFile(activeFileMeta.id);
+							if (activeFile.meta?.id) {
+								activeFile && deleteFile(activeFile.meta.id);
 							}
 						}}>Delete File</Menubar.Item
-					>
+					> -->
 				</Menubar.Content>
 			</Menubar.Menu>
 			<Menubar.Menu>
@@ -282,7 +292,7 @@
 			<Menubar.Menu>
 				<Menubar.Trigger>View</Menubar.Trigger>
 				<Menubar.Content>
-					<Menubar.Item onclick={() => ((openTabs.current = []), (activeTab.current = ''))}
+					<Menubar.Item onclick={() => ((tabs.current = []), (activeTab.current = ''))}
 						>Close All Tabs</Menubar.Item
 					>
 				</Menubar.Content>
@@ -296,7 +306,7 @@
 				variant="seamless"
 				class="bg-background/80  no-scrollbar flex h-9!  gap-0 overflow-x-auto overflow-y-hidden border-x *:relative *:border-t-0 *:border-l-0! "
 			>
-				{#each openTabs.current as tab, i}
+				{#each tabs.current as tab, i}
 					<div
 						class=" group relative flex h-full w-fit max-w-64 min-w-24 truncate overflow-hidden *:border-l-0!"
 					>
@@ -315,29 +325,42 @@
 											}}
 											class="not-data-active:bg-background/80! not-data-active:hover:bg-card! peer data-active:border-t-brand-primary! w-full grow justify-start overflow-hidden pr-8"
 											><span class="truncate"
-												>{filesById.get(tab.id)?.name ?? 'Untitled'}
+												>{filesMeta.current[tab.id]?.name ?? ''}
 											</span></Tabs.Trigger
 										>
 									{/snippet}
 								</Tooltip.Trigger>
 								<Tooltip.Content>
-									<p>{filesById.get(tab.id)?.name}</p>
+									<p>{filesMeta.current[tab.id]?.name ?? ''}</p>
 								</Tooltip.Content>
 							</Tooltip.Root>
 
 							<Tooltip.Root>
-								<Tooltip.Trigger class="">
+								<Tooltip.Trigger>
 									{#snippet child({ props }: any)}
 										<Button
 											{...props}
 											variant="ghost"
-											class="group-hover:text-foreground peer-data-active:text-foreground hover:bg-card-foreground/20! absolute top-0 right-1.5 bottom-0 my-auto aspect-auto size-6 -translate-0 text-transparent "
-											onclick={() => closeTab(tab.id)}><IconXRegular class="size-4" /></Button
+											class="group-hover:text-foreground group/button peer-data-active:text-foreground hover:bg-card-foreground/20! absolute top-0 right-1.5 bottom-0 my-auto aspect-auto size-6 -translate-0 text-transparent "
+											onclick={() => closeTab(tab.id)}
+											><IconXRegular
+												class="peer absolute top-0 bottom-0 m-auto size-4 {filesMeta.current[tab.id]
+													?.edited
+													? 'opacity-0 group-hover/button:opacity-100'
+													: ''}"
+											/>
+											<IconCircle
+												class="absolute top-0 bottom-0 m-auto size-2.5 opacity-0 {filesMeta.current[
+													tab.id
+												]?.edited
+													? 'text-foreground opacity-100 group-hover/button:opacity-0'
+													: ''}"
+											/></Button
 										>
 									{/snippet}
 								</Tooltip.Trigger>
 								<Tooltip.Content sideOffset={4}>
-									<p>close</p>
+									<p>{filesMeta.current[tab.id]?.edited ? 'close (unsaved changes)' : 'close'}</p>
 								</Tooltip.Content>
 							</Tooltip.Root>
 						</Tooltip.Provider>
@@ -360,11 +383,11 @@
 							class=" h-full min-h-0 w-full grow overflow-hidden rounded-lg "
 						>
 							<Resizable.Pane defaultSize={75} minSize={40} class="min-h-0 min-w-0 overflow-hidden">
-								<Tabs.Root value="Diagram" class="h-full grow gap-0 overflow-hidden">
+								<Tabs.Root value="Diagram" class="relative h-full grow gap-0 overflow-hidden">
 									<header class="flex h-[85px] w-full items-center gap-4 border-b p-4">
 										<section class="flex min-w-0 flex-1 flex-col">
-											{#if activeFileMeta}
-												{#key activeFileMeta.id}
+											{#if activeFile.meta}
+												{#key activeFile.meta}
 													<form
 														class="relative inline-flex w-max max-w-full min-w-0 items-center gap-1"
 													>
@@ -393,16 +416,18 @@
 											{/if}
 										</section>
 										<Tabs.List class="shrink-0 gap-2 bg-transparent pr-4">
+											<Button
+												class="opacity-0 {isShiftPressed
+													? 'hover:opacity-100 '
+													: 'pointer-events-none'}"
+												data-shift
+												onclick={(e: { shiftKey: any }) => {
+													debugMode.current = !debugMode.current;
+												}}>Debug mode</Button
+											>
 											<Tabs.Trigger value="Diagram"><IconGraphRegular /> Diagram</Tabs.Trigger>
 											<Tabs.Trigger value="Outline"><IconTableRegular /> Outline</Tabs.Trigger>
-											<Tabs.Trigger
-												value="Code"
-												onclick={(e: { shiftKey: any }) => {
-													if (e.shiftKey) {
-														debugMode.current = !debugMode.current;
-													}
-												}}
-											>
+											<Tabs.Trigger value="Code">
 												<IconCodeRegular />
 												Code
 											</Tabs.Trigger>
@@ -422,9 +447,34 @@
 										<span class="text-destructive py-2 text-center">Debug mode!</span>
 									{/if}
 
-									<!-- Diagram tab: Graph now needs no rawPayload prop at all -->
 									<Tabs.Content value="Diagram" class="p-0">
 										<Graph controls enableContext />
+										{#if debugMode.current === true}
+											<section
+												class="bg-destructive/10 text-destructive absolute top-40 left-0 z-50 flex w-fit flex-col gap-2 p-2 text-sm"
+											>
+												<span>active file id: {activeFile.current?.id}</span>
+
+												{#if activeFile.meta?.created}
+													<span>file created: {format(activeFile.meta.created, 'Pp')}</span>
+												{/if}
+												{#if activeFile.meta?.saved}
+													<span>file saved: {format(activeFile.meta.saved, 'Pp')}</span>
+												{/if}
+												{#if activeFile.meta?.edited}
+													<span>file edited: {format(activeFile.meta.edited, 'Pp')}</span>
+												{/if}
+												<span>file name: {activeFile.meta?.name}</span>
+												<span>file description: {activeFile.meta?.description}</span>
+												<span>files: {Object.entries(filesMeta.current).length}</span>
+												<span>tabs: {tabs.current.length}</span>
+												<span>tab id: {activeTab.current}</span>
+
+												<Separator />
+												<span>selected agent client id: {sessCtx.selectedAgentClientId}</span>
+												<span>file agents: {activeFile.current?.agents.length}</span>
+											</section>
+										{/if}
 									</Tabs.Content>
 
 									<Tabs.Content value="Outline" class="overflow-y-auto p-4">
@@ -446,14 +496,17 @@
 										value="Code"
 										class="relative flex min-h-0 flex-1 flex-col overflow-hidden"
 									>
-										{#key activeFileMeta}
+										{#key activeFile.meta}
 											{#if debugMode.current === true}
 												<CodePane
 													data={JSON.stringify(activeFile.current, null, 4)}
 													onchange={() => {}}
 												/>
 											{:else}
-												<CodePane bind:data={codePaneContent} onchange={onCodePaneChange} />
+												<CodePane
+													data={JSON.stringify(activeFile.current, null, 4)}
+													onchange={() => {}}
+												/>
 											{/if}
 										{/key}
 									</Tabs.Content>
@@ -513,29 +566,6 @@
 											</Tabs.Content>
 										</Tabs.Root>
 									</Resizable.Pane>
-									<!-- <Resizable.Handle />
-							<Resizable.Pane defaultSize={75} minSize={10}>
-								<Tabs.Root value="Agent">
-									<Tabs.List variant="line" class="*:after:bg-brand-primary">
-										<Tabs.Trigger value="Agent">Agent</Tabs.Trigger>
-										<Tabs.Trigger value="Tools">Tools</Tabs.Trigger>
-										<Tabs.Trigger value="Groups">Groups</Tabs.Trigger>
-										<Tabs.Trigger value="Session">Session</Tabs.Trigger>
-									</Tabs.List>
-									<Tabs.Content value="Agent" class="p-2">
-										<AgentPane />
-									</Tabs.Content>
-									<Tabs.Content value="Tools" class="p-2">
-										<ToolsPane />
-									</Tabs.Content>
-									<Tabs.Content value="Groups" class="p-2">
-										<GroupsPane />
-									</Tabs.Content>
-									<Tabs.Content value="Session" class="p-2">
-										<SessionPane />
-									</Tabs.Content>
-								</Tabs.Root>
-							</Resizable.Pane> -->
 								</Resizable.PaneGroup>
 							</Resizable.Pane>
 						</Resizable.PaneGroup>

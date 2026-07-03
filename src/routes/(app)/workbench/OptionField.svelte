@@ -79,7 +79,7 @@
 	import type { components } from '$generated/api';
 	import { TooltipLabel } from '@coral-os/component-library';
 	import { Separator } from '@coral-os/component-library/components/ui/separator/index.js';
-	import type { Agent } from '$lib/fileStorage';
+	import type { Agent } from '$lib/fileStorage.svelte';
 	import { activeFile } from '$lib/activeFile.svelte';
 
 	type Props = {

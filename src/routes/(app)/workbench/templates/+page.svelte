@@ -197,12 +197,7 @@
 										onclick={() => openTemplate(template)}
 									>
 										<SvelteFlowProvider>
-											<Graph
-												agents={graphData?.agentGraphRequest?.agents || []}
-												groups={graphData?.agentGraphRequest?.groups || []}
-												id={template}
-												viewOnly
-											></Graph>
+											<Graph id={template} viewOnly></Graph>
 										</SvelteFlowProvider>
 									</button>
 

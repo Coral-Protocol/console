@@ -20,7 +20,7 @@
 	import { getSessionContext } from '$lib/sessionCreatorContext';
 	import { activeFile } from '../../../../lib/activeFile.svelte';
 	import type { RuntimeId } from '$lib/sessionSchema/types';
-	import type { Agent } from '$lib/fileStorage';
+	import type { Agent } from '$lib/fileStorage.svelte';
 
 	let ctx = appContext.get();
 	let sessCtx = getSessionContext();
@@ -195,7 +195,7 @@
 						</span>
 					{/if}
 					{#each Object.values(activeFile.current?.sessionSettings.customTools ?? {}) as tool}
-						<Select.Item value={tool}>{tool}</Select.Item>
+						<Select.Item value={tool.title ?? ''}>{tool.title ?? ''}</Select.Item>
 					{/each}
 				</Select.Content>
 			</Select.Root>

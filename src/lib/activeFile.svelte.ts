@@ -1,45 +1,103 @@
 import {
 	loadFileData,
-	saveFileData,
 	defaultFileData,
 	type FileData,
 	type Agent,
-	type Group
-} from '$lib/fileStorage';
+	type Group,
+	saveFileDataDelta,
+	type FileMeta,
+	getFileMeta,
+	updateFileDataFromDelta,
+	loadFileDataDelta
+} from '$lib/fileStorage.svelte';
+import { PersistedState } from 'runed';
+import { debugMode } from './debugMode.svelte';
+
+function log(...args: unknown[]) {
+	if (debugMode.current) console.log('%c[activeFile]', 'color:#c084fc', ...args);
+}
+
+function logGroup<T>(label: string, fn: () => T): T {
+	if (!debugMode.current) return fn();
+
+	console.groupCollapsed(`%c[activeFile] ${label}`, 'color:#c084fc;font-weight:600');
+	const result = fn();
+
+	if (result instanceof Promise) {
+		return result.finally(() => console.groupEnd()) as T;
+	}
+
+	console.groupEnd();
+	return result;
+}
 
 class ActiveFileStore {
 	current = $state<FileData | null>(null);
+	meta = $state<FileMeta | null>(null);
 	#id = $state<string | null>(null);
 
 	async open(id: string) {
-		this.#id = id;
-		const raw = await loadFileData(id);
-		if (this.#id !== id) return;
-		try {
-			this.current = JSON.parse(raw);
-		} catch {
-			this.current = defaultFileData(id);
-		}
+		await logGroup(`open("${id}")`, async () => {
+			this.#id = id;
+			const rawData = await loadFileData(id);
+			const rawDelta = await loadFileDataDelta(id);
+			const meta = getFileMeta(id);
+			this.meta = meta;
+
+			if (this.#id !== id) {
+				log('id changed during open, aborting stale load', { requested: id, current: this.#id });
+				return;
+			}
+
+			try {
+				const data = JSON.parse(rawData);
+				const delta = rawDelta ? JSON.parse(rawDelta) : null;
+				this.current = delta ? { ...data, ...delta } : data;
+				log('loaded', delta ? '(with pending delta applied)' : '(no delta)');
+			} catch (err) {
+				log('failed to parse file data, falling back to default', err);
+				this.current = defaultFileData(id);
+			}
+		});
 	}
 
 	close() {
-		this.#id = null;
-		this.current = null;
+		logGroup(`close("${this.#id}")`, () => {
+			this.#id = null;
+			this.current = null;
+			this.meta = null;
+		});
+	}
+
+	async save() {
+		await logGroup(`save("${this.#id}")`, async () => {
+			if (!this.#id) {
+				log('no active file, aborting');
+				return;
+			}
+			await updateFileDataFromDelta(this.#id);
+			this.meta = getFileMeta(this.#id);
+		});
 	}
 
 	#commit(next: FileData) {
-		this.current = next;
-		saveFileData(next.id, JSON.stringify(next, null, 4));
+		logGroup(`commit("${next.id}")`, () => {
+			this.current = next;
+			saveFileDataDelta(next.id, JSON.stringify(next, null, 4));
+			this.meta = getFileMeta(next.id);
+		});
 	}
 
 	addAgent(agent: Omit<Agent, 'clientId'>) {
 		if (!this.current) return;
 		const newAgent: Agent = { ...agent, clientId: crypto.randomUUID() };
+		log('addAgent', $state.snapshot(newAgent));
 		this.#commit({ ...this.current, agents: [...this.current.agents, newAgent] });
 	}
 
 	removeAgent(clientId: string) {
 		if (!this.current) return;
+		log('removeAgent', clientId);
 		this.#commit({
 			...this.current,
 			agents: this.current.agents.filter((a) => a.clientId !== clientId),
@@ -52,6 +110,7 @@ class ActiveFileStore {
 
 	updateAgent(clientId: string, patch: Partial<Omit<Agent, 'clientId'>>) {
 		if (!this.current) return;
+		log('updateAgent', clientId, $state.snapshot(patch));
 		this.#commit({
 			...this.current,
 			agents: this.current.agents.map((a) =>
@@ -69,11 +128,13 @@ class ActiveFileStore {
 	addGroup(group: Omit<Group, 'clientId'>) {
 		if (!this.current) return;
 		const newGroup: Group = { ...group, clientId: crypto.randomUUID() };
+		log('addGroup', $state.snapshot(newGroup));
 		this.#commit({ ...this.current, groups: [...this.current.groups, newGroup] });
 	}
 
 	updateGroup(clientId: string, patch: Partial<Omit<Group, 'clientId'>>) {
 		if (!this.current) return;
+		log('updateGroup', clientId, $state.snapshot(patch));
 		this.#commit({
 			...this.current,
 			groups: this.current.groups.map((g) => (g.clientId === clientId ? { ...g, ...patch } : g))
@@ -82,6 +143,7 @@ class ActiveFileStore {
 
 	removeGroup(clientId: string) {
 		if (!this.current) return;
+		log('removeGroup', clientId);
 		this.#commit({
 			...this.current,
 			groups: this.current.groups.filter((g) => g.clientId !== clientId)
@@ -89,6 +151,7 @@ class ActiveFileStore {
 	}
 
 	replace(next: FileData) {
+		log('replace', next.id);
 		this.#commit(next);
 	}
 }
