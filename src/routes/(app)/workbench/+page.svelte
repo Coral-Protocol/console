@@ -221,7 +221,6 @@
 	bind:showDeleteConfirmation
 	name={tabToCloseName}
 	id={tabToClose}
-	save={updateFileDataFromDelta}
 	{closeTab}
 />
 
@@ -442,10 +441,6 @@
 											>
 										</section>
 									</header>
-
-									{#if debugMode.current === true}
-										<span class="text-destructive py-2 text-center">Debug mode!</span>
-									{/if}
 
 									<Tabs.Content value="Diagram" class="p-0">
 										<Graph controls enableContext />

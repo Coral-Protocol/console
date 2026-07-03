@@ -2,6 +2,7 @@ import { get, set, del } from 'idb-keyval';
 import { PersistedState } from 'runed';
 import type { SessionCreatorContext } from './sessionCreatorContext';
 import { debugMode } from './debugMode.svelte';
+import { success } from 'zod';
 
 function log(...args: unknown[]) {
 	if (debugMode.current) console.log('%c[fileStorage]', 'color:#888', ...args);
@@ -212,33 +213,26 @@ export async function hasFileData(id: string): Promise<boolean> {
 	});
 }
 
-export async function updateFileDataFromDelta(id: string) {
+export async function updateFileDataFromDelta(id: string): Promise<void> {
 	return logGroup(`updateFileDataFromDelta("${id}")`, async () => {
 		const delta = await unsavedFileStore.load(id, () => '');
 
 		if (!delta) {
-			log('no delta, aborting');
-			return 'Failed to save file';
+			throw new Error('No delta to save');
 		}
 
-		try {
-			savedFileStore.save(id, delta);
-			await savedFileStore.flush(id);
-			await unsavedFileStore.remove(id);
-			const meta = filesMeta.current[id];
+		savedFileStore.save(id, delta);
+		await savedFileStore.flush(id);
+		await unsavedFileStore.remove(id);
 
-			if (meta) {
-				filesMeta.current[id] = {
-					...meta,
-					saved: Date.now(),
-					edited: undefined
-				};
-			}
-			log('success');
-			return 'Successfully saved file';
-		} catch (err) {
-			log('failed', err);
-			return 'Failed to save file';
+		const meta = filesMeta.current[id];
+
+		if (meta) {
+			filesMeta.current[id] = {
+				...meta,
+				saved: Date.now(),
+				edited: undefined
+			};
 		}
 	});
 }
