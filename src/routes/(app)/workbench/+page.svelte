@@ -44,7 +44,8 @@
 		deleteFileDataDelta,
 		updateFileDataFromDelta,
 		hasFileDataDelta,
-		hasFileData
+		hasFileData,
+		type FileMeta
 	} from '$lib/fileStorage.svelte.js';
 	import DndProvider, { useDnD } from '$lib/components/DndProvider.svelte';
 	import { toSessionRequest, fromSessionRequest } from '$lib/payloadConstructor';
@@ -177,14 +178,6 @@
 		tabToClose = null;
 	}
 
-	// new tab order function: (i should make this more obvious):
-	// 1: create new id
-	// 2: create unique name
-	// 3: create new file metadata entry in filesMeta containg the name, description, id, and when it was created
-	// 4: open new tab, setting the tab ID to the new file ID
-	// 5: sets the current tab to the ID of the newly created tab ID
-	// 6: an $effect that is listening to the current tab id, uses the activeFile.open function to parse the json from a file with the provided ID, this func has a fallback function which in this case just passes the default body if it fails, which it will, if there is no id found when called
-
 	function openFile(id: string) {
 		const alreadyOpen = tabs.current.some((tab) => tab.id === id);
 		if (!alreadyOpen) {
@@ -208,21 +201,32 @@
 		draftDescription = activeFile.meta?.description ?? '';
 	});
 
-	function commitName() {
-		if (activeFile.meta) activeFile.meta.name = draftName;
-	}
+	let recentFiles = $derived(
+		Object.entries(filesMeta.current)
+			.map(([id, file]) => ({ ...file, id }))
+			.sort((a, b) => b.created - a.created)
+	);
 
-	function commitDescription() {
-		if (activeFile.meta) activeFile.meta.description = draftDescription;
-	}
+	// INFO: a note on how this all works:
+	// when a tab is clicked on, it will get activeFile to "open" the file with the tab id, which is a shared ID between tabs, file meta data, file data, and file data delta
+	// activeFile is then populated from fileStorage.svelte.ts
+	// the activeFile data, and meta, is displayed across the page
+	// any changes made will use functions provided by activeFile, for example, activeFile.updateAgent, or activeFile.addAgent, this is how changes are made
+	// when any changes are made using these functions, it will commit an update to the current data in activeFile, replacing the previous values, the ui reads from this, so it will display as expected
+	// activeFile has two main parts: data, and meta, meta is stored in localStorage, data is stored in IndexedDB
+	// when commiting updated activeData, it will save these changes to a new store in IndexedDB, as "unsaved-data"
+	// this allows tabs to maintain data of unsaved changes, without overwriting the files previously saved changes
+	// when desired, you can call activeFile.save, to commit the changes from unsaved-data, to saved-data, removing the unsaved-data in the process, and merging/overwriting any previous data inside the saved-data store
+	// so effectively, each file is:
+	// meta to store its name, description, stats, etc
+	// unsaved-data to store changes
+	// saved-data to store saved changes
+	// and the ui just calls update/get calls appropriately.
+
+	// also if you close a tab and the file has no delta or data, the files meta is deleted.
 </script>
 
-<DeleteWarning
-	bind:showDeleteConfirmation
-	name={tabToCloseName}
-	id={tabToClose}
-	{closeTab}
-/>
+<DeleteWarning bind:showDeleteConfirmation name={tabToCloseName} id={tabToClose} {closeTab} />
 
 <section class=" flex h-full min-h-0 grow flex-col overflow-hidden p-2">
 	<header class="bg-card">
@@ -238,9 +242,7 @@
 							align="start"
 							class="max-h-96 max-w-64 overflow-x-hidden overflow-y-auto"
 						>
-							{#each Object.entries(filesMeta.current)
-								.map(([id, file]) => ({ ...file, id }))
-								.sort((a, b) => b.created - a.created) as file}
+							{#each recentFiles as file}
 								<Menubar.Item class="flex w-full justify-between" onclick={() => openFile(file.id)}>
 									<span class="truncate">{file.name}</span>
 									<span class="text-foreground/50 w-max text-xs text-nowrap">
@@ -323,14 +325,19 @@
 												if (e.button === 1) closeTab(tab.id);
 											}}
 											class="not-data-active:bg-background/80! not-data-active:hover:bg-card! peer data-active:border-t-brand-primary! w-full grow justify-start overflow-hidden pr-8"
-											><span class="truncate"
+											><span class="truncate {filesMeta.current[tab.id]?.edited ? 'italic' : ''}"
 												>{filesMeta.current[tab.id]?.name ?? ''}
 											</span></Tabs.Trigger
 										>
 									{/snippet}
 								</Tooltip.Trigger>
 								<Tooltip.Content>
-									<p>{filesMeta.current[tab.id]?.name ?? ''}</p>
+									<p>
+										{filesMeta.current[tab.id]?.name ?? ''}
+										{#if filesMeta.current[tab.id]?.edited}
+											<span class="text-muted-foreground text-xs">(unsaved)</span>
+										{/if}
+									</p>
 								</Tooltip.Content>
 							</Tooltip.Root>
 
@@ -359,7 +366,7 @@
 									{/snippet}
 								</Tooltip.Trigger>
 								<Tooltip.Content sideOffset={4}>
-									<p>{filesMeta.current[tab.id]?.edited ? 'close (unsaved changes)' : 'close'}</p>
+									<p>close</p>
 								</Tooltip.Content>
 							</Tooltip.Root>
 						</Tooltip.Provider>
@@ -382,130 +389,167 @@
 							class=" h-full min-h-0 w-full grow overflow-hidden rounded-lg "
 						>
 							<Resizable.Pane defaultSize={75} minSize={40} class="min-h-0 min-w-0 overflow-hidden">
-								<Tabs.Root value="Diagram" class="relative h-full grow gap-0 overflow-hidden">
-									<header class="flex h-[85px] w-full items-center gap-4 border-b p-4">
-										<section class="flex min-w-0 flex-1 flex-col">
-											{#if activeFile.meta}
-												{#key activeFile.meta}
-													<form
-														class="relative inline-flex w-max max-w-full min-w-0 items-center gap-1"
-													>
-														<input
-															type="text"
-															maxlength="45"
-															bind:value={draftName}
-															onblur={commitName}
-															class="peer absolute inset-0 z-10 w-full min-w-0 text-xl outline-0!"
-														/>
-														<span class="pointer-events-none max-w-full truncate text-xl opacity-0"
-															>{draftName || ' '}</span
+								{#if tabs.current.length >= 1}
+									<Tabs.Root value="Diagram" class="relative h-full grow gap-0 overflow-hidden">
+										<header class="flex h-[85px] w-full items-center gap-4 border-b p-4">
+											<section class="flex min-w-0 flex-1 flex-col">
+												{#if activeFile.meta}
+													{#key activeFile.meta}
+														<form
+															class="relative inline-flex w-max max-w-full min-w-0 items-center gap-1"
 														>
-														<IconEditRegular class="z-0 shrink-0 opacity-50 peer-focus:opacity-0" />
-													</form>
-													<form>
-														<input
-															type="text"
-															bind:value={draftDescription}
-															placeholder="no description"
-															onblur={commitDescription}
-															class="text-foreground/80 outline-0!"
-														/>
-													</form>
-												{/key}
-											{/if}
-										</section>
-										<Tabs.List class="shrink-0 gap-2 bg-transparent pr-4">
-											<Button
-												class="opacity-0 {isShiftPressed
-													? 'hover:opacity-100 '
-													: 'pointer-events-none'}"
-												data-shift
-												onclick={(e: { shiftKey: any }) => {
-													debugMode.current = !debugMode.current;
-												}}>Debug mode</Button
-											>
-											<Tabs.Trigger value="Diagram"><IconGraphRegular /> Diagram</Tabs.Trigger>
-											<Tabs.Trigger value="Outline"><IconTableRegular /> Outline</Tabs.Trigger>
-											<Tabs.Trigger value="Code">
-												<IconCodeRegular />
-												Code
-											</Tabs.Trigger>
-										</Tabs.List>
-										<section class="flex shrink-0 gap-0">
-											<Button variant="outline" size="icon" class="border-r-0"
-												><IconMinusRegular /></Button
-											>
-											<Input value="100" class="w-16 border-x-0 bg-transparent!" />
-											<Button variant="outline" size="icon" class="border-l-0"
-												><IconPlusRegular /></Button
-											>
-										</section>
-									</header>
-
-									<Tabs.Content value="Diagram" class="p-0">
-										<Graph controls enableContext />
-										{#if debugMode.current === true}
-											<section
-												class="bg-destructive/10 text-destructive absolute top-40 left-0 z-50 flex w-fit flex-col gap-2 p-2 text-sm"
-											>
-												<span>active file id: {activeFile.current?.id}</span>
-
-												{#if activeFile.meta?.created}
-													<span>file created: {format(activeFile.meta.created, 'Pp')}</span>
+															<input
+																type="text"
+																maxlength="45"
+																bind:value={draftName}
+																onchange={() => {
+																	activeFile.updateMeta({ name: draftName });
+																}}
+																class="peer absolute inset-0 z-10 w-full min-w-0 text-xl outline-0!"
+															/>
+															<span
+																class="pointer-events-none max-w-full truncate text-xl opacity-0"
+																>{draftName || ' '}</span
+															>
+															<IconEditRegular
+																class="z-0 shrink-0 opacity-50 peer-focus:opacity-0"
+															/>
+														</form>
+														<form>
+															<input
+																type="text"
+																placeholder="no description"
+																bind:value={draftDescription}
+																onchange={() => {
+																	const id = activeFile?.current?.id;
+																	if (id && filesMeta.current[id])
+																		filesMeta.current[id].description = draftDescription ?? '';
+																}}
+																class="text-foreground/80 outline-0!"
+															/>
+														</form>
+													{/key}
 												{/if}
-												{#if activeFile.meta?.saved}
-													<span>file saved: {format(activeFile.meta.saved, 'Pp')}</span>
-												{/if}
-												{#if activeFile.meta?.edited}
-													<span>file edited: {format(activeFile.meta.edited, 'Pp')}</span>
-												{/if}
-												<span>file name: {activeFile.meta?.name}</span>
-												<span>file description: {activeFile.meta?.description}</span>
-												<span>files: {Object.entries(filesMeta.current).length}</span>
-												<span>tabs: {tabs.current.length}</span>
-												<span>tab id: {activeTab.current}</span>
-
-												<Separator />
-												<span>selected agent client id: {sessCtx.selectedAgentClientId}</span>
-												<span>file agents: {activeFile.current?.agents.length}</span>
 											</section>
-										{/if}
-									</Tabs.Content>
-
-									<Tabs.Content value="Outline" class="overflow-y-auto p-4">
-										{#if activeFile.current?.agents.length}
-											<ul class="flex flex-col gap-2">
-												{#each activeFile.current.agents as agent}
-													<li class="rounded-md border p-2">
-														<p class="font-medium">{agent.name}</p>
-														<p class="text-foreground/70 text-sm">{agent.description}</p>
-													</li>
-												{/each}
-											</ul>
-										{:else}
-											<p class="text-foreground/50">No agents in this graph yet.</p>
-										{/if}
-									</Tabs.Content>
-
-									<Tabs.Content
-										value="Code"
-										class="relative flex min-h-0 flex-1 flex-col overflow-hidden"
-									>
-										{#key activeFile.meta}
+											<Tabs.List class="shrink-0 gap-2 bg-transparent pr-4">
+												<Button
+													class="opacity-0 {isShiftPressed
+														? 'hover:opacity-100 '
+														: 'pointer-events-none'}"
+													data-shift
+													onclick={(e: { shiftKey: any }) => {
+														debugMode.current = !debugMode.current;
+													}}>Debug mode</Button
+												>
+												<Tabs.Trigger value="Diagram"><IconGraphRegular /> Diagram</Tabs.Trigger>
+												<Tabs.Trigger value="Outline"><IconTableRegular /> Outline</Tabs.Trigger>
+												<Tabs.Trigger value="Code">
+													<IconCodeRegular />
+													Code
+												</Tabs.Trigger>
+											</Tabs.List>
+											<section class="flex shrink-0 gap-0">
+												<Button variant="outline" size="icon" class="border-r-0"
+													><IconMinusRegular /></Button
+												>
+												<Input value="100" class="w-16 border-x-0 bg-transparent!" />
+												<Button variant="outline" size="icon" class="border-l-0"
+													><IconPlusRegular /></Button
+												>
+											</section>
+										</header>
+										<Tabs.Content value="Diagram" class="p-0">
+											<Graph controls enableContext />
 											{#if debugMode.current === true}
-												<CodePane
-													data={JSON.stringify(activeFile.current, null, 4)}
-													onchange={() => {}}
-												/>
-											{:else}
-												<CodePane
-													data={JSON.stringify(activeFile.current, null, 4)}
-													onchange={() => {}}
-												/>
+												<section
+													class="bg-destructive/10 text-destructive absolute top-40 left-0 z-50 flex w-fit flex-col gap-2 p-2 text-sm"
+												>
+													<span>active file id: {activeFile.current?.id}</span>
+
+													{#if activeFile.meta?.created}
+														<span>file created: {format(activeFile.meta.created, 'Pp')}</span>
+													{/if}
+													{#if activeFile.meta?.saved}
+														<span>file saved: {format(activeFile.meta.saved, 'Pp')}</span>
+													{/if}
+													{#if activeFile.meta?.edited}
+														<span>file edited: {format(activeFile.meta.edited, 'Pp')}</span>
+													{/if}
+													<span>file name: {activeFile.meta?.name}</span>
+													<span>file description: {activeFile.meta?.description}</span>
+													<span>files: {Object.entries(filesMeta.current).length}</span>
+													<span>tabs: {tabs.current.length}</span>
+													<span>tab id: {activeTab.current}</span>
+
+													<Separator />
+													<span>selected agent client id: {sessCtx.selectedAgentClientId}</span>
+													<span>file agents: {activeFile.current?.agents.length}</span>
+												</section>
 											{/if}
-										{/key}
-									</Tabs.Content>
-								</Tabs.Root>
+										</Tabs.Content>
+
+										<Tabs.Content value="Outline" class="overflow-y-auto p-4">
+											{#if activeFile.current?.agents.length}
+												<ul class="flex flex-col gap-2">
+													{#each activeFile.current.agents as agent}
+														<li class="rounded-md border p-2">
+															<p class="font-medium">{agent.name}</p>
+															<p class="text-foreground/70 text-sm">{agent.description}</p>
+														</li>
+													{/each}
+												</ul>
+											{:else}
+												<p class="text-foreground/50">No agents in this graph yet.</p>
+											{/if}
+										</Tabs.Content>
+
+										<Tabs.Content
+											value="Code"
+											class="relative flex min-h-0 flex-1 flex-col overflow-hidden"
+										>
+											{#key activeFile.meta}
+												{#if debugMode.current === true}
+													<CodePane
+														data={JSON.stringify(activeFile.current, null, 4)}
+														onchange={() => {}}
+													/>
+												{:else}
+													<CodePane
+														data={JSON.stringify(activeFile.current, null, 4)}
+														onchange={() => {}}
+													/>
+												{/if}
+											{/key}
+										</Tabs.Content>
+									</Tabs.Root>
+								{:else}
+									<div class="grid grid-cols-2">
+										<section>
+											Recent files:
+											{#each recentFiles as file}
+												<Button
+													variant="link"
+													class="flex w-full justify-between"
+													onclick={() => openFile(file.id)}
+												>
+													<span class="truncate">{file.name}</span>
+													<span class="text-foreground/50 w-max text-xs text-nowrap">
+														{formatDistanceToNow(file.created, { addSuffix: true })}
+													</span>
+												</Button>
+											{/each}
+										</section>
+										<section>
+											<Button
+												variant="link"
+												class="flex w-full justify-between"
+												onclick={() => newTab()}
+											>
+												New file
+											</Button>
+										</section>
+									</div>
+								{/if}
 							</Resizable.Pane>
 							<Resizable.Handle />
 							<Resizable.Pane defaultSize={35} minSize={10}>

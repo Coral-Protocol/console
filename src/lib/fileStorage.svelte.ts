@@ -2,7 +2,6 @@ import { get, set, del } from 'idb-keyval';
 import { PersistedState } from 'runed';
 import type { SessionCreatorContext } from './sessionCreatorContext';
 import { debugMode } from './debugMode.svelte';
-import { success } from 'zod';
 
 function log(...args: unknown[]) {
 	if (debugMode.current) console.log('%c[fileStorage]', 'color:#888', ...args);
@@ -162,10 +161,41 @@ export function loadFileData(id: string): Promise<string> {
 	});
 }
 
+export function defaultFileMeta(): FileMeta {
+	return {
+		name: 'Untitled',
+		created: Date.now()
+	};
+}
+
 export function getFileMeta(id: string): FileMeta | null {
 	const meta = filesMeta.current[id] ?? null;
 	log('getFileMeta', id, '->', meta ? $state.snapshot(meta) : null);
 	return meta;
+}
+
+export function saveFileMeta(id: string, meta: FileMeta) {
+	logGroup(`saveFileMeta("${id}")`, () => {
+		filesMeta.current[id] = meta;
+		log('saved', $state.snapshot(meta));
+	});
+}
+
+export function updateFileMeta(id: string, patch: Partial<FileMeta>): FileMeta {
+	return logGroup(`updateFileMeta("${id}")`, () => {
+		const current = filesMeta.current[id] ?? defaultFileMeta();
+		const next: FileMeta = { ...current, ...patch };
+		filesMeta.current[id] = next;
+		log('updateFileMeta', id, '->', $state.snapshot(next));
+		return next;
+	});
+}
+
+export function deleteFileMeta(id: string) {
+	logGroup(`deleteFileMeta("${id}")`, () => {
+		delete filesMeta.current[id];
+		log('deleted');
+	});
 }
 
 // the below function is for changes made to the default data that all new files are based off, this is saved in a separate store so that unsaved changes are kept on power loss/etc but not overwriting whatever is actually "saved", tl;dr it works the same way as vscode files :)
@@ -177,14 +207,8 @@ export function getFileMeta(id: string): FileMeta | null {
 export function saveFileDataDelta(id: string, data: string, debounceMs = 300) {
 	return logGroup(`saveFileDataDelta("${id}")`, () => {
 		unsavedFileStore.save(id, data, debounceMs, () => {
-			const meta = filesMeta.current[id];
-			if (meta) {
-				filesMeta.current[id] = {
-					...meta,
-					edited: Date.now()
-				};
-				log('edited timestamp updated');
-			}
+			updateFileMeta(id, { edited: Date.now() });
+			log('edited timestamp updated');
 		});
 	});
 }
@@ -225,15 +249,7 @@ export async function updateFileDataFromDelta(id: string): Promise<void> {
 		await savedFileStore.flush(id);
 		await unsavedFileStore.remove(id);
 
-		const meta = filesMeta.current[id];
-
-		if (meta) {
-			filesMeta.current[id] = {
-				...meta,
-				saved: Date.now(),
-				edited: undefined
-			};
-		}
+		updateFileMeta(id, { saved: Date.now(), edited: undefined });
 	});
 }
 

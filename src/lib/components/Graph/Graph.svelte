@@ -193,7 +193,7 @@
 			.force('x', d3Force.forceX().x(0).strength(0.1))
 			.force('y', d3Force.forceY().y(0).strength(0.1))
 			.force('collide', d3Force.forceCollide().radius(82 + 12))
-			.alphaTarget(0)
+			.alphaTarget(0.15)
 			.stop();
 
 		return () => {
@@ -373,14 +373,7 @@
 		}
 	}
 
-	function handleNodeDragStart({ targetNode }: { targetNode: Node | null }) {
-		if (targetNode) draggingNode = { id: targetNode.id, position: targetNode.position };
-		if (!running) {
-			running = true;
-			window.requestAnimationFrame(tick);
-		}
-		if (simulation) simulation.alphaTarget(0.1).restart();
-	}
+	function handleNodeDragStart({ targetNode }: { targetNode: Node | null }) {}
 
 	function handleNodeDrag({ targetNode }: { targetNode: Node | null }) {
 		if (targetNode) draggingNode = { id: targetNode.id, position: targetNode.position };
@@ -394,12 +387,6 @@
 		event: MouseEvent | TouchEvent;
 	}) {
 		if (targetNode) {
-			const simNodes = simulation.nodes() as SimNode[];
-			const simNode = simNodes.find((n) => n.id === targetNode.id);
-			if (simNode) {
-				simNode.fx = targetNode.position.x;
-				simNode.fy = targetNode.position.y;
-			}
 			if (event.shiftKey) {
 				activeFile.updateAgent(targetNode.id, {
 					nodeData: { position: targetNode.position, locked: !targetNode.data.locked }
@@ -414,6 +401,17 @@
 	}
 
 	function handleSelectionDragStop(event: MouseEvent, nodes: AgentNode[]) {
+		if (nodes.length === 0) return;
+		for (const node of nodes) {
+			if (node.data.locked) {
+				activeFile.updateAgent(node.id, {
+					nodeData: { position: node.position, locked: node.data.locked }
+				});
+			}
+		}
+	}
+
+	function handleSelectionDrag(event: MouseEvent, nodes: AgentNode[]) {
 		if (nodes.length === 0) return;
 		for (const node of nodes) {
 			if (node.data.locked) {

@@ -4,13 +4,13 @@ import {
 	type FileData,
 	type Agent,
 	type Group,
-	saveFileDataDelta,
 	type FileMeta,
+	saveFileDataDelta,
 	getFileMeta,
+	saveFileMeta,
 	updateFileDataFromDelta,
 	loadFileDataDelta
 } from '$lib/fileStorage.svelte';
-import { PersistedState } from 'runed';
 import { debugMode } from './debugMode.svelte';
 
 function log(...args: unknown[]) {
@@ -130,6 +130,14 @@ class ActiveFileStore {
 		const newGroup: Group = { ...group, clientId: crypto.randomUUID() };
 		log('addGroup', $state.snapshot(newGroup));
 		this.#commit({ ...this.current, groups: [...this.current.groups, newGroup] });
+	}
+
+	updateMeta(patch: Partial<Omit<FileMeta, 'created'>>) {
+		if (!this.#id || !this.meta) return;
+		log('updateMeta', $state.snapshot(patch));
+		const next: FileMeta = { ...this.meta, ...patch };
+		this.meta = next;
+		saveFileMeta(this.#id, next);
 	}
 
 	updateGroup(clientId: string, patch: Partial<Omit<Group, 'clientId'>>) {

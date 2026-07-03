@@ -19,11 +19,8 @@
 <Dialog.Root bind:open={showDeleteConfirmation}>
 	<Dialog.Content>
 		<Dialog.Header>
-			<Dialog.Title
-				>Do you want to save your changes to <span class="italic">{name ?? 'this file'}?</span
-				></Dialog.Title
-			>
-			<Dialog.Description>Unsaved changes will be lost forever if not saved.</Dialog.Description>
+			<Dialog.Title>Do you want to save your changes?</Dialog.Title>
+			<Dialog.Description>Unsaved changes will be lost if not saved.</Dialog.Description>
 		</Dialog.Header>
 		<Dialog.Footer>
 			<Button
