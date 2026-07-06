@@ -41,7 +41,7 @@
 
 	import * as Popover from '@coral-os/component-library/ui/popover/index.js';
 
-	import { cn } from '$lib/utils';
+	import { cn, dollarFmt } from '$lib/utils';
 	import { socketCtx } from '$lib/socket.svelte';
 	import { toggleMode } from 'mode-watcher';
 
@@ -65,6 +65,7 @@
 	import type { WithElementRef } from 'bits-ui';
 	import IconSpinnerGapRegular from 'phosphor-icons-svelte/IconSpinnerGapRegular.svelte';
 	import Settings from './Settings.svelte';
+	import { onMount } from 'svelte';
 
 	let ctx = appContext.get();
 	let tools = socketCtx.get();
@@ -72,6 +73,12 @@
 
 	let connecting = $state(false);
 	let error: string | null = $state(null);
+
+	onMount(() => {
+		if (ctx.cloud) {
+			ctx.cloud.getBalance();
+		}
+	});
 
 	const onNoAuth = useDebounce(() => {
 		if (toast.getActiveToasts().some((t) => t.id === 'server-disconnected')) {
@@ -323,6 +330,14 @@
 				>
 			{/if}
 		</div>
+		{#if ctx.cloud !== null}
+			<Sidebar.Group>
+				<Sidebar.GroupLabel class="text-muted-foreground">Balance</Sidebar.GroupLabel>
+				<Sidebar.GroupContent>
+					<Sidebar.Menu>{dollarFmt.format(ctx.cloud.balance ?? 0)}</Sidebar.Menu>
+				</Sidebar.GroupContent>
+			</Sidebar.Group>
+		{/if}
 
 		<Sidebar.Group>
 			<Sidebar.GroupLabel class="text-muted-foreground">Namespace</Sidebar.GroupLabel>

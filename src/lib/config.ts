@@ -4,6 +4,7 @@ import { z } from 'zod';
 const envSchema = z.object({
 	PUBLIC_LOGIN_BEHAVIOUR: z.union([z.literal('token'), z.literal('reload')]).default('token'),
 	PUBLIC_API_PATH: z.string().default('/'),
+	PUBLIC_CLOUD_API_PATH: z.string().default('/api/internal'),
 	PUBLIC_DEPLOYMENT: z.union([z.literal('cloud'), z.literal('local')]).default('local')
 });
 

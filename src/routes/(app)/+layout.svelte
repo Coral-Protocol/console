@@ -8,11 +8,14 @@
 
 	import TourOverlay from '$lib/components/tour/TourOverlay.svelte';
 	import { tour } from '$lib/components/tour/tourLib.svelte';
+	import config from '$lib/config';
+	import CloudClient from '$lib/CloudClient.svelte';
 
 	let { children } = $props();
 
 	let ctx: AppContext = $state({
 		server: new CoralServer(),
+		cloud: config.PUBLIC_DEPLOYMENT === 'cloud' ? new CloudClient() : null,
 		connection: null,
 		session: null,
 		sessions: null,
