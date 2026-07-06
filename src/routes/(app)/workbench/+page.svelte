@@ -1,4 +1,6 @@
 <script lang="ts">
+	import DiagonalLines from './DiagonalLines.svelte';
+
 	import DeleteWarning from './DeleteWarning.svelte';
 
 	import * as Tabs from '@coral-os/component-library/ui/tabs/index.js';
@@ -293,9 +295,13 @@
 			<Menubar.Menu>
 				<Menubar.Trigger>View</Menubar.Trigger>
 				<Menubar.Content>
-					<Menubar.Item onclick={() => ((tabs.current = []), (activeTab.current = ''))}
-						>Close All Tabs</Menubar.Item
+					<Menubar.Item
+						onclick={() => {
+							for (const tab of tabs.current) closeTab(tab.id);
+							activeTab.current = '';
+						}}>Close All Tabs</Menubar.Item
 					>
+					<!-- need to make these tabs go visually first instead of one by one, leave that in the backend id say -->
 				</Menubar.Content>
 			</Menubar.Menu>
 		</Menubar.Root>
@@ -359,7 +365,7 @@
 												class="absolute top-0 bottom-0 m-auto size-2.5 opacity-0 {filesMeta.current[
 													tab.id
 												]?.edited
-													? 'text-foreground opacity-100 group-hover/button:opacity-0'
+													? 'text-foreground/80 opacity-100 group-hover/button:opacity-0'
 													: ''}"
 											/></Button
 										>
@@ -388,7 +394,11 @@
 							direction="horizontal"
 							class=" h-full min-h-0 w-full grow overflow-hidden rounded-lg "
 						>
-							<Resizable.Pane defaultSize={75} minSize={40} class="min-h-0 min-w-0 overflow-hidden">
+							<Resizable.Pane
+								defaultSize={75}
+								minSize={40}
+								class="relative min-h-0 min-w-0 overflow-hidden"
+							>
 								{#if tabs.current.length >= 1}
 									<Tabs.Root value="Diagram" class="relative h-full grow gap-0 overflow-hidden">
 										<header class="flex h-[85px] w-full items-center gap-4 border-b p-4">
@@ -523,31 +533,58 @@
 										</Tabs.Content>
 									</Tabs.Root>
 								{:else}
-									<div class="grid grid-cols-2">
-										<section>
-											Recent files:
-											{#each recentFiles as file}
+									<DiagonalLines />
+									<div
+										class="absolute top-1/2 left-1/2 flex h-fit min-h-42 w-fit min-w-1/2 -translate-1/2 flex-col gap-4"
+									>
+										<h1 class="text-center text-xl">Coral Console Workbench</h1>
+										<div class="flex gap-4">
+											<section class="flex w-full grow flex-col gap-2">
+												<span>Recent</span>
+												{#each recentFiles as file}
+													<Button
+														variant="link"
+														class="text-brand-primary flex w-full justify-between"
+														onclick={() => openFile(file.id)}
+													>
+														<span class="truncate">{file.name}</span>
+														{#if file.saved}
+															<span class="text-foreground/50 w-max text-xs text-nowrap">
+																{formatDistanceToNow(file.saved, { addSuffix: true })}
+															</span>
+														{/if}
+													</Button>
+												{:else}
+													<span class="text-foreground/50">no recent files</span>
+												{/each}
+											</section>
+											<Separator orientation="vertical" class="min-h-42" />
+											<section class="flex w-full grow flex-col gap-2">
+												<span>Actions</span>
 												<Button
 													variant="link"
-													class="flex w-full justify-between"
-													onclick={() => openFile(file.id)}
+													class="text-brand-primary flex justify-between"
+													onclick={() => newTab()}
 												>
-													<span class="truncate">{file.name}</span>
-													<span class="text-foreground/50 w-max text-xs text-nowrap">
-														{formatDistanceToNow(file.created, { addSuffix: true })}
-													</span>
+													New file
 												</Button>
-											{/each}
-										</section>
-										<section>
-											<Button
-												variant="link"
-												class="flex w-full justify-between"
-												onclick={() => newTab()}
-											>
-												New file
-											</Button>
-										</section>
+												<Button
+													variant="link"
+													disabled={recentFiles.length <= 0}
+													class="text-brand-primary flex justify-between"
+													onclick={() => newTab()}
+												>
+													Open file
+												</Button>
+												<Button
+													variant="link"
+													class="text-brand-primary flex justify-between"
+													onclick={() => newTab()}
+												>
+													Import file
+												</Button>
+											</section>
+										</div>
 									</div>
 								{/if}
 							</Resizable.Pane>
