@@ -15,7 +15,9 @@
 		MiniMap,
 		Controls,
 		type OnSelectionDrag,
-		type NodesEventWithPointer
+		type NodesEventWithPointer,
+		type Viewport,
+		type OnDelete
 	} from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
 
@@ -26,7 +28,7 @@
 
 	import * as d3Force from 'd3-force';
 	import type { SessionAgentState } from '$lib/session.svelte';
-	import { cn } from '$lib/utils';
+	import { cn, getInitials } from '$lib/utils';
 
 	import {
 		Button,
@@ -42,7 +44,55 @@
 	import { getSessionContext, type SessionCreatorContext } from '$lib/sessionCreatorContext';
 	import { useDnD } from '$lib/components/DndProvider.svelte';
 	import { activeFile } from '../../activeFile.svelte';
-	const { setCenter, screenToFlowPosition } = useSvelteFlow();
+	import * as Avatar from '@coral-os/component-library/ui/avatar/index.js';
+
+	let fps = $state(0);
+	let fpsFrame: number | null = null;
+
+	onMount(() => {
+		let frameCount = 0;
+		let lastFpsUpdate = performance.now();
+
+		function measureFps() {
+			frameCount++;
+			const now = performance.now();
+			const elapsed = now - lastFpsUpdate;
+
+			if (elapsed >= 500) {
+				fps = Math.round((frameCount * 1000) / elapsed);
+				frameCount = 0;
+				lastFpsUpdate = now;
+			}
+
+			fpsFrame = requestAnimationFrame(measureFps);
+		}
+
+		fpsFrame = requestAnimationFrame(measureFps);
+
+		return () => {
+			if (fpsFrame !== null) cancelAnimationFrame(fpsFrame);
+		};
+	});
+
+	function hueFromString(str: string): number {
+		let hash = 0;
+		for (let i = 0; i < str.length; i++) {
+			hash = (hash << 5) - hash + str.charCodeAt(i);
+			hash |= 0;
+		}
+		return Math.abs(hash) % 360;
+	}
+
+	function handleToggleLock(
+		nodeId: string,
+		position: { x: number; y: number },
+		currentlyLocked: boolean
+	) {
+		activeFile.updateAgent(nodeId, {
+			nodeData: { position, locked: !currentlyLocked }
+		});
+	}
+	const { setCenter, screenToFlowPosition, setViewport } = useSvelteFlow();
 
 	const pendingPositions = new Map<string, { x: number; y: number }>();
 	let contextFlowPosition: { x: number; y: number } | null = null;
@@ -85,6 +135,7 @@
 	import { appContext } from '$lib/context';
 	import { add } from 'date-fns';
 	import { PersistedState, PressedKeys } from 'runed';
+	import { debugMode } from '$lib/debugMode.svelte';
 
 	const agents = $derived(activeFile.current?.agents ?? []);
 	const groups = $derived(activeFile.current?.groups ?? []);
@@ -156,7 +207,9 @@
 					viewOnly,
 					index,
 					locked: nodeData?.locked ?? false,
-					selected: agent.clientId === sessCtx.selectedAgentClientId
+					selected: agent.clientId === sessCtx.selectedAgentClientId,
+					hue: hueFromString(agent.clientId),
+					onToggleLock: handleToggleLock
 				},
 				type: 'circleNode',
 				draggable: !viewOnly,
@@ -453,12 +506,26 @@
 
 	const agentData = useDnD();
 
+	let dragPreviewPos = $state<{ x: number; y: number } | null>(null);
+
 	const onDragOver = (event: DragEvent) => {
 		event.preventDefault();
+		if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+		dragPreviewPos = { x: event.clientX, y: event.clientY };
+	};
 
-		if (event.dataTransfer) {
-			event.dataTransfer.dropEffect = 'move';
-		}
+	const onDragLeave = () => {
+		dragPreviewPos = null;
+	};
+
+	const onDrop = (event: DragEvent) => {
+		event.preventDefault();
+		const agent = agentData.current;
+		if (!agent) return;
+
+		const dropPos = screenToFlowPosition({ x: event.clientX, y: event.clientY });
+		addAgent(agent, dropPos);
+		dragPreviewPos = null;
 	};
 
 	const addAgent = async (agent: any, spawnPos: { x: number; y: number } | null = null) => {
@@ -503,28 +570,66 @@
 	};
 	// todo: ^^ sort out the other provider types because they are not all 'local', but seafra has stated its not currently important
 
-	const onDrop = (event: DragEvent) => {
-		event.preventDefault();
-		const agent = agentData.agent;
-		if (!agent) return;
+	const saveViewportPos = (event: MouseEvent | TouchEvent | null, viewport: Viewport) => {
+		activeFile.updateMeta({ viewport: viewport });
+	};
 
-		const dropPos = screenToFlowPosition({ x: event.clientX, y: event.clientY });
-		addAgent(agent, dropPos);
+	const deleteData: OnDelete<AgentNode, GroupEdge> = ({
+		nodes: deletedNodes,
+		edges: deletedEdges
+	}) => {
+		for (const node of deletedNodes) {
+			activeFile.removeAgent(node.id);
+			if (node.id === sessCtx.selectedAgentClientId) {
+				sessCtx.selectedAgentClientId = null;
+			}
+		}
 	};
 
 	const keys = new PressedKeys();
 	const IsShiftPressed = $derived(keys.has('Shift'));
+
+	let lastFileId = $state<string | null>(null);
+
+	$effect(() => {
+		const currentId = activeFile.current?.id;
+		if (!currentId || currentId === lastFileId) return;
+
+		lastFileId = currentId;
+		const savedViewport = activeFile.meta?.viewport;
+
+		if (savedViewport) {
+			setViewport(savedViewport, { duration: 0 });
+		} else {
+			setCenter(0, 0, { zoom: 1, duration: 0 });
+		}
+	});
 </script>
+
+{#if dragPreviewPos && agentData.current}
+	<Avatar.Root
+		class="pointer-events-none fixed z-50 flex size-18  shadow-lg"
+		style="left: {dragPreviewPos.x}px; top: {dragPreviewPos.y}px; transform: translate(-50%, -50%);"
+	>
+		<Avatar.Fallback class="">
+			{getInitials(agentData.current.name)}
+		</Avatar.Fallback>
+	</Avatar.Root>
+{/if}
 
 {#if mode.current}
 	<SvelteFlow
+		onmoveend={saveViewportPos}
 		bind:nodes
 		bind:edges
+		nodeOrigin={[0.5, 0.5]}
 		{nodeTypes}
 		class={cn('svelte-flow__pane.selection ', className)}
 		ondragover={onDragOver}
 		fitView
+		ondelete={deleteData}
 		ondrop={onDrop}
+		ondragleave={onDragLeave}
 		onpanecontextmenu={handleContextMenu}
 		onnodecontextmenu={handleNodeContextMenu}
 		onnodedragstart={handleNodeDragStart}
@@ -565,6 +670,14 @@
 			nodeBorderRadius={100}
 		/>
 		<Controls />
+		{#if debugMode.current === true}
+			<Panel
+				position="top-left"
+				class="text-muted-foreground pointer-events-none font-mono text-xs"
+			>
+				{fps} fps
+			</Panel>
+		{/if}
 		{#if controls}
 			<Panel position="top-right" class="flex gap-4 ">
 				<Tooltip.Root>
