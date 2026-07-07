@@ -24,3 +24,12 @@ export type WithElementRef<T, U extends HTMLElement = HTMLElement> = T & { ref?:
 export const unreachable = (t: never): never => {
 	throw new Error(`unreachable - ${t}`);
 };
+
+export function getInitials(str: string | string[]) {
+	const dash = str.indexOf('-');
+	if (dash === -1) {
+		return str[0]?.toUpperCase() ?? '';
+	}
+
+	return (str[0]?.toUpperCase() ?? '') + (str[dash + 1]?.toUpperCase() ?? '');
+}
