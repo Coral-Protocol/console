@@ -263,4 +263,8 @@
 			{/each}
 		</ol>
 	{/if}
+{:else}
+	<Card.Root class="bg-muted/50 m-4">
+		<Card.Content class="">Select an agent to configure it with the Inspector</Card.Content>
+	</Card.Root>
 {/if}

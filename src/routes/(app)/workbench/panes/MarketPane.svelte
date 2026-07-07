@@ -24,6 +24,9 @@
 
 	import { useDnD } from '$lib/components/DndProvider.svelte';
 	import { getSessionContext } from '$lib/sessionCreatorContext';
+	import { getInitials } from '$lib/utils';
+	import { activeFile } from '$lib/activeFile.svelte';
+	import { randomAdjective, randomPlant } from '$lib/words';
 
 	let ctx = appContext.get();
 	let sessCtx = getSessionContext();
@@ -70,13 +73,55 @@
 			return null;
 		}
 
-		agentData.agent = agent;
+		agentData.current = agent;
 		event.dataTransfer.effectAllowed = 'move';
+		event.dataTransfer.setData('text/plain', agent.name); // some browsers need at least one type set
+
+		const transparentPixel = new Image();
+		transparentPixel.src =
+			'data:image/gif;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+		event.dataTransfer.setDragImage(transparentPixel, 0, 0);
+	};
+
+	const addAgent = async (agent: any, spawnPos: { x: number; y: number } | null = null) => {
+		const registrySourceId = agent.registrySourceId ?? { type: agent.source };
+
+		const lookupDetails = await ctx.server.lookupAgent({
+			name: agent.name,
+			version: agent.version,
+			registrySourceId
+		});
+
+		if (!lookupDetails) {
+			console.error('Failed to look up agent details for', agent);
+			return;
+		}
+
+		const runtime = (Object.keys(lookupDetails.registryAgent.runtimes).at(0) ?? undefined) as
+			| 'function'
+			| 'executable'
+			| 'docker'
+			| 'prototype';
+
+		const beforeIds = new Set((activeFile.current?.agents ?? []).map((a) => a.clientId));
+
+		activeFile.addAgent({
+			id: { name: agent.name, version: agent.version, registrySourceId },
+			name: `${randomAdjective()} ${randomPlant()}`,
+			description: lookupDetails.registryAgent.info.description ?? '',
+			provider: { type: 'local', runtime },
+			blocking: false,
+			customToolAccess: [],
+			plugins: [],
+			budgetSettings: { budget: 0, exhaustionBehavior: { type: 'consume_session' } },
+			x402Budgets: [],
+			options: {}
+		});
 	};
 </script>
 
 <InputGroup.Root>
-	<InputGroup.Input placeholder="Search..." bind:value={search} />
+	<InputGroup.Input placeholder="Search agents" bind:value={search} />
 	<InputGroup.Addon>
 		<IconMagnifyingGlassRegular />
 	</InputGroup.Addon>
@@ -88,76 +133,89 @@
 	</InputGroup.Addon>
 </InputGroup.Root>
 {#each filtered as catalog}
-	{#if catalog.identifier.type == source}
-		<ol class="flex w-full grow flex-col justify-center gap-2 pt-2">
-			{#each catalog.agents as agent}
-				{#await ctx.server.lookupAgent( { name: agent.name, version: agent.versions[0]!, registrySourceId: catalog.identifier } )}
-					<div class="bg-foreground/5 h-[42px] w-xs border"></div>
-				{:then details}
-					<li class="w-full grow cursor-pointer">
-						<button
-							onclick={() => {
-								selectedAgentClientId = { agent, details };
-								dialogOpen = true;
-							}}
-							ondragstart={(event) =>
-								onDragStart(event, {
-									name: agent.name,
-									version: agent.versions[0]!,
-									source: catalog.identifier.type
-								})}
-							draggable={true}
-							type="button"
-							class="h-full w-full grow"
+	<!-- {#if catalog.identifier.type == source} -->
+	<ol class="flex w-full grow flex-col justify-center pt-2">
+		{#each catalog.agents as agent}
+			{#await ctx.server.lookupAgent( { name: agent.name, version: agent.versions[0]!, registrySourceId: catalog.identifier } )}
+				<div class="bg-card/50 h-[42px] w-full border"></div>
+			{:then details}
+				<li
+					class="group hover:dark:bg-ring/20 flex w-full grow cursor-pointer items-center gap-3 border-b py-2 pr-2 align-middle"
+				>
+					<button
+						onclick={() => {
+							selectedAgentClientId = { agent, details };
+							dialogOpen = true;
+						}}
+						ondragstart={(event) =>
+							onDragStart(event, {
+								name: agent.name,
+								version: agent.versions[0]!,
+								source: catalog.identifier.type
+							})}
+						draggable={true}
+						type="button"
+						class="h-full w-full grow"
+					>
+						<Card.Root
+							class="  h-full w-full grow gap-1 border-0 bg-transparent p-1 text-left shadow-none"
 						>
-							<Card.Root
-								class="hover:dark:bg-ring/20 hover:bg-ring/10 h-full w-full grow gap-0 border-0 bg-transparent p-1 text-left shadow-none"
+							<Card.Header class="flex gap-2 p-0">
+								<Avatar.Root class="size-8">
+									<Avatar.Image
+										class="bg-cover object-cover"
+										src={details.extension?.iconUrl}
+										alt={getInitials(agent.name)}
+									/>
+									<Avatar.Fallback>
+										{getInitials(agent.name)}
+									</Avatar.Fallback>
+								</Avatar.Root>
+								<div class="flex flex-col items-start gap-1">
+									<Card.Title class="font-bold">{agent.name}</Card.Title>
+									<Card.Description class="text-xs">
+										{details.extension?.developer
+											? 'By ' + details.extension.developer
+											: 'Unknown developer'}
+									</Card.Description>
+								</div>
+							</Card.Header>
+							<Card.Content
+								class="text-foreground/40 group-hover:text-foreground/80 flex w-full grow flex-col gap-2 p-0"
 							>
-								<Card.Header class="flex gap-2 p-0">
-									<Avatar.Root class="size-8">
-										<Avatar.Image
-											class="bg-cover object-cover"
-											src={details.extension?.iconUrl}
-											alt={agent.name.charAt(0).toUpperCase()}
-										/>
-										<Avatar.Fallback>
-											{agent.name.charAt(0).toUpperCase()}
-										</Avatar.Fallback>
-									</Avatar.Root>
-									<div class="flex flex-col items-start gap-1">
-										<Card.Title class="font-bold">{agent.name}</Card.Title>
-										<Card.Description class="text-xs">
-											{details.extension?.developer
-												? 'By ' + details.extension.developer
-												: 'Unknown developer'}
-										</Card.Description>
+								<p class="line-clamp-4 overflow-ellipsis">
+									{details.registryAgent.info.description}
+								</p>
+								{#if details.registryAgent?.marketplace?.keywords?.length}
+									<div class="flex flex-wrap gap-1">
+										{#each details.registryAgent.marketplace.keywords.slice(0, 3) as keyword}
+											<span class="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs">
+												{keyword}
+											</span>
+										{/each}
 									</div>
-								</Card.Header>
-								<!-- <Card.Content class="flex w-full grow flex-col gap-2 p-0">
-									<p class="line-clamp-4 overflow-ellipsis">
-										{details.registryAgent.info.description}
-									</p>
-									{#if details.registryAgent?.marketplace?.keywords?.length}
-										<div class="flex flex-wrap gap-1">
-											{#each details.registryAgent.marketplace.keywords.slice(0, 3) as keyword}
-												<span
-													class="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs"
-												>
-													{keyword}
-												</span>
-											{/each}
-										</div>
-									{/if}
-								</Card.Content> -->
-							</Card.Root>
-						</button>
-					</li>
-				{:catch err}
-					<!-- skip -->
-				{/await}
-			{/each}
-		</ol>
-	{/if}
+								{/if}
+							</Card.Content>
+						</Card.Root>
+					</button>
+					<Button
+						variant="outline"
+						size="sm"
+						class="opacity-0 transition group-hover:opacity-100"
+						onclick={() =>
+							addAgent({
+								name: agent.name,
+								version: agent.versions[0]!,
+								source: catalog.identifier.type
+							})}>Add</Button
+					>
+				</li>
+			{:catch err}
+				<!-- skip -->
+			{/await}
+		{/each}
+	</ol>
+	<!-- {/if} -->
 {/each}
 
 {#if filteredCount === 0 && !loading}

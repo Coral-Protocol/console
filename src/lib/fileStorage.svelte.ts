@@ -2,6 +2,7 @@ import { get, set, del } from 'idb-keyval';
 import { PersistedState } from 'runed';
 import type { SessionCreatorContext } from './sessionCreatorContext';
 import { debugMode } from './debugMode.svelte';
+import type { Viewport } from '@xyflow/svelte';
 
 function log(...args: unknown[]) {
 	if (debugMode.current) console.log('%c[fileStorage]', 'color:#888', ...args);
@@ -27,6 +28,7 @@ export type FileMeta = {
 	created: EpochTimeStamp;
 	saved?: EpochTimeStamp;
 	edited?: EpochTimeStamp;
+	viewport?: Viewport;
 };
 
 export const filesMeta = new PersistedState<Record<string, FileMeta>>('workbench:fileMetadata', {});
@@ -40,6 +42,11 @@ export type Group = {
 	clientId: string;
 	name: string;
 	agentClientIds: string[];
+};
+
+export type Annotation = {
+	key: string;
+	value: string;
 };
 
 export type SessionSettings = {
@@ -174,7 +181,7 @@ export function getFileMeta(id: string): FileMeta | null {
 	return meta;
 }
 
-export function saveFileMeta(id: string, meta: FileMeta) {
+export function setFileMeta(id: string, meta: FileMeta) {
 	logGroup(`saveFileMeta("${id}")`, () => {
 		filesMeta.current[id] = meta;
 		log('saved', $state.snapshot(meta));
@@ -307,7 +314,10 @@ export function defaultFileData(id: string): FileData {
 				budget: 100000000,
 				exhaustionBehavior: { type: 'kill_session', minimum: 1000000 }
 			},
-			annotations: {}
+			annotations: {
+				createdWith: 'coral console',
+				sourceFileId: id
+			}
 		}
 	};
 }
