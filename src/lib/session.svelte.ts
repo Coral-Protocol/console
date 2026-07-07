@@ -113,7 +113,7 @@ export class Session {
 		this.sessionId = sessionId;
 
 		this.socket.onopen = () => {
-			toast.success('Connected to session.');
+			// toast.success('Connected to session.');
 			this.connected = true;
 		};
 		this.socket.onerror = () => {
@@ -122,8 +122,8 @@ export class Session {
 			this.socket.close();
 		};
 		this.socket.onclose = (e) => {
-			if (this.connected)
-				toast.info(`Session connection closed${e.reason ? ` - ${e.reason}` : '.'}`);
+			// if (this.connected)
+			// 	toast.info(`Session connection closed${e.reason ? ` - ${e.reason}` : '.'}`);
 			this.threads = {};
 			this.agents = {};
 			this.connected = false;
