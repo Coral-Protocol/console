@@ -25,7 +25,8 @@
 	let threads = $derived(conn?.threads ?? {});
 	let agents = $derived(conn?.agents ?? {});
 
-	let agentName = $derived(page.url.hash.substring(1));
+	let agentName = $derived(page.url.hash ? decodeURIComponent(page.url.hash.substring(1)) : '');
+
 	let agent = $derived(agentName ? agents[agentName] : undefined);
 
 	let memberThreads = $derived(
