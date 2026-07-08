@@ -1332,135 +1332,6 @@
           "agentSecret" : [ ]
         } ]
       }
-    },
-    "/api/v1/agent-rpc/x402" : {
-      "post" : {
-        "tags" : [ "agent-rpc" ],
-        "summary" : "Request for x402 proxying",
-        "description" : "Allows an agent to request that the server pays for an x402 service by proxy",
-        "operationId" : "requestX402Proxy",
-        "parameters" : [ {
-          "name" : "agentSecret",
-          "in" : "path",
-          "description" : "The agent's unique secret",
-          "required" : true,
-          "deprecated" : false,
-          "explode" : false,
-          "schema" : {
-            "type" : "string",
-            "title" : "String"
-          }
-        } ],
-        "requestBody" : {
-          "description" : "The request to be proxied",
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/X402ProxyRequest"
-              }
-            }
-          },
-          "required" : false
-        },
-        "responses" : {
-          "200" : {
-            "description" : "Success",
-            "headers" : { },
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/X402ProxiedResponse"
-                }
-              }
-            }
-          }
-        },
-        "deprecated" : false,
-        "security" : [ {
-          "agentSecret" : [ ]
-        } ]
-      }
-    },
-    "/api/v1/agent-rental/reserve" : {
-      "post" : {
-        "tags" : [ "agent-rental" ],
-        "summary" : "Reserve a list of rental agents",
-        "description" : "Reserves a list of rental agents",
-        "operationId" : "reserveAgents",
-        "parameters" : [ ],
-        "requestBody" : {
-          "description" : "A list of agents to claim",
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/PaidGraphAgentRequest"
-              }
-            }
-          },
-          "required" : false
-        },
-        "responses" : {
-          "200" : {
-            "description" : "Success",
-            "headers" : { },
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "string",
-                  "title" : "String"
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "GraphAgentRequest is invalid in a remote context",
-            "headers" : { },
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RouteException"
-                }
-              }
-            }
-          }
-        },
-        "deprecated" : false
-      }
-    },
-    "/api/v1/agent-rental/wallet" : {
-      "get" : {
-        "tags" : [ "agent-rental" ],
-        "summary" : "Get wallet address for rental agents",
-        "description" : "Returns the wallet address payments should be made to for renting agents from this server",
-        "operationId" : "getPublicWallet",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "Success",
-            "headers" : { },
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "string",
-                  "title" : "String"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "This server is not configured to allow rental agents",
-            "headers" : { },
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RouteException"
-                }
-              }
-            }
-          }
-        },
-        "deprecated" : false
-      }
     }
   },
   "components" : {
@@ -4539,369 +4410,6 @@
               },
               "required" : [ "runtime", "type" ],
               "title" : "local"
-            }, {
-              "type" : "object",
-              "description" : "A remote agent provided by a specific server",
-              "properties" : {
-                "type" : {
-                  "type" : "string",
-                  "enum" : [ "remote" ],
-                  "title" : "String"
-                },
-                "server" : {
-                  "$ref" : "#/components/schemas/GraphAgentServer",
-                  "description" : "The server that is providing this remote agent"
-                },
-                "runtime" : {
-                  "$ref" : "#/components/schemas/RuntimeId",
-                  "description" : "The runtime to be used on the remote server.  Likely Docker or Phala"
-                },
-                "wallet" : {
-                  "type" : "string",
-                  "description" : "The wallet address of the server that is providing this remote agent",
-                  "title" : "String"
-                },
-                "maxCost" : {
-                  "anyOf" : [ {
-                    "type" : "object",
-                    "properties" : {
-                      "type" : {
-                        "type" : "string",
-                        "enum" : [ "coral" ],
-                        "title" : "String"
-                      },
-                      "amount" : {
-                        "type" : "number",
-                        "format" : "double",
-                        "title" : "Double"
-                      }
-                    },
-                    "required" : [ "amount", "type" ],
-                    "title" : "coral"
-                  }, {
-                    "type" : "object",
-                    "properties" : {
-                      "type" : {
-                        "type" : "string",
-                        "enum" : [ "micro_coral" ],
-                        "title" : "String"
-                      },
-                      "amount" : {
-                        "type" : "integer",
-                        "format" : "int64",
-                        "title" : "Long"
-                      }
-                    },
-                    "required" : [ "amount", "type" ],
-                    "title" : "micro_coral"
-                  }, {
-                    "type" : "object",
-                    "properties" : {
-                      "type" : {
-                        "type" : "string",
-                        "enum" : [ "usd" ],
-                        "title" : "String"
-                      },
-                      "amount" : {
-                        "type" : "number",
-                        "format" : "double",
-                        "title" : "Double"
-                      }
-                    },
-                    "required" : [ "amount", "type" ],
-                    "title" : "usd"
-                  } ],
-                  "description" : "The max cost of this agent",
-                  "discriminator" : {
-                    "propertyName" : "type"
-                  },
-                  "title" : "AgentClaimAmount"
-                },
-                "paymentSessionId" : {
-                  "type" : "string",
-                  "description" : "The payment session ID for this remote agent.  This will be shared with all other remote agents in the graph",
-                  "title" : "String"
-                }
-              },
-              "required" : [ "maxCost", "paymentSessionId", "runtime", "server", "type", "wallet" ],
-              "title" : "remote"
-            }, {
-              "type" : "object",
-              "description" : "A request for a remote agent and a list of places to try and source a server from",
-              "properties" : {
-                "type" : {
-                  "type" : "string",
-                  "enum" : [ "remote_request" ],
-                  "title" : "String"
-                },
-                "runtime" : {
-                  "$ref" : "#/components/schemas/RuntimeId",
-                  "description" : "The runtime that should be used for this remote agent.  Servers can export only specific runtimes so the runtime choice may narrow servers that can adequately provide the agent"
-                },
-                "maxCost" : {
-                  "anyOf" : [ {
-                    "type" : "object",
-                    "properties" : {
-                      "type" : {
-                        "type" : "string",
-                        "enum" : [ "coral" ],
-                        "title" : "String"
-                      },
-                      "amount" : {
-                        "type" : "number",
-                        "format" : "double",
-                        "title" : "Double"
-                      }
-                    },
-                    "required" : [ "amount", "type" ],
-                    "title" : "coral"
-                  }, {
-                    "type" : "object",
-                    "properties" : {
-                      "type" : {
-                        "type" : "string",
-                        "enum" : [ "micro_coral" ],
-                        "title" : "String"
-                      },
-                      "amount" : {
-                        "type" : "integer",
-                        "format" : "int64",
-                        "title" : "Long"
-                      }
-                    },
-                    "required" : [ "amount", "type" ],
-                    "title" : "micro_coral"
-                  }, {
-                    "type" : "object",
-                    "properties" : {
-                      "type" : {
-                        "type" : "string",
-                        "enum" : [ "usd" ],
-                        "title" : "String"
-                      },
-                      "amount" : {
-                        "type" : "number",
-                        "format" : "double",
-                        "title" : "Double"
-                      }
-                    },
-                    "required" : [ "amount", "type" ],
-                    "title" : "usd"
-                  } ],
-                  "description" : "The maximum we are willing to pay for this remote agent, note that if this is not high enough there may be no remotes willing to provide the agent",
-                  "discriminator" : {
-                    "propertyName" : "type"
-                  },
-                  "title" : "AgentClaimAmount"
-                },
-                "serverSource" : {
-                  "anyOf" : [ {
-                    "type" : "object",
-                    "properties" : {
-                      "type" : {
-                        "type" : "string",
-                        "enum" : [ "org.coralprotocol.coralserver.agent.graph.server.GraphAgentServerSource.Indexer" ],
-                        "title" : "String"
-                      },
-                      "indexer" : {
-                        "type" : "string",
-                        "title" : "String"
-                      }
-                    },
-                    "required" : [ "indexer", "type" ],
-                    "title" : "Indexer"
-                  }, {
-                    "type" : "object",
-                    "properties" : {
-                      "type" : {
-                        "type" : "string",
-                        "enum" : [ "servers" ],
-                        "title" : "String"
-                      },
-                      "servers" : {
-                        "type" : "array",
-                        "items" : {
-                          "$ref" : "#/components/schemas/GraphAgentServer"
-                        },
-                        "title" : "ArrayList<GraphAgentServer>"
-                      }
-                    },
-                    "required" : [ "servers", "type" ],
-                    "title" : "servers"
-                  } ],
-                  "description" : "A description of which servers should be queried for this remote agent request",
-                  "discriminator" : {
-                    "propertyName" : "type"
-                  },
-                  "title" : "GraphAgentServerSource"
-                },
-                "serverScoring" : {
-                  "anyOf" : [ {
-                    "type" : "object",
-                    "description" : "Custom server scoring.  Weights can be added on a flat or multiplier basis per attribute",
-                    "properties" : {
-                      "type" : {
-                        "type" : "string",
-                        "enum" : [ "custom" ],
-                        "title" : "String"
-                      },
-                      "scorers" : {
-                        "type" : "array",
-                        "items" : {
-                          "anyOf" : [ {
-                            "type" : "object",
-                            "description" : "The effect will be applied for every attribute of the specified type with a boolean false value",
-                            "properties" : {
-                              "op" : {
-                                "type" : "string",
-                                "enum" : [ "is_false" ],
-                                "title" : "String"
-                              },
-                              "type" : {
-                                "$ref" : "#/components/schemas/GraphAgentServerAttributeType"
-                              },
-                              "effect" : {
-                                "$ref" : "#/components/schemas/flat",
-                                "description" : "A flat negative or positive weight"
-                              }
-                            },
-                            "required" : [ "effect", "op", "type" ],
-                            "title" : "is_false"
-                          }, {
-                            "type" : "object",
-                            "description" : "The effect will be applied if the no attribute of the specified type is present",
-                            "properties" : {
-                              "op" : {
-                                "type" : "string",
-                                "enum" : [ "is_not_present" ],
-                                "title" : "String"
-                              },
-                              "type" : {
-                                "$ref" : "#/components/schemas/GraphAgentServerAttributeType"
-                              },
-                              "effect" : {
-                                "$ref" : "#/components/schemas/flat",
-                                "description" : "A flat negative or positive weight"
-                              }
-                            },
-                            "required" : [ "effect", "op", "type" ],
-                            "title" : "is_not_present"
-                          }, {
-                            "type" : "object",
-                            "description" : "The effect will be applied for every attribute of the specified type",
-                            "properties" : {
-                              "op" : {
-                                "type" : "string",
-                                "enum" : [ "is_present" ],
-                                "title" : "String"
-                              },
-                              "type" : {
-                                "$ref" : "#/components/schemas/GraphAgentServerAttributeType"
-                              },
-                              "effect" : {
-                                "$ref" : "#/components/schemas/GraphAgentServerScorerEffect"
-                              }
-                            },
-                            "required" : [ "effect", "op", "type" ],
-                            "title" : "is_present"
-                          }, {
-                            "type" : "object",
-                            "description" : "The effect will be applied for every attribute of the specified type with a boolean true value",
-                            "properties" : {
-                              "op" : {
-                                "type" : "string",
-                                "enum" : [ "is_true" ],
-                                "title" : "String"
-                              },
-                              "type" : {
-                                "$ref" : "#/components/schemas/GraphAgentServerAttributeType"
-                              },
-                              "effect" : {
-                                "$ref" : "#/components/schemas/flat",
-                                "description" : "A flat negative or positive weight"
-                              }
-                            },
-                            "required" : [ "effect", "op", "type" ],
-                            "title" : "is_true"
-                          }, {
-                            "type" : "object",
-                            "description" : "The effect will be applied for every attribute of the specified type with a matching string value",
-                            "properties" : {
-                              "op" : {
-                                "type" : "string",
-                                "enum" : [ "string_equal" ],
-                                "title" : "String"
-                              },
-                              "type" : {
-                                "$ref" : "#/components/schemas/GraphAgentServerAttributeType"
-                              },
-                              "string" : {
-                                "type" : "string",
-                                "title" : "String"
-                              },
-                              "effect" : {
-                                "$ref" : "#/components/schemas/flat",
-                                "description" : "A flat negative or positive weight"
-                              }
-                            },
-                            "required" : [ "effect", "op", "string", "type" ],
-                            "title" : "string_equal"
-                          }, {
-                            "type" : "object",
-                            "description" : "The effect will be applied for every attribute of the specified type with a non-matching string value",
-                            "properties" : {
-                              "op" : {
-                                "type" : "string",
-                                "enum" : [ "string_not_equal" ],
-                                "title" : "String"
-                              },
-                              "type" : {
-                                "$ref" : "#/components/schemas/GraphAgentServerAttributeType"
-                              },
-                              "string" : {
-                                "type" : "string",
-                                "title" : "String"
-                              },
-                              "effect" : {
-                                "$ref" : "#/components/schemas/flat",
-                                "description" : "A flat negative or positive weight"
-                              }
-                            },
-                            "required" : [ "effect", "op", "string", "type" ],
-                            "title" : "string_not_equal"
-                          } ],
-                          "discriminator" : {
-                            "propertyName" : "op"
-                          },
-                          "title" : "GraphAgentServerCustomScorer"
-                        },
-                        "title" : "ArrayList<GraphAgentServerCustomScorer>"
-                      }
-                    },
-                    "required" : [ "scorers", "type" ],
-                    "title" : "custom"
-                  }, {
-                    "type" : "object",
-                    "description" : "Default server scoring.  No weights assigned to any server attribute",
-                    "properties" : {
-                      "type" : {
-                        "type" : "string",
-                        "enum" : [ "default" ],
-                        "title" : "String"
-                      }
-                    },
-                    "required" : [ "type" ],
-                    "title" : "default"
-                  } ],
-                  "description" : "Customisation for the scoring of servers",
-                  "discriminator" : {
-                    "propertyName" : "type"
-                  },
-                  "title" : "GraphAgentServerScoring"
-                }
-              },
-              "required" : [ "maxCost", "runtime", "serverSource", "type" ],
-              "title" : "remote_request"
             } ],
             "description" : "The server that should provide this agent and the runtime to use",
             "discriminator" : {
@@ -4945,139 +4453,6 @@
         "type" : "string",
         "enum" : [ "executable", "docker", "function", "prototype" ],
         "title" : "RuntimeId"
-      },
-      "GraphAgentServer" : {
-        "type" : "object",
-        "properties" : {
-          "address" : {
-            "type" : "string",
-            "title" : "String"
-          },
-          "port" : {
-            "type" : "integer",
-            "maximum" : 65535,
-            "minimum" : 0,
-            "title" : "UShort"
-          },
-          "secure" : {
-            "type" : "boolean",
-            "title" : "Boolean"
-          },
-          "attributes" : {
-            "type" : "array",
-            "items" : {
-              "anyOf" : [ {
-                "type" : "object",
-                "properties" : {
-                  "format" : {
-                    "type" : "string",
-                    "enum" : [ "boolean" ],
-                    "title" : "String"
-                  },
-                  "type" : {
-                    "$ref" : "#/components/schemas/GraphAgentServerAttributeType"
-                  },
-                  "value" : {
-                    "type" : "boolean",
-                    "title" : "Boolean"
-                  }
-                },
-                "required" : [ "format", "type", "value" ],
-                "title" : "boolean"
-              }, {
-                "type" : "object",
-                "properties" : {
-                  "format" : {
-                    "type" : "string",
-                    "enum" : [ "number" ],
-                    "title" : "String"
-                  },
-                  "type" : {
-                    "$ref" : "#/components/schemas/GraphAgentServerAttributeType"
-                  },
-                  "value" : {
-                    "type" : "number",
-                    "format" : "double",
-                    "title" : "Double"
-                  }
-                },
-                "required" : [ "format", "type", "value" ],
-                "title" : "number"
-              }, {
-                "type" : "object",
-                "properties" : {
-                  "format" : {
-                    "type" : "string",
-                    "enum" : [ "string" ],
-                    "title" : "String"
-                  },
-                  "type" : {
-                    "$ref" : "#/components/schemas/GraphAgentServerAttributeType"
-                  },
-                  "value" : {
-                    "type" : "string",
-                    "title" : "String"
-                  }
-                },
-                "required" : [ "format", "type", "value" ],
-                "title" : "string"
-              } ],
-              "discriminator" : {
-                "propertyName" : "format"
-              },
-              "title" : "GraphAgentServerAttribute"
-            },
-            "title" : "ArrayList<GraphAgentServerAttribute>"
-          }
-        },
-        "required" : [ "address", "attributes", "port", "secure" ],
-        "title" : "GraphAgentServer"
-      },
-      "GraphAgentServerAttributeType" : {
-        "type" : "string",
-        "enum" : [ "geographic_location", "attested_by" ],
-        "title" : "GraphAgentServerAttributeType"
-      },
-      "flat" : {
-        "type" : "object",
-        "description" : "A flat negative or positive weight",
-        "properties" : {
-          "weight" : {
-            "type" : "number",
-            "format" : "double",
-            "title" : "Double"
-          }
-        },
-        "required" : [ "weight" ],
-        "title" : "flat"
-      },
-      "GraphAgentServerScorerEffect" : {
-        "anyOf" : [ {
-          "type" : "object",
-          "description" : "A flat negative or positive weight",
-          "properties" : {
-            "weight" : {
-              "type" : "number",
-              "format" : "double",
-              "title" : "Double"
-            }
-          },
-          "required" : [ "weight" ],
-          "title" : "flat"
-        }, {
-          "type" : "object",
-          "description" : "A multiplier weight, this effect will only multiply against attributes with a number type",
-          "properties" : {
-            "weight" : {
-              "type" : "number",
-              "format" : "double",
-              "title" : "Double"
-            }
-          },
-          "required" : [ "weight" ],
-          "title" : "multiplier"
-        } ],
-        "title" : "GraphAgentServerScorerEffect"
       },
       "X402BudgetedResource" : {
         "type" : "object",
@@ -5173,6 +4548,10 @@
       "ToolSchema" : {
         "type" : "object",
         "properties" : {
+          "$schema" : {
+            "type" : "string",
+            "title" : "String"
+          },
           "properties" : {
             "type" : "object",
             "additionalProperties" : {
@@ -6604,7 +5983,67 @@
             "$ref" : "#/components/schemas/PrototypeString"
           },
           "client" : {
-            "$ref" : "#/components/schemas/PrototypeClient"
+            "anyOf" : [ {
+              "type" : "object",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "anthropic" ],
+                  "title" : "String"
+                }
+              },
+              "required" : [ "type" ],
+              "title" : "anthropic"
+            }, {
+              "type" : "object",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "deepseek" ],
+                  "title" : "String"
+                },
+                "strict" : {
+                  "type" : "boolean",
+                  "title" : "Boolean"
+                }
+              },
+              "required" : [ "strict", "type" ],
+              "title" : "deepseek"
+            }, {
+              "type" : "object",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "openai" ],
+                  "title" : "String"
+                },
+                "strict" : {
+                  "type" : "boolean",
+                  "title" : "Boolean"
+                }
+              },
+              "required" : [ "strict", "type" ],
+              "title" : "openai"
+            }, {
+              "type" : "object",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
+                  "enum" : [ "openrouter" ],
+                  "title" : "String"
+                },
+                "strict" : {
+                  "type" : "boolean",
+                  "title" : "Boolean"
+                }
+              },
+              "required" : [ "strict", "type" ],
+              "title" : "openrouter"
+            } ],
+            "discriminator" : {
+              "propertyName" : "type"
+            },
+            "title" : "PrototypeClient"
           },
           "iterations" : {
             "$ref" : "#/components/schemas/PrototypeInteger"
@@ -6754,11 +6193,6 @@
         "type" : "object",
         "properties" : { },
         "title" : "PrototypeString"
-      },
-      "PrototypeClient" : {
-        "type" : "string",
-        "enum" : [ "openai", "openrouter", "anthropic" ],
-        "title" : "PrototypeClient"
       },
       "PrototypeInteger" : {
         "type" : "object",
@@ -7189,6 +6623,17 @@
               "properties" : {
                 "type" : {
                   "type" : "string",
+                  "enum" : [ "DeepSeek" ],
+                  "title" : "String"
+                }
+              },
+              "required" : [ "type" ],
+              "title" : "DeepSeek"
+            }, {
+              "type" : "object",
+              "properties" : {
+                "type" : {
+                  "type" : "string",
                   "enum" : [ "OpenAI" ],
                   "title" : "String"
                 }
@@ -7574,69 +7019,6 @@
         },
         "required" : [ "autoKill", "claimTypeName" ],
         "title" : "AgentClaimRequest"
-      },
-      "X402ProxyRequest" : {
-        "type" : "object",
-        "description" : "A proxied request to a service that potentially requests x402 payment",
-        "properties" : {
-          "endpoint" : {
-            "type" : "string",
-            "description" : "The full endpoint of the target API",
-            "title" : "String"
-          },
-          "method" : {
-            "type" : "string",
-            "description" : "The API method, e.g. POST, GET, DELETE, etc",
-            "title" : "String"
-          },
-          "body" : {
-            "type" : "object",
-            "additionalProperties" : {
-              "$ref" : "#/components/schemas/JsonElement"
-            },
-            "description" : "The body of the request",
-            "title" : "JsonObject<String,JsonElement>"
-          }
-        },
-        "required" : [ "body", "endpoint", "method" ],
-        "title" : "X402ProxyRequest"
-      },
-      "X402ProxiedResponse" : {
-        "type" : "object",
-        "properties" : {
-          "code" : {
-            "type" : "integer",
-            "format" : "int32",
-            "title" : "Int"
-          },
-          "body" : {
-            "type" : "string",
-            "title" : "String"
-          }
-        },
-        "required" : [ "body", "code" ],
-        "title" : "X402ProxiedResponse"
-      },
-      "PaidGraphAgentRequest" : {
-        "type" : "object",
-        "description" : "A paid request for an agent.  GraphAgentRequest -> GraphAgent",
-        "properties" : {
-          "graphAgentRequest" : {
-            "$ref" : "#/components/schemas/GraphAgentRequest",
-            "description" : "A request for an agent.  GraphAgentRequest -> GraphAgent"
-          },
-          "paidSessionId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "title" : "Long"
-          },
-          "clientWalletAddress" : {
-            "type" : "string",
-            "title" : "String"
-          }
-        },
-        "required" : [ "clientWalletAddress", "graphAgentRequest", "paidSessionId" ],
-        "title" : "PaidGraphAgentRequest"
       }
     },
     "examples" : { },

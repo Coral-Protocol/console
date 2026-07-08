@@ -17,24 +17,17 @@
 	let parent: any = $state();
 
 	let { data, id, positionAbsoluteX, positionAbsoluteY, dragging }: NodeProps = $props();
-
-	const nodeHue = $derived((data.hue ?? 0).toString());
-	const brandHue = 44.59;
 </script>
 
-<div
-	style:--node-hue={nodeHue}
-	style:--brand-hue={brandHue}
-	class="ring-wrapper group relative h-30 w-30 rounded-full opacity-100 transition-all starting:opacity-0
-		{data.selected ? 'scale-[1.04]' : ''}"
->
+<div class="ring-wrapper group relative h-30 w-30 rounded-full transition-all">
 	<div
 		class="handle-container border-foreground/10 flyIn relative flex h-full w-full flex-col items-center justify-center
 	rounded-full border bg-white
 	text-[oklch(0.72_0.18_44.59)]
 transition-all
 	duration-200 group-hover:scale-[1.02]
-	dark:bg-[var(--xy-background-color-default)]"
+	dark:bg-[var(--xy-background-color-default)]
+	{data.selected ? 'bg-foreground/50' : ''}"
 	>
 		<div
 			bind:this={parent}
@@ -47,7 +40,7 @@ transition-all
 			{/if}
 
 			<span
-				class="text-foreground/90 line-clamp-1 text-sm leading-tight font-medium tracking-wide wrap-anywhere"
+				class="text-foreground/90 line-clamp-1.5 text-sm leading-tight font-medium tracking-wide wrap-anywhere"
 				use:textfit={{ parent, mode: 'single', max: 10 }}
 			>
 				{data.label}
@@ -103,18 +96,18 @@ transition-all
 				</NodeToolbar>
 			{/if}
 		{/if}
-		{#if data.alert}
+		{#if (data.errors as any)?.agent?.[id]}
 			<Tooltip.Root>
 				<Tooltip.Trigger class="absolute top-0 right-0"
 					><div
 						class="flyIn
-							bg-destructive/80 border-destructive
-							 flex h-8 w-8 items-center justify-center rounded-full border-4 text-center"
+							bg-destructive border-destructive text-foreground
+							 flex h-8 w-8 items-center justify-center rounded-full border-1 text-center text-xl transition-transform hover:scale-105"
 					>
 						!
 					</div></Tooltip.Trigger
 				>
-				<Tooltip.Content>{data.errors ?? 'error displaying error'}</Tooltip.Content>
+				<Tooltip.Content>Agent contains errors! Click for details</Tooltip.Content>
 			</Tooltip.Root>
 		{/if}
 

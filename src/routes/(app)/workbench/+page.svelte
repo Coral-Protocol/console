@@ -13,6 +13,7 @@
 	import IconPlusRegular from 'phosphor-icons-svelte/IconPlusRegular.svelte';
 	import IconMinusRegular from 'phosphor-icons-svelte/IconMinusRegular.svelte';
 	import { Separator } from '@coral-os/component-library/ui/separator/index.js';
+	import type { components, paths } from '$generated/api';
 
 	import * as Tooltip from '@coral-os/component-library/ui/tooltip/index.js';
 	import IconCircuity from 'phosphor-icons-svelte/IconCircuitryRegular.svelte';
@@ -48,20 +49,22 @@
 		hasFileDataDelta,
 		hasFileData,
 		type FileMeta,
-		type FileData
+		type FileData,
+		zodErrorsToFileErrors
 	} from '$lib/fileStorage.svelte.js';
 	import DndProvider, { useDnD } from '$lib/components/DndProvider.svelte';
-	import { toSessionRequest, fromSessionRequest } from '$lib/payloadConstructor';
+	import { toSessionRequest, fromSessionRequest } from '$lib/payloadConstructor.svelte';
 	import { activeFile } from '$lib/activeFile.svelte';
-	import { file, type length } from 'zod';
+	import { file, z, ZodError, type length } from 'zod';
 	import { keys } from '$lib/keyHandler.svelte';
 	import { toast } from 'svelte-sonner';
 	import { debugMode } from '$lib/debugMode.svelte';
 	import { Spinner } from '@coral-os/component-library/components/ui/spinner/index.js';
 	import { Session } from '$lib/session.svelte';
-	import { preventDefault } from 'svelte/legacy';
 	import { shortcut } from '$lib/actions/shortcut.svelte';
 	import { onMount } from 'svelte';
+	import { json } from '@sveltejs/kit';
+	import { SessionRequest } from '$lib/generated/api.zod';
 
 	type Tab = { id: string };
 
@@ -69,24 +72,24 @@
 	const isMobile = new IsMobile();
 
 	let ctx = appContext.get();
-	let formSchema = $derived(makeFormSchema(ctx.server));
+	let zodSchema = $derived(makeFormSchema(ctx.server));
 	// svelte-ignore state_referenced_locally
-	let form = superForm(defaults(zod4(formSchema)), {
-		SPA: true,
-		dataType: 'json',
-		validators: zod4(formSchema),
-		validationMethod: 'onblur',
-		resetForm: false
-	});
+	// let form = superForm(defaults(zod4(formSchema)), {
+	// 	SPA: true,
+	// 	dataType: 'json',
+	// 	validators: zod4(formSchema),
+	// 	validationMethod: 'onblur',
+	// 	resetForm: false
+	// });
 
-	let { form: formData, errors, enhance } = $derived(form);
+	// let { form: formData, errors, enhance } = $derived(form);
 	let sessCtx = $state({
 		// svelte-ignore state_referenced_locally
-		formData,
+		// formData,
 		// svelte-ignore state_referenced_locally
-		errors,
-		form,
-		selectedAgentClientId: null,
+		// errors,
+		// form,
+		selectedAgentClientId: undefined,
 		availableAgents: null
 	}) as SessionCreatorContext;
 
@@ -94,8 +97,6 @@
 
 	const tabs = new PersistedState<Tab[]>('workbench:tabs', []);
 	const activeTab = new PersistedState<string>('workbench:activeTab', '');
-
-	$inspect(Date.now(), tabs.current);
 
 	$effect(() => {
 		const tabId = activeTab.current;
@@ -234,7 +235,7 @@
 	// and the ui just calls update/get calls appropriately.
 
 	// also if you close a tab and the file has no delta or data, the files meta is deleted.
-	let sendingForm = $state(false);
+	let sendingRequest = $state(false);
 	let validation = $state('successful');
 
 	async function createSession(): Promise<void> {
@@ -253,7 +254,7 @@
 			});
 
 			try {
-				sendingForm = true;
+				sendingRequest = true;
 
 				const body = await toSessionRequest(activeFile.current);
 				const res = await ctx.server.api.POST('/api/v1/local/session', { body });
@@ -278,7 +279,7 @@
 				console.log(e);
 				toast.error(`Failed to create session: ${e}`);
 			} finally {
-				sendingForm = false;
+				sendingRequest = false;
 			}
 		}
 	}
@@ -717,7 +718,7 @@
 												<SessionPane />
 											</Tabs.Content>
 											<Tabs.Content value="Tools" class="p-2">
-												<ToolsPane />
+												<!-- <ToolsPane /> -->
 											</Tabs.Content>
 											<Tabs.Content value="Groups" class="p-2">
 												<GroupsPane />
@@ -742,12 +743,11 @@
 											<!-- <Spinner /> -->
 											Save request</Button
 										>
-										<Button variant="secondary">
-											<!-- <Spinner /> -->
-											Validate</Button
-										>
-										<Button onclick={createSession}>
-											<!-- <Spinner /> -->
+
+										<Button onclick={createSession} disabled={sendingRequest}>
+											{#if sendingRequest}
+												<Spinner />
+											{/if}
 											Create session</Button
 										>
 									</Resizable.Pane>

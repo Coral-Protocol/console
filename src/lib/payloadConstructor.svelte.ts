@@ -5,11 +5,16 @@ type AgentGraphRequest = components['schemas']['AgentGraphRequest'];
 type SessionRequest = components['schemas']['SessionRequest'];
 
 export function toSessionRequest(file: FileData): SessionRequest {
-	const clientIdToName = new Map(file.agents.map((agent) => [agent.clientId, agent.name]));
+	const sessionRequest = $state.snapshot(file);
+	const clientIdToName = new Map(
+		sessionRequest.agents.map((agent) => [agent.clientId, agent.name])
+	);
 
-	const agents: AgentGraphRequest['agents'] = file.agents.map(({ clientId, nodeData, ...rest }) => rest);
+	const agents: AgentGraphRequest['agents'] = sessionRequest.agents.map(
+		({ clientId, nodeData, ...rest }) => rest
+	);
 
-	const groups: AgentGraphRequest['groups'] = file.groups.map((group) =>
+	const groups: AgentGraphRequest['groups'] = sessionRequest.groups.map((group) =>
 		group.agentClientIds.map((clientId) => {
 			const name = clientIdToName.get(clientId);
 			if (!name) {
@@ -25,12 +30,12 @@ export function toSessionRequest(file: FileData): SessionRequest {
 		agentGraphRequest: {
 			agents,
 			groups,
-			customTools: file.sessionSettings.customTools
+			customTools: sessionRequest.sessionSettings.customTools
 		},
-		namespaceProvider: file.sessionSettings.namespaceProvider,
-		execution: file.sessionSettings.execution,
-		budgetSettings: file.sessionSettings.budgetSettings,
-		annotations: file.sessionSettings.annotations
+		namespaceProvider: sessionRequest.sessionSettings.namespaceProvider,
+		execution: sessionRequest.sessionSettings.execution,
+		budgetSettings: sessionRequest.sessionSettings.budgetSettings,
+		annotations: sessionRequest.sessionSettings.annotations
 	};
 }
 

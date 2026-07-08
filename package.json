@@ -36,6 +36,7 @@
 		"mdsvex": "^0.12.7",
 		"mode-watcher": "^1.0.8",
 		"openapi-typescript": "^7.13.0",
+		"orval": "^8.20.0",
 		"paneforge": "1.0.0-next.5",
 		"phosphor-icons-svelte": "^2.0.9",
 		"prettier": "^3.4.2",

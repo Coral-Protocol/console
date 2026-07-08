@@ -139,6 +139,7 @@
 
 	const agents = $derived(activeFile.current?.agents ?? []);
 	const groups = $derived(activeFile.current?.groups ?? []);
+	const errors = $derived(activeFile.current?.errors);
 
 	type AgentNode = Node<{
 		label: string;
@@ -146,6 +147,7 @@
 		index: number;
 		locked: boolean;
 		selected: boolean;
+		errors?: any;
 	}>;
 	type GroupEdge = Edge;
 
@@ -209,7 +211,8 @@
 					locked: nodeData?.locked ?? false,
 					selected: agent.clientId === sessCtx.selectedAgentClientId,
 					hue: hueFromString(agent.clientId),
-					onToggleLock: handleToggleLock
+					onToggleLock: handleToggleLock,
+					errors: errors
 				},
 				type: 'circleNode',
 				draggable: !viewOnly,
@@ -581,7 +584,7 @@
 		for (const node of deletedNodes) {
 			activeFile.removeAgent(node.id);
 			if (node.id === sessCtx.selectedAgentClientId) {
-				sessCtx.selectedAgentClientId = null;
+				sessCtx.selectedAgentClientId = undefined;
 			}
 		}
 	};
@@ -608,7 +611,7 @@
 
 {#if dragPreviewPos && agentData.current}
 	<Avatar.Root
-		class="pointer-events-none fixed z-50 flex size-18  shadow-lg"
+		class="pointer-events-none fixed z-50 flex size-8  shadow-lg"
 		style="left: {dragPreviewPos.x}px; top: {dragPreviewPos.y}px; transform: translate(-50%, -50%);"
 	>
 		<Avatar.Fallback class="">
@@ -641,11 +644,11 @@
 		onselectioncontextmenu={handleSelectionContextMenu}
 		selectNodesOnDrag={true}
 		onpaneclick={() => {
-			sessCtx.selectedAgentClientId = null;
+			sessCtx.selectedAgentClientId = undefined;
 		}}
 		snapGrid={[20, 20]}
 		onselectionend={() => {
-			sessCtx.selectedAgentClientId = null;
+			sessCtx.selectedAgentClientId = undefined;
 		}}
 		selectionOnDrag={true}
 		edgesFocusable={false}
@@ -655,7 +658,7 @@
 		defaultEdgeOptions={{ selectable: false, focusable: false }}
 		autoPanOnNodeDrag={false}
 		onedgeclick={() => {
-			sessCtx.selectedAgentClientId = null;
+			sessCtx.selectedAgentClientId = undefined;
 		}}
 		connectionMode={'loose' as ConnectionMode}
 		colorMode={mode.current}
@@ -665,8 +668,8 @@
 	>
 		<MiniMap
 			class="border opacity-70 transition-opacity hover:opacity-100"
-			pannable
-			zoomable
+			pannable={false}
+			zoomable={false}
 			nodeBorderRadius={100}
 		/>
 		<Controls />

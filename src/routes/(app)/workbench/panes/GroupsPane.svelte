@@ -18,7 +18,6 @@
 	import { activeFile } from '$lib/activeFile.svelte';
 
 	let ctx = getSessionContext();
-	let formData = $derived(ctx.formData);
 
 	let openId: string | null = $state(null);
 
@@ -136,8 +135,10 @@
 		{/each}
 	</ol>
 	<p
-		class="text-muted-foreground mx-auto transition-opacity select-none {$formData.groups.length >
-			1 && $formData.groups.filter((g) => g.length === 0).length >= 1
+		class="text-muted-foreground mx-auto transition-opacity select-none {(activeFile.current?.groups
+			?.length ?? 0) > 1 &&
+		(activeFile.current?.groups?.filter((g) => (g.agentClientIds?.length ?? 0) === 0)?.length ??
+			0) >= 1
 			? 'opacity-50 delay-300 duration-800'
 			: 'opacity-0 delay-0 duration-0'}"
 	>

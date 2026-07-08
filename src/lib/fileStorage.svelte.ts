@@ -3,6 +3,11 @@ import { PersistedState } from 'runed';
 import type { SessionCreatorContext } from './sessionCreatorContext';
 import { debugMode } from './debugMode.svelte';
 import type { Viewport } from '@xyflow/svelte';
+import type { z, ZodError } from 'zod';
+import { activeFile } from './activeFile.svelte';
+import { toSessionRequest } from './payloadConstructor.svelte';
+import { SessionRequest } from './generated/api.zod';
+import { json } from '@sveltejs/kit';
 
 function log(...args: unknown[]) {
 	if (debugMode.current) console.log('%c[fileStorage]', 'color:#888', ...args);
@@ -38,6 +43,14 @@ type ServerAgent = AgentGraphRequest['agents'][number];
 
 export type Agent = ServerAgent & { clientId: string; nodeData?: Record<string, any> };
 
+export type ValidationError = Omit<z.core.$ZodIssue, 'path'>;
+
+export type FileValidationErrors = {
+	agent: Record<string, Record<string, ValidationError>>;
+	group: Record<string, Record<string, ValidationError>>;
+	session: Record<string, ValidationError>;
+};
+
 export type Group = {
 	clientId: string;
 	name: string;
@@ -62,7 +75,71 @@ export type FileData = {
 	agents: Agent[];
 	groups: Group[];
 	sessionSettings: SessionSettings;
+	errors?: FileValidationErrors;
 };
+
+function describeValue(input: unknown): string {
+	if (input === undefined) return 'undefined';
+	if (input === null) return 'null';
+	if (Array.isArray(input)) return 'an array';
+	return typeof input;
+}
+
+function validate() {
+	if (activeFile.current) {
+		const convertedRequest = toSessionRequest(activeFile.current as FileData);
+		const result = SessionRequest.safeParse(convertedRequest);
+
+		if (!result.success) {
+			const errors = zodErrorsToFileErrors(result.error, activeFile.current);
+
+			return json({ errors }, { status: 400 });
+		}
+
+		activeFile.current.errors = undefined;
+
+		return result.data;
+	}
+}
+
+export function zodErrorsToFileErrors(error: ZodError, fileData: FileData): FileValidationErrors {
+	const errors: FileValidationErrors = {
+		agent: {},
+		group: {},
+		session: {}
+	};
+
+	for (const issue of error.issues) {
+		const path = issue.path as (string | number)[];
+
+		const agentsIndex = path.findIndex((part) => part === 'agents');
+
+		if (agentsIndex !== -1 && typeof path[agentsIndex + 1] === 'number') {
+			const agentIndex = path[agentsIndex + 1] as number;
+			const agent = fileData.agents[agentIndex];
+
+			if (agent) {
+				const fieldPath = path
+					.slice(agentsIndex + 2)
+					.map(String)
+					.join('.');
+
+				const agentErrors = errors.agent[agent.clientId] ?? (errors.agent[agent.clientId] = {});
+				agentErrors[fieldPath] = issue;
+
+				continue;
+			}
+		}
+
+		const fieldPath = path.map(String).join('.');
+
+		errors.session[fieldPath] = issue;
+	}
+	if (activeFile.current) {
+		activeFile.current.errors = errors;
+	}
+	return errors;
+}
 
 function createDebouncedStore(prefix: string, color: string) {
 	const cache = new Map<string, string>();
@@ -124,6 +201,7 @@ function createDebouncedStore(prefix: string, color: string) {
 		};
 
 		pending.set(id, setTimeout(flush, debounceMs));
+		validate();
 	}
 
 	async function flush(id: string) {

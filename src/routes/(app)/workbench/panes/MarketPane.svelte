@@ -140,7 +140,7 @@
 				<div class="bg-card/50 h-[42px] w-full border"></div>
 			{:then details}
 				<li
-					class="group hover:dark:bg-ring/20 flex w-full grow cursor-pointer items-center gap-3 border-b py-2 pr-2 align-middle"
+					class="group hover:dark:bg-ring/20 flex max-h-32 min-h-28 w-full grow cursor-pointer items-center gap-3 overflow-hidden border-b py-2 pr-2 align-middle"
 				>
 					<button
 						onclick={() => {
@@ -183,7 +183,7 @@
 							<Card.Content
 								class="text-foreground/40 group-hover:text-foreground/80 flex w-full grow flex-col gap-2 p-0"
 							>
-								<p class="line-clamp-4 overflow-ellipsis">
+								<p class="line-clamp-4 truncate overflow-ellipsis">
 									{details.registryAgent.info.description}
 								</p>
 								{#if details.registryAgent?.marketplace?.keywords?.length}
