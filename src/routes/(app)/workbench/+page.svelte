@@ -294,11 +294,16 @@
 	}
 
 	const saveFile = () => {
-		toast.promise(activeFile.save(), {
-			loading: 'Saving file...',
-			success: activeFile.meta?.name + ' saved',
-			error: 'Failed to save file'
-		});
+		const length = activeFile.meta?.name.length;
+		const name = activeFile.meta?.name;
+		if (name && name.includes('Untitled') && length === 2) {
+		} else {
+			toast.promise(activeFile.save(), {
+				loading: 'Saving file...',
+				success: activeFile.meta?.name + ' saved',
+				error: 'Failed to save file'
+			});
+		}
 	};
 
 	let mounted = $state(false);
