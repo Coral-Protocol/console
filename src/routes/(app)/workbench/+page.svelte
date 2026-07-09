@@ -33,7 +33,6 @@
 	import { format, formatDistanceToNow } from 'date-fns';
 	import MarketPane from './panes/MarketPane.svelte';
 	import { appContext } from '$lib/context';
-	import { makeFormSchema } from '$lib/sessionSchema/types';
 	import { setSessionContext, type SessionCreatorContext } from '$lib/sessionCreatorContext';
 	import AgentPane from './panes/AgentPane.svelte';
 	import { superForm, defaults } from 'sveltekit-superforms';
@@ -51,7 +50,8 @@
 		type FileMeta,
 		type FileData,
 		zodErrorsToFileErrors,
-		validateRequest
+		validateRequest,
+		updateFileMeta
 	} from '$lib/fileStorage.svelte.js';
 	import DndProvider, { useDnD } from '$lib/components/DndProvider.svelte';
 	import { toSessionRequest, fromSessionRequest } from '$lib/payloadConstructor.svelte';
@@ -63,9 +63,10 @@
 	import { Spinner } from '@coral-os/component-library/components/ui/spinner/index.js';
 	import { Session } from '$lib/session.svelte';
 	import { shortcut } from '$lib/actions/shortcut.svelte';
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { json } from '@sveltejs/kit';
-	import { SessionRequest } from '$lib/generated/api.zod';
+	import { SessionRequest } from '$generated/api.zod';
+	import { randomAdjective, randomAnimal, randomPlant } from '$lib/words';
 
 	type Tab = { id: string };
 
@@ -73,23 +74,8 @@
 	const isMobile = new IsMobile();
 
 	let ctx = appContext.get();
-	let zodSchema = $derived(makeFormSchema(ctx.server));
-	// svelte-ignore state_referenced_locally
-	// let form = superForm(defaults(zod4(formSchema)), {
-	// 	SPA: true,
-	// 	dataType: 'json',
-	// 	validators: zod4(formSchema),
-	// 	validationMethod: 'onblur',
-	// 	resetForm: false
-	// });
 
-	// let { form: formData, errors, enhance } = $derived(form);
 	let sessCtx = $state({
-		// svelte-ignore state_referenced_locally
-		// formData,
-		// svelte-ignore state_referenced_locally
-		// errors,
-		// form,
 		selectedAgentClientId: undefined,
 		availableAgents: null
 	}) as SessionCreatorContext;
@@ -150,44 +136,46 @@
 
 	const tabToCloseName = $derived(tabToClose ? (filesMeta.current[tabToClose]?.name ?? '') : '');
 
-	async function closeTab(id: string, force?: boolean) {
-		let delta;
-		let data;
+	async function closeTab(id: string, force = false) {
 		try {
-			delta = await hasFileDataDelta(id);
-			data = await hasFileData(id);
+			const [hasDelta, hasData] = await Promise.all([hasFileDataDelta(id), hasFileData(id)]);
+
+			if (hasDelta && !force) {
+				tabToClose = id;
+				showDeleteConfirmation = true;
+				return;
+			}
+
+			if (!hasData) {
+				const { [id]: _, ...rest } = filesMeta.current;
+				filesMeta.current = rest;
+			}
+			await deleteFileDataDelta(id);
+
+			showDeleteConfirmation = false;
+			removeTab(id);
 		} catch (error) {
 			console.error(error);
-			return;
 		}
-
-		if (delta && !force) {
-			tabToClose = id;
-			showDeleteConfirmation = true;
-			return;
-		}
-
-		if (!data) {
-			const { [id]: _removed, ...rest } = filesMeta.current;
-			filesMeta.current = rest;
-			deleteFileDataDelta(id);
-		}
-
-		showDeleteConfirmation = false;
-		goodbyeTab(id);
 	}
 
-	async function goodbyeTab(id: string) {
-		const tabIndex = tabs.current.findIndex((tab) => tab.id === id);
-		if (tabIndex === -1) return;
+	function removeTab(id: string) {
+		const index = tabs.current.findIndex((tab) => tab.id === id);
+		if (index < 0) return;
 
 		const wasActive = activeTab.current === id;
-		const nextActiveId = (tabIndex > 0 ? tabs.current[tabIndex - 1] : tabs.current[1])?.id ?? '';
 
-		tabs.current.splice(tabIndex, 1);
-		if (wasActive) activeTab.current = nextActiveId;
+		const remainingTabs = tabs.current.filter((tab) => tab.id !== id);
+		tabs.current = remainingTabs;
+
+		if (wasActive) {
+			activeTab.current = remainingTabs[Math.max(0, index - 1)]?.id ?? remainingTabs[0]?.id ?? '';
+		}
 
 		tabToClose = null;
+		showDeleteConfirmation = false;
+
+		updateFileMeta(id, { edited: undefined });
 	}
 
 	function openFile(id: string) {
@@ -293,16 +281,17 @@
 		}
 	}
 
-	const saveFile = () => {
-		const length = activeFile.meta?.name.length;
-		const name = activeFile.meta?.name;
-		if (name && name.includes('Untitled') && length === 2) {
-		} else {
-			toast.promise(activeFile.save(), {
-				loading: 'Saving file...',
-				success: activeFile.meta?.name + ' saved',
-				error: 'Failed to save file'
-			});
+	const saveFile = async () => {
+		if (activeFile.current?.id) {
+			const hasDelta = await hasFileDataDelta(activeFile.current.id);
+
+			if (hasDelta) {
+				toast.promise(activeFile.save(), {
+					loading: 'Saving file...',
+					success: `File saved`,
+					error: 'Failed to save file'
+				});
+			}
 		}
 	};
 
@@ -316,7 +305,10 @@
 	use:shortcut={{
 		key: 's',
 		ctrl: true,
-		callback: saveFile
+		callback: (event: KeyboardEvent) => {
+			if (event.repeat) return;
+			saveFile();
+		}
 	}}
 />
 
@@ -348,12 +340,13 @@
 					</Menubar.Sub>
 					<Menubar.Separator />
 					<Menubar.Item
+						disabled={tabs.current.length <= 0}
 						onclick={() => {
 							// close tabs that do NOT have an edited timestamp on their file meta
 							for (const tab of tabs.current.filter((t) => !filesMeta.current[t.id]?.edited))
 								closeTab(tab.id);
 							if (!tabs.current.find((t) => t.id === activeTab.current)) activeTab.current = '';
-						}}>Close All Tabs</Menubar.Item
+						}}>Close all saved files</Menubar.Item
 					>
 					<Menubar.Separator />
 					<Menubar.Item onclick={saveFile}>Save</Menubar.Item>
@@ -505,7 +498,17 @@
 																	type="text"
 																	maxlength="45"
 																	bind:value={draftName}
-																	onchange={() => {
+																	onfocus={async (e) => {
+																		if (/^Untitled \d+$/.test(e.currentTarget.value)) {
+																			e.currentTarget.value = uniqueName(
+																				`${randomAdjective()} ${randomAnimal()}`,
+																				Object.values(filesMeta.current).map((f) => f.name)
+																			);
+																			draftName = e.currentTarget.value;
+																		}
+																		e.currentTarget.select();
+																	}}
+																	onblur={() => {
 																		activeFile.updateMeta({ name: draftName });
 																	}}
 																	class="peer absolute inset-0 z-10 w-full min-w-0 text-xl outline-0!"
@@ -514,9 +517,12 @@
 																	class="pointer-events-none max-w-full truncate text-xl opacity-0"
 																	>{draftName || ' '}</span
 																>
-																<IconEditRegular
-																	class="z-0 shrink-0 opacity-50 peer-focus:opacity-0"
-																/>
+																{#if /^Untitled \d+$/.test(draftName)}
+																	<!-- TODO: shouldnt be a regex test everytime but ill fix this later -->
+																	<IconEditRegular
+																		class="z-0 shrink-0 opacity-50 peer-focus:opacity-0"
+																	/>
+																{/if}
 															</form>
 															<form>
 																<input
@@ -669,13 +675,14 @@
 													</Button>
 													<Button
 														variant="link"
-														disabled={recentFiles.length <= 0}
+														disabled
 														class="text-brand-primary flex justify-between"
 														onclick={() => newTab()}
 													>
 														Open file
 													</Button>
 													<Button
+														disabled
 														variant="link"
 														class="text-brand-primary flex justify-between"
 														onclick={() => newTab()}
