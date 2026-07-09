@@ -20,6 +20,10 @@ export function toSessionRequest(file: FileData, format?: 'submission' | 'check'
 			if (options) {
 				Object.entries(options).forEach(([key, val]) => {
 					if (val && val.secret === true) {
+						const secretObject = getSecretFromId(val.value);
+						if (secretObject === undefined) {
+							delete options[key];
+						}
 						delete val.secret;
 					}
 				});
