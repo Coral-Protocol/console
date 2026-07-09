@@ -126,7 +126,6 @@
 		return a === b;
 	}
 
-	// what's currently persisted on disk for this option, loaded async
 	let savedValue = $state<any>(undefined);
 	let savedValueLoaded = $state(false);
 
@@ -134,6 +133,7 @@
 		const fileId = activeFile.current?.id;
 		const clientId = agent?.clientId;
 		const optionName = name;
+		const savedAt = activeFile.meta?.saved;
 		let cancelled = false;
 
 		savedValueLoaded = false;
