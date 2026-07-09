@@ -1,4 +1,4 @@
-<script lang="ts">
+<!-- <script lang="ts">
 	import * as Item from '@coral-os/component-library/ui/item/index.js';
 	import * as Form from '@coral-os/component-library/ui/form/index.js';
 
@@ -96,4 +96,4 @@
 	{#if selectedTool !== null}
 		<ToolInput superform={form} id={selectedTool} />
 	{/if}
-</section>
+</section> -->

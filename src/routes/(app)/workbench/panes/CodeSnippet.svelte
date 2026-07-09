@@ -55,11 +55,9 @@ requests.post(
 <script lang="ts">
 	import { CopyButton } from '@coral-os/component-library';
 	import { Highlight } from 'svelte-highlight';
-	import type { CreateSessionRequest } from '$lib/sessionSchema/types';
-	let {
-		snippet: snippetName,
-		body
-	}: { snippet: keyof typeof snippets; body: CreateSessionRequest } = $props();
+	import type { SessionRequest } from '$generated/api.zod';
+	let { snippet: snippetName, body }: { snippet: keyof typeof snippets; body: SessionRequest } =
+		$props();
 	let snippet = $derived(snippets[snippetName]);
 	let code = $derived.by(() => {
 		try {

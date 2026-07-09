@@ -1,31 +1,16 @@
 <script lang="ts">
-	import * as Accordion from '@coral-os/component-library/ui/accordion/index.js';
-	import * as Select from '@coral-os/component-library/ui/select/index.js';
-	import * as Tooltip from '@coral-os/component-library/ui/tooltip/index.js';
-
 	import { Button } from '@coral-os/component-library/ui/button/index.js';
-	import * as Card from '@coral-os/component-library/ui/card/index.js';
-	import { getSessionContext } from '$lib/sessionCreatorContext';
-	import { Separator } from '@coral-os/component-library/ui/separator/index.js';
 	import { Badge } from '@coral-os/component-library/components/ui/badge/index.js';
 	import * as Command from '@coral-os/component-library/ui/command/index.js';
-	import * as HoverCard from '@coral-os/component-library/ui/hover-card/index.js';
-	import * as Avatar from '@coral-os/component-library/ui/avatar/index.js';
 	import * as Popover from '@coral-os/component-library/ui/popover/index.js';
 	import { buttonVariants } from '@coral-os/component-library/ui/button/index.js';
 	import IconXRegular from 'phosphor-icons-svelte/IconXRegular.svelte';
 	import IconTrash from 'phosphor-icons-svelte/IconTrashRegular.svelte';
 	import { activeFile } from '$lib/activeFile.svelte';
+	import type { Group, Agent } from '$lib/fileStorage.svelte';
 
-	let ctx = getSessionContext();
-
-	let openId: string | null = $state(null);
-
-	function handleScroll() {
-		openId = null;
-	}
-
-	let newGroup = [];
+	let groups = $derived<Group[]>(activeFile?.current?.groups ?? []);
+	let agents = $derived<Agent[]>(activeFile.current?.agents ?? []);
 </script>
 
 <header class="flex w-full flex-col gap-4 border-b p-4">
@@ -51,13 +36,13 @@
 	</section>
 </header>
 <ul class=" flex flex-col">
-	{#if activeFile?.current?.groups.length == 0}
+	{#if groups.length == 0}
 		<p class="text-muted-foreground flex w-full place-items-center justify-center pt-8">
 			No groups to display.
 		</p>
 	{/if}
 	<ol class="flex flex-col gap-1 p-2">
-		{#each activeFile?.current?.groups as group, i}
+		{#each groups as group, i}
 			<li
 				class="flex w-full items-stretch gap-2 border p-2 {group.agentClientIds.length == 0
 					? 'border-dashed'
@@ -69,10 +54,8 @@
 				></div>
 				<section class="flex w-full">
 					<ol class="flex w-full grow flex-wrap gap-2">
-						{#each group.agentClientIds as agentClientId, agentI}
-							{@const agent = activeFile.current?.agents.find(
-								(agent) => agent.clientId === agentClientId
-							)}
+						{#each group.agentClientIds as agentClientId}
+							{@const agent = agents.find((agent) => agent.clientId === agentClientId)}
 							<li>
 								<Badge variant="outline" class="h-fit justify-start pr-0.5"
 									>{agent?.name}
@@ -101,9 +84,9 @@
 							<Popover.Content
 								><Command.Root>
 									<Command.Input placeholder="Search agents..." />
-									<Command.List onscroll={handleScroll}>
+									<Command.List>
 										<Command.Group heading="Available agents">
-											{#each activeFile.current?.agents as agent}
+											{#each agents as agent}
 												{#if !group.agentClientIds.includes(agent.clientId)}
 													<Command.Item
 														value={agent.name}
@@ -135,10 +118,8 @@
 		{/each}
 	</ol>
 	<p
-		class="text-muted-foreground mx-auto transition-opacity select-none {(activeFile.current?.groups
-			?.length ?? 0) > 1 &&
-		(activeFile.current?.groups?.filter((g) => (g.agentClientIds?.length ?? 0) === 0)?.length ??
-			0) >= 1
+		class="text-muted-foreground mx-auto transition-opacity select-none {(groups?.length ?? 0) >
+			1 && (groups?.filter((g) => (g.agentClientIds?.length ?? 0) === 0)?.length ?? 0) >= 1
 			? 'opacity-50 delay-300 duration-800'
 			: 'opacity-0 delay-0 duration-0'}"
 	>

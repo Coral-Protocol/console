@@ -41,7 +41,6 @@
 
 	import IconDotsThree from 'phosphor-icons-svelte/IconDotsThreeRegular.svelte';
 	import IconCheckRegular from 'phosphor-icons-svelte/IconCheckRegular.svelte';
-	import { sessionDraft, recentSession } from '$lib/sessionDraftData';
 
 	import * as Popover from '@coral-os/component-library/ui/popover/index.js';
 
@@ -384,12 +383,6 @@
 
 					<div use:tourTarget={'workbench'} class="relative w-full">
 						<SidebarLink url="{base}/workbench" icon={IconCircuity} title="Request workbench" />
-						{#if sessionDraft.current && sessionDraft.current.agentGraphRequest.agents.length > 0}
-							<Badge
-								class="text-muted-foreground pointer-events-none absolute top-1 right-1 bottom-1 my-auto italic"
-								variant="secondary">draft</Badge
-							>
-						{/if}
 					</div>
 				</Sidebar.Menu>
 			</Sidebar.GroupContent>
@@ -461,14 +454,12 @@
 																			server: ctx.server
 																		}))}
 																>
-																	{#snippet child({ props }: any)}
-																		<Sidebar.MenuButton {...props} class="truncate p-2">
-																			<IconSession class="size-4" />
-																			<span>
-																				{session.annotations?.sessionName ?? session.id}
-																			</span>
-																		</Sidebar.MenuButton>
-																	{/snippet}
+																	<Sidebar.MenuButton class="truncate p-2">
+																		<IconSession class="size-4" />
+																		<span>
+																			{session.annotations?.sessionName ?? session.id}
+																		</span>
+																	</Sidebar.MenuButton>
 																</Accordion.Trigger>
 
 																<Accordion.Content>

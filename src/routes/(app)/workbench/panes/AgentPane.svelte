@@ -18,10 +18,10 @@
 
 	import * as Alert from '@coral-os/component-library/components/ui/alert/index.js';
 	import { getSessionContext } from '$lib/sessionCreatorContext';
-	import { activeFile } from '../../../../lib/activeFile.svelte';
-	import type { RuntimeId } from '$lib/sessionSchema/types';
+	import { activeFile } from '$lib/activeFile.svelte';
 	import type { Agent } from '$lib/fileStorage.svelte';
 	import { untrack } from 'svelte';
+	import { RuntimeId } from '$generated/api.zod';
 
 	let ctx = appContext.get();
 	let sessCtx = getSessionContext();
@@ -196,7 +196,7 @@
 			<TooltipLabel tooltip={'What custom tools this agent has access to.'} class="m-0 w-fit">
 				Custom Tools
 			</TooltipLabel>
-			<Select.Root
+			<!-- <Select.Root
 				type="multiple"
 				value={tools}
 				disabled={!agentLookup}
@@ -211,11 +211,11 @@
 							No tools found, add some in the tools pane
 						</span>
 					{/if}
-					{#each Object.values(activeFile.current?.sessionSettings.customTools ?? {}) as tool}
+					{#each Object.values(activeFile.current?.sessionSettings.customTools ?? {} as ) as tool}
 						<Select.Item value={tool.title ?? ''}>{tool.title ?? ''}</Select.Item>
 					{/each}
 				</Select.Content>
-			</Select.Root>
+			</Select.Root> -->
 		</section>
 	</header>
 

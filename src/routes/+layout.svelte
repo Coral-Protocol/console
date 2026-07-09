@@ -3,7 +3,6 @@
 	import { ModeWatcher } from 'mode-watcher';
 	import '../app.css';
 	import { TooltipProvider } from '@coral-os/component-library/components/ui/tooltip/index.js';
-	import { positionFixed } from '@unovis/ts/components/tooltip/style';
 
 	let { children } = $props();
 </script>

@@ -1,4 +1,4 @@
-<script lang="ts">
+<!-- <script lang="ts">
 	import * as Item from '@coral-os/component-library/ui/item/index.js';
 	import * as Form from '@coral-os/component-library/ui/form/index.js';
 
@@ -36,7 +36,6 @@
 
 	let form = $derived(ctx?.form as any);
 	let errors = $derived(ctx?.errors as any);
-	let formData = $derived(ctx.formData);
 
 	function formatMsToHHMMSS(ms: number): string {
 		const totalSeconds = Math.floor(ms / 1000);
@@ -112,13 +111,11 @@
 
 {#if ctx && $formData}
 	<section class="flex h-full min-h-0 grow flex-col gap-2 overflow-y-auto px-4">
-		<!-- TODO: later all of this should use the same input field components that the optionfield comp uses -->
 		<p>
 			The Session Budget is a shared pool of funds used across all agents in the session. Agents
 			with their own budget settings will not take from this balance unless configured to do so.
 		</p>
 		<Form.ElementField {form} name="sessionBudgetSettings.budget" class="flex items-center gap-2 ">
-			<!-- TODO: fix the wild tailwind above -->
 			<Form.Control>
 				{#snippet children({ props })}
 					<TooltipLabel
@@ -327,4 +324,4 @@
 			</Alert.Description>
 		</Alert.Root>
 	</section>
-{/if}
+{/if} -->

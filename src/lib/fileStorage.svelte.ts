@@ -6,7 +6,7 @@ import type { Viewport } from '@xyflow/svelte';
 import type { z, ZodError } from 'zod';
 import { activeFile } from './activeFile.svelte';
 import { toSessionRequest } from './payloadConstructor.svelte';
-import { SessionRequest } from './generated/api.zod';
+import { SessionRequest } from '../generated/api.zod';
 import { json } from '@sveltejs/kit';
 
 function log(...args: unknown[]) {

@@ -22,12 +22,9 @@
 	import '@xyflow/svelte/dist/style.css';
 
 	import { mode } from 'mode-watcher';
-	import type { FormSchema } from '../../sessionSchema';
-	import z, { json } from 'zod';
 	import GraphCircleNode from './GraphCircleNode.svelte';
 
 	import * as d3Force from 'd3-force';
-	import type { SessionAgentState } from '$lib/session.svelte';
 	import { cn, getInitials } from '$lib/utils';
 
 	import {

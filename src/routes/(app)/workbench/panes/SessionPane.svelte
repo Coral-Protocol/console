@@ -1,4 +1,4 @@
-<script lang="ts">
+<!-- <script lang="ts">
 	import * as Item from '@coral-os/component-library/ui/item/index.js';
 	import * as Form from '@coral-os/component-library/ui/form/index.js';
 
@@ -33,9 +33,6 @@
 
 	let ctx = getSessionContext();
 
-	let form = $derived(ctx?.form as any);
-	let errors = $derived(ctx?.errors as any);
-	let formData = $derived(ctx.formData);
 
 	function formatMsToHHMMSS(ms: number): string {
 		const totalSeconds = Math.floor(ms / 1000);
@@ -47,7 +44,6 @@
 	}
 </script>
 
-{#if ctx && $formData}
 	<section class="flex h-full min-h-0 grow flex-col gap-2 overflow-y-auto px-4">
 		<p>If specified, the session will never live longer than this duration.</p>
 		<Form.ElementField {form} name="sessionRuntimeSettings.ttl" class="flex items-center gap-2 ">
@@ -84,5 +80,4 @@
 				{$errors?.sessionRuntimeSettings?.ttl}
 			</span>
 		{/if}
-	</section>
-{/if}
+	</section> -->

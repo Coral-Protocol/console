@@ -1,5 +1,5 @@
-<script lang="ts">
-	import * as schemas from '$lib/sessionSchema';
+<!-- <script lang="ts">
+	import * as schemas from '$generated/api.zod';
 	import type { z } from 'zod';
 	import type { HTMLInputAttributes } from 'svelte/elements';
 	import * as store from 'svelte/store';
@@ -8,7 +8,7 @@
 	import * as Form from '@coral-os/component-library/ui/form/index.js';
 	import { Input } from '@coral-os/component-library/ui/input/index.js';
 
-	type T = z.output<schemas.FormSchema>;
+	type T = z.output<typeof schemas.AgentGraphRequest>;
 
 	type Props = HTMLInputAttributes & {
 		superform: SuperForm<T>;
@@ -19,7 +19,7 @@
 	const { form: formData, errors } = form;
 	let data = $derived(
 		store.toStore(
-			() => $formData.tools[id],
+			() => $formData.c[id],
 			(tool) => {
 				if (!tool) return;
 				$formData.tools[id] = tool;
@@ -58,4 +58,4 @@
 		<Form.FieldErrors />
 	</Form.Field>
 {/if}
-<!-- {#if $errors}<span class="invalid">{$errors}</span>{/if} -->
+{#if $errors}<span class="invalid">{$errors}</span>{/if} -->

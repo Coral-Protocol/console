@@ -1,7 +1,7 @@
 <script lang="ts" module>
 	import type { z } from 'zod';
-	import * as schemas from '$lib/sessionSchema';
 	import type { components } from '$generated/api';
+	import * as schemas from '$generated/api.zod';
 
 	import Blob from './options/Blob.svelte';
 	import Bool from './options/Bool.svelte';
@@ -9,10 +9,12 @@
 	import NumberOption from './options/Number.svelte';
 	import StringOption from './options/String.svelte';
 
-	type Schema = z.output<schemas.FormSchema>;
-	type Option = NonNullable<Schema['agents'][number]['options'][string]>;
+	type Schema = z.output<typeof schemas.AgentGraphRequest>;
+	type Option = NonNullable<Schema['agents'][number]['options']>[string];
 
-	export type OptionTypes = NonNullable<Option['type']>;
+	type RegistryOption = components['schemas']['RegistryAgent']['options'][string];
+
+	export type OptionTypes = NonNullable<RegistryOption['type']>;
 
 	export type OptionProps<Type extends OptionTypes = OptionTypes> = {
 		meta: Extract<components['schemas']['RegistryAgent']['options'][string], { type: Type }>;
@@ -23,7 +25,6 @@
 	};
 
 	const NUMBER_TYPES = [
-		'number',
 		'i8',
 		'i16',
 		'i32',
@@ -58,7 +59,7 @@
 		blob: Blob,
 		...Object.fromEntries(NUMBER_TYPES.map((t) => [t, NumberOption])),
 		...Object.fromEntries(LIST_TYPES.map((t) => [t, List]))
-	} as any; // Safety: keys are exhaustively covered by NUMBER_TYPES/LIST_TYPES above
+	} as any; // Safety: keys are covered by NUMBER_TYPES/LIST_TYPES above
 </script>
 
 <script lang="ts">
