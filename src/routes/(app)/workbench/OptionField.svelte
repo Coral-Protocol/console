@@ -72,10 +72,16 @@
 	import { TooltipLabel } from '@coral-os/component-library';
 
 	import IconArrowUUpLeft from 'phosphor-icons-svelte/IconArrowUUpLeftRegular.svelte';
+	import IconXRegular from 'phosphor-icons-svelte/IconXRegular.svelte';
 
 	import { cn } from '$lib/utils';
 	import { activeFile } from '$lib/activeFile.svelte';
-	import type { Agent, FileValidationErrors } from '$lib/fileStorage.svelte';
+	import {
+		loadFileData,
+		loadFileDataField,
+		type Agent,
+		type FileValidationErrors
+	} from '$lib/fileStorage.svelte';
 
 	type Props = {
 		agent: Agent;
@@ -87,6 +93,11 @@
 	let { agent, name, meta, class: className }: Props = $props();
 
 	let type = $derived(meta.type);
+	let secret = $derived.by(() => {
+		if (meta.type === 'string') {
+			return meta.secret;
+		}
+	});
 
 	let value = $derived(
 		store.toStore(
@@ -96,7 +107,7 @@
 				activeFile.updateAgent(agent.clientId, {
 					options: {
 						...agent.options,
-						[name]: { type, value } as any
+						[name]: { type, value, ...(secret && { secret }) } as any
 					}
 				});
 			}
@@ -115,7 +126,39 @@
 		return a === b;
 	}
 
-	let showRevertButton = $derived(
+	// what's currently persisted on disk for this option, loaded async
+	let savedValue = $state<any>(undefined);
+	let savedValueLoaded = $state(false);
+
+	$effect(() => {
+		const fileId = activeFile.current?.id;
+		const clientId = agent?.clientId;
+		const optionName = name;
+		let cancelled = false;
+
+		savedValueLoaded = false;
+
+		if (!fileId || !clientId) {
+			savedValue = undefined;
+			return;
+		}
+
+		loadFileDataField(fileId, optionName, clientId).then((result) => {
+			if (cancelled) return;
+			savedValue = result ?? undefined;
+			savedValueLoaded = true;
+		});
+
+		return () => {
+			cancelled = true;
+		};
+	});
+
+	let showRevertToSaveButton = $derived(
+		savedValueLoaded && savedValue !== undefined && !valuesEqual($value, savedValue)
+	);
+
+	let showRevertToDefaultButton = $derived(
 		meta.default !== undefined && $value !== undefined && !valuesEqual($value, meta.default)
 	);
 
@@ -145,19 +188,37 @@
 				</div>
 			</TooltipLabel>
 
-			{#if showRevertButton}
-				<Tooltip.Root>
-					<Tooltip.Trigger
-						class={cn(buttonVariants({ size: 'icon' }))}
-						onclick={() => {
-							$value = meta.default as any;
-						}}
-					>
-						<IconArrowUUpLeft />
-					</Tooltip.Trigger>
-					<Tooltip.Content>Revert to default</Tooltip.Content>
-				</Tooltip.Root>
-			{/if}
+			<div class="flex flex-col gap-1">
+				{#if showRevertToSaveButton}
+					<Tooltip.Root disableHoverableContent>
+						<Tooltip.Trigger
+							class={cn(buttonVariants({ size: 'icon', variant: 'outline' }))}
+							onclick={() => {
+								$value = savedValue;
+							}}
+						>
+							<IconArrowUUpLeft />
+						</Tooltip.Trigger>
+						<Tooltip.Content>Revert to saved</Tooltip.Content>
+					</Tooltip.Root>
+				{/if}
+				{#if showRevertToDefaultButton}
+					<Tooltip.Root disableHoverableContent>
+						<Tooltip.Trigger
+							class={cn(buttonVariants({ size: 'icon', variant: 'outline' }))}
+							onclick={() => {
+								if (!agent) return;
+								const newOptions = { ...agent.options } as Record<string, any>;
+								delete newOptions[name];
+								activeFile.updateAgent(agent.clientId, { options: newOptions });
+							}}
+						>
+							<IconXRegular />
+						</Tooltip.Trigger>
+						<Tooltip.Content>Revert to default</Tooltip.Content>
+					</Tooltip.Root>
+				{/if}
+			</div>
 		</Resizable.Pane>
 
 		<Resizable.Handle class="w-1 bg-transparent" />

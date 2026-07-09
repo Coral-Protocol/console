@@ -50,7 +50,8 @@
 		hasFileData,
 		type FileMeta,
 		type FileData,
-		zodErrorsToFileErrors
+		zodErrorsToFileErrors,
+		validateRequest
 	} from '$lib/fileStorage.svelte.js';
 	import DndProvider, { useDnD } from '$lib/components/DndProvider.svelte';
 	import { toSessionRequest, fromSessionRequest } from '$lib/payloadConstructor.svelte';
@@ -253,33 +254,41 @@
 				)
 			});
 
-			try {
-				sendingRequest = true;
+			sendingRequest = true;
+			if (activeFile.current !== null) {
+				try {
+					toast.promise(
+						(async () => {
+							const body = toSessionRequest(activeFile.current!, 'submission');
+							const res = await ctx.server.api.POST('/api/v1/local/session', { body });
+							('');
+							if (res.error) {
+								let error: { message?: string; stackTrace?: string[] } = res.error;
+								throw new Error(error.message ?? 'Failed to create session');
+							}
 
-				const body = await toSessionRequest(activeFile.current);
-				const res = await ctx.server.api.POST('/api/v1/local/session', { body });
+							if (!res.data) {
+								throw new Error('no data received');
+							}
 
-				if (res.error) {
-					let error: { message?: string; stackTrace?: string[] } = res.error;
-					console.error(error.stackTrace);
-					toast.error(`Failed to create session: ${error.message}`);
-					return;
+							ctx.session = new Session({
+								sessionId: res.data.sessionId,
+								namespace: ctx.server.namespace,
+								server: ctx.server
+							});
+						})(),
+						{
+							loading: 'Creating session...',
+							success: 'Session created',
+							error: (e: unknown) =>
+								`Failed to create session: ${(e instanceof Error ? e.message : e) ?? e}`
+						}
+					);
+				} catch (e) {
+					console.error(e);
+				} finally {
+					sendingRequest = false;
 				}
-
-				if (res.data) {
-					ctx.session = new Session({
-						sessionId: res.data.sessionId,
-						namespace: ctx.server.namespace,
-						server: ctx.server
-					});
-				} else {
-					throw new Error('no data received');
-				}
-			} catch (e) {
-				console.log(e);
-				toast.error(`Failed to create session: ${e}`);
-			} finally {
-				sendingRequest = false;
 			}
 		}
 	}
@@ -695,6 +704,7 @@
 												<Tabs.Trigger value="Tools">Tools</Tabs.Trigger>
 												<Tabs.Trigger value="Groups">Groups</Tabs.Trigger>
 												<Tabs.Trigger value="Budget">Budget</Tabs.Trigger>
+												<Tabs.Trigger value="Errors">Errors</Tabs.Trigger>
 											</Tabs.List>
 											<Tabs.Content
 												value="Agents"
@@ -724,6 +734,11 @@
 												<GroupsPane />
 											</Tabs.Content>
 											<Tabs.Content value="Budget" class="p-2">Budget settings</Tabs.Content>
+											<Tabs.Content value="Errors" class="p-2">
+												{#each Object.entries(activeFile.current?.errors ?? {}) as error}
+													{JSON.stringify(error)}
+												{/each}
+											</Tabs.Content>
 										</Tabs.Root>
 									</Resizable.Pane>
 									<Resizable.Handle />
@@ -744,12 +759,34 @@
 											Save request</Button
 										>
 
-										<Button onclick={createSession} disabled={sendingRequest}>
+										<Button
+											onclick={async (e: { shiftKey: any }) => {
+												const validationErrors = await validateRequest();
+
+												if (!validationErrors || e.shiftKey) {
+													createSession();
+												} else {
+													toast.error('Session body contains errors', {
+														description:
+															'Hold shift when creating a session to ignore validation errors and continue anyway'
+													});
+												}
+											}}
+											disabled={sendingRequest}
+										>
 											{#if sendingRequest}
 												<Spinner />
 											{/if}
 											Create session</Button
 										>
+										{#if activeFile.current?.errors}
+											<Tooltip.Root>
+												<Tooltip.Trigger>
+													<Button>!</Button>
+												</Tooltip.Trigger>
+												<Tooltip.Content>Session request body contains errors</Tooltip.Content>
+											</Tooltip.Root>
+										{/if}
 									</Resizable.Pane>
 								</Resizable.PaneGroup>
 							</Resizable.Pane>

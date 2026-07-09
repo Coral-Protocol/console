@@ -17,7 +17,8 @@
 	position="bottom-left"
 	toastOptions={{
 		classes: {
-			toast: '!rounded-none !w-[270px]'
+			toast: '!rounded-none !w-[270px]',
+			description: 'text-foreground/80! text-xs'
 		}
 	}}
 />

@@ -85,7 +85,7 @@ function describeValue(input: unknown): string {
 	return typeof input;
 }
 
-function validate() {
+export async function validateRequest(): Promise<{ errors: FileValidationErrors } | void> {
 	if (activeFile.current) {
 		const convertedRequest = toSessionRequest(activeFile.current as FileData);
 		const result = SessionRequest.safeParse(convertedRequest);
@@ -93,12 +93,10 @@ function validate() {
 		if (!result.success) {
 			const errors = zodErrorsToFileErrors(result.error, activeFile.current);
 
-			return json({ errors }, { status: 400 });
+			return { errors };
 		}
 
 		activeFile.current.errors = undefined;
-
-		return result.data;
 	}
 }
 
@@ -201,7 +199,7 @@ function createDebouncedStore(prefix: string, color: string) {
 		};
 
 		pending.set(id, setTimeout(flush, debounceMs));
-		validate();
+		// validateRequest();
 	}
 
 	async function flush(id: string) {
@@ -244,6 +242,56 @@ export function loadFileData(id: string): Promise<string> {
 	return logGroup(`loadFileData("${id}")`, () => {
 		return savedFileStore.load(id, () => JSON.stringify(defaultFileData(id), null, 4));
 	});
+}
+
+export async function loadFileDataField<T = any>(
+	id: string,
+	field: string,
+	clientID?: string
+): Promise<T | null> {
+	return logGroup(
+		`loadFileDataField("${id}", "${field}"${clientID ? `, "${clientID}"` : ''})`,
+		async () => {
+			try {
+				log(
+					'loadFileDataField: searching for field',
+					field,
+					'in file',
+					id,
+					clientID ? `from agent ${clientID}` : ''
+				);
+				const raw = await savedFileStore.load(id, () => {
+					return '{}';
+				});
+				log('loadFileDataField: raw data for id', id, raw);
+				const obj = JSON.parse(raw ?? '{}');
+
+				let source: any = obj;
+				if (clientID) {
+					const agent = Array.isArray(obj?.agents)
+						? obj.agents.find((a: any) => a?.clientId === clientID)
+						: undefined;
+					log('loadFileDataField: matched agent', agent ? $state.snapshot(agent) : null);
+					source = agent ?? null;
+				}
+
+				log('loadFileDataField: available fields', Object.keys(source ?? {}));
+
+				if (source && field in source) {
+					return source[field] ?? null;
+				}
+
+				if (clientID && source?.options && field in source.options) {
+					return source.options[field]?.value ?? null;
+				}
+
+				return null;
+			} catch (e) {
+				log('loadFileDataField error', e);
+				return null;
+			}
+		}
+	);
 }
 
 export function defaultFileMeta(): FileMeta {

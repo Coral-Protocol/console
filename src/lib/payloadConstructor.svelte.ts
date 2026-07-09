@@ -1,18 +1,46 @@
 import type { FileData, Agent, Group } from './fileStorage.svelte';
 import type { components } from '$generated/api.ts'; // adjust path
+import { getSecretFromId } from './components/dialogs/secretManager.svelte';
 
 type AgentGraphRequest = components['schemas']['AgentGraphRequest'];
 type SessionRequest = components['schemas']['SessionRequest'];
 
-export function toSessionRequest(file: FileData): SessionRequest {
+export function toSessionRequest(file: FileData, format?: 'submission' | 'check'): SessionRequest {
 	const sessionRequest = $state.snapshot(file);
 	const clientIdToName = new Map(
 		sessionRequest.agents.map((agent) => [agent.clientId, agent.name])
 	);
-
-	const agents: AgentGraphRequest['agents'] = sessionRequest.agents.map(
+	let agents: AgentGraphRequest['agents'] = sessionRequest.agents.map(
 		({ clientId, nodeData, ...rest }) => rest
 	);
+
+	if (format !== 'submission') {
+		agents = sessionRequest.agents.map(({ clientId, nodeData, ...rest }) => {
+			const options = rest.options as Record<string, any> | undefined;
+			if (options) {
+				Object.entries(options).forEach(([key, val]) => {
+					if (val && val.secret === true) {
+						delete val.secret;
+					}
+				});
+			}
+			return rest;
+		});
+	} else {
+		agents = sessionRequest.agents.map(({ clientId, nodeData, ...rest }) => {
+			const options = rest.options as Record<string, any> | undefined;
+			if (options) {
+				Object.entries(options).forEach(async ([key, val]) => {
+					if (val && val.secret === true) {
+						const secretObject = getSecretFromId(val.value);
+						delete val.secret;
+						val.value = secretObject?.secret;
+					}
+				});
+			}
+			return rest;
+		});
+	}
 
 	const groups: AgentGraphRequest['groups'] = sessionRequest.groups.map((group) =>
 		group.agentClientIds.map((clientId) => {

@@ -21,6 +21,7 @@
 	import { activeFile } from '../../../../lib/activeFile.svelte';
 	import type { RuntimeId } from '$lib/sessionSchema/types';
 	import type { Agent } from '$lib/fileStorage.svelte';
+	import { untrack } from 'svelte';
 
 	let ctx = appContext.get();
 	let sessCtx = getSessionContext();
@@ -47,16 +48,32 @@
 	let agentLookup = $state<Awaited<ReturnType<CoralServer['lookupAgent']>> | null>(null);
 	let optionsLoading = $state(false);
 
+	const agentKey = $derived(
+		sessionAgentObject
+			? `${sessionAgentObject.id.registrySourceId}:${sessionAgentObject.id.name}:${sessionAgentObject.id.version}`
+			: undefined
+	);
+
 	$effect(() => {
-		const id = sessionAgentObject?.id;
+		const key = agentKey;
 		let cancelled = false;
+
+		if (!key) {
+			agentLookup = null;
+			return;
+		}
+
+		const id = untrack(() => sessionAgentObject?.id);
+		if (!id) {
+			agentLookup = null;
+			return;
+		}
 
 		optionsLoading = true;
 		getOptions(id).then((result) => {
 			if (cancelled) return;
 			agentLookup = result;
 			optionsLoading = false;
-			// Clear any stale error from a previous failed lookup once this one succeeds
 			if (result) sessCtx.selectedAgentError = null;
 		});
 
