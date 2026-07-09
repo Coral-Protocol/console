@@ -216,7 +216,6 @@
 				},
 				type: 'circleNode',
 				draggable: !viewOnly,
-				selected: agent.clientId === sessCtx.selectedAgentClientId,
 				locked: nodeData?.locked ?? false
 			};
 		});
@@ -642,10 +641,7 @@
 		}}
 		onselectiondragstop={handleSelectionDragStop}
 		onselectioncontextmenu={handleSelectionContextMenu}
-		selectNodesOnDrag={true}
-		onpaneclick={() => {
-			sessCtx.selectedAgentClientId = undefined;
-		}}
+		selectNodesOnDrag={false}
 		snapGrid={[20, 20]}
 		onselectionend={() => {
 			sessCtx.selectedAgentClientId = undefined;
@@ -653,13 +649,10 @@
 		selectionOnDrag={true}
 		edgesFocusable={false}
 		panOnDrag={[1]}
-		elevateNodesOnSelect={true}
+		elevateNodesOnSelect={false}
 		onnodedragstop={handleNodeDragStop}
 		defaultEdgeOptions={{ selectable: false, focusable: false }}
 		autoPanOnNodeDrag={false}
-		onedgeclick={() => {
-			sessCtx.selectedAgentClientId = undefined;
-		}}
 		connectionMode={'loose' as ConnectionMode}
 		colorMode={mode.current}
 		proOptions={{

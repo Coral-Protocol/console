@@ -16,18 +16,19 @@
 
 	let parent: any = $state();
 
-	let { data, id, positionAbsoluteX, positionAbsoluteY, dragging }: NodeProps = $props();
+	let { data, id, positionAbsoluteX, positionAbsoluteY, dragging, selected }: NodeProps = $props();
 </script>
 
 <div class="ring-wrapper group relative h-30 w-30 rounded-full transition-all">
 	<div
-		class="handle-container border-foreground/10 flyIn relative flex h-full w-full flex-col items-center justify-center
-	rounded-full border bg-white
-	text-[oklch(0.72_0.18_44.59)]
-transition-all
-	duration-200 group-hover:scale-[1.02]
+		class="handle-container border-foreground/10 flyIn hover:border-brand-primary/50 relative flex h-full w-full flex-col items-center
+	justify-center rounded-full border
+	bg-white
+text-[oklch(0.72_0.18_44.59)]
+	transition-all
 	dark:bg-[var(--xy-background-color-default)]
-	{data.selected ? 'bg-foreground/50' : ''}"
+	{selected && !data.selected && !dragging ? 'border-foreground!' : ''}
+	{data.selected ? 'border-brand-primary!' : ''}"
 	>
 		<div
 			bind:this={parent}
@@ -107,7 +108,7 @@ transition-all
 						!
 					</div></Tooltip.Trigger
 				>
-				<Tooltip.Content>Agent contains errors! Click for details</Tooltip.Content>
+				<Tooltip.Content>Agent settings invalid</Tooltip.Content>
 			</Tooltip.Root>
 		{/if}
 
@@ -147,10 +148,6 @@ transition-all
 </div>
 
 <style>
-	.ring-wrapper:hover {
-		transform: translateX(-0.5px) translateY(-0.5px) scale(1.04);
-	}
-
 	.handle-container > :global(.svelte-flow__handle) {
 		margin: auto;
 		position: absolute;
