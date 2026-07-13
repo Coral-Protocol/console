@@ -84,6 +84,10 @@
 	};
 
 	const addAgent = async (agent: any, spawnPos: { x: number; y: number } | null = null) => {
+		if (!activeFile.current) {
+			
+		}
+		
 		const registrySourceId = agent.registrySourceId ?? { type: agent.source };
 
 		const lookupDetails = await ctx.server.lookupAgent({
@@ -140,9 +144,10 @@
 				<div class="bg-card/50 h-[42px] w-full border"></div>
 			{:then details}
 				<li
-					class="group hover:dark:bg-ring/20 flex max-h-32 min-h-28 w-full grow cursor-pointer items-center gap-3 overflow-hidden border-b py-2 pr-2 align-middle"
+					class="group hover:dark:bg-ring/20 flex max-h-32 min-h-28 w-full items-center gap-3 overflow-hidden border-b p-1"
 				>
 					<button
+						class="min-w-0 flex-1"
 						onclick={() => {
 							selectedAgentClientId = { agent, details };
 							dialogOpen = true;
@@ -155,13 +160,10 @@
 							})}
 						draggable={true}
 						type="button"
-						class="h-full w-full grow"
 					>
-						<Card.Root
-							class="  h-full w-full grow gap-1 border-0 bg-transparent p-1 text-left shadow-none"
-						>
+						<Card.Root class="gap-1 border-0 bg-transparent p-1 text-left shadow-none">
 							<Card.Header class="flex gap-2 p-0">
-								<Avatar.Root class="size-8">
+								<Avatar.Root class="size-8 shrink-0">
 									<Avatar.Image
 										class="bg-cover object-cover"
 										src={details.extension?.iconUrl}
@@ -171,9 +173,12 @@
 										{getInitials(agent.name)}
 									</Avatar.Fallback>
 								</Avatar.Root>
-								<div class="flex flex-col items-start gap-1">
-									<Card.Title class="font-bold">{agent.name}</Card.Title>
-									<Card.Description class="text-xs">
+								<div class="flex min-w-0 flex-col items-start gap-1">
+									<Card.Title class="truncate font-bold">
+										{agent.name}
+									</Card.Title>
+
+									<Card.Description class="truncate text-xs">
 										{details.extension?.developer
 											? 'By ' + details.extension.developer
 											: 'Unknown developer'}
@@ -181,9 +186,9 @@
 								</div>
 							</Card.Header>
 							<Card.Content
-								class="text-foreground/40 group-hover:text-foreground/80 flex w-full grow flex-col gap-2 p-0"
+								class="text-foreground/90 group-hover:text-foreground flex flex-col gap-2 p-0"
 							>
-								<p class="line-clamp-4 truncate overflow-ellipsis">
+								<p class="line-clamp-2">
 									{details.registryAgent.info.description}
 								</p>
 								{#if details.registryAgent?.marketplace?.keywords?.length}
@@ -201,14 +206,16 @@
 					<Button
 						variant="outline"
 						size="sm"
-						class="opacity-0 transition group-hover:opacity-100"
+						class="shrink-0 opacity-0 transition group-hover:opacity-100"
 						onclick={() =>
 							addAgent({
 								name: agent.name,
 								version: agent.versions[0]!,
 								source: catalog.identifier.type
-							})}>Add</Button
+							})}
 					>
+						Add
+					</Button>
 				</li>
 			{:catch err}
 				<!-- skip -->

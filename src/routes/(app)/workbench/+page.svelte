@@ -19,7 +19,7 @@
 	import IconCircuity from 'phosphor-icons-svelte/IconCircuitryRegular.svelte';
 	import * as Resizable from '@coral-os/component-library/ui/resizable/index.js';
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
-	import { PersistedState, PressedKeys } from 'runed';
+	import { PressedKeys } from 'runed';
 
 	import IconCodeRegular from 'phosphor-icons-svelte/IconCodeRegular.svelte';
 	import IconTableRegular from 'phosphor-icons-svelte/IconTableRegular.svelte';
@@ -67,8 +67,7 @@
 	import { json } from '@sveltejs/kit';
 	import { SessionRequest } from '$generated/api.zod';
 	import { randomAdjective, randomAnimal, randomPlant } from '$lib/words';
-
-	type Tab = { id: string };
+	import { fileTabs, uniqueName } from '$lib/fileTabs.svelte';
 
 	const isShiftPressed = $derived(keys.has('Shift'));
 	const isMobile = new IsMobile();
@@ -82,114 +81,14 @@
 
 	setSessionContext(sessCtx);
 
-	const tabs = new PersistedState<Tab[]>('workbench:tabs', []);
-	const activeTab = new PersistedState<string>('workbench:activeTab', '');
-
 	$effect(() => {
-		const tabId = activeTab.current;
-		if (!tabId) {
-			activeFile.close();
-			return;
-		}
-		activeFile.open(tabId);
+		fileTabs.syncActiveFile();
 	});
-
-	function uniqueName(base: string, existingNames: string[]): string {
-		if (!existingNames.includes(base)) return base;
-
-		const escaped = base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-		const pattern = new RegExp(`^${escaped} (\\d+)$`);
-
-		let max = 1;
-		for (const name of existingNames) {
-			const match = name.match(pattern);
-			if (match) {
-				max = Math.max(max, parseInt(match[1] ?? '0', 10));
-			}
-		}
-
-		return `${base} ${max + 1}`;
-	}
-	
-	function newTab() {
-		const fileId = crypto.randomUUID();
-
-		const fileName = uniqueName(
-			'Untitled',
-			Object.values(filesMeta.current).map((f) => f.name)
-		);
-
-		filesMeta.current = {
-			...filesMeta.current,
-			[fileId]: {
-				name: fileName,
-				created: Date.now()
-			}
-		};
-
-		tabs.current.push({ id: fileId });
-		activeTab.current = fileId;
-	}
-
-	let showDeleteConfirmation = $state(false);
-	let tabToClose = $state<string | null>(null);
-
-	const tabToCloseName = $derived(tabToClose ? (filesMeta.current[tabToClose]?.name ?? '') : '');
-
-	async function closeTab(id: string, force = false) {
-		try {
-			const [hasDelta, hasData] = await Promise.all([hasFileDataDelta(id), hasFileData(id)]);
-
-			if (hasDelta && !force) {
-				tabToClose = id;
-				showDeleteConfirmation = true;
-				return;
-			}
-
-			if (!hasData) {
-				const { [id]: _, ...rest } = filesMeta.current;
-				filesMeta.current = rest;
-			}
-			await deleteFileDataDelta(id);
-
-			showDeleteConfirmation = false;
-			removeTab(id);
-		} catch (error) {
-			console.error(error);
-		}
-	}
-
-	function removeTab(id: string) {
-		const index = tabs.current.findIndex((tab) => tab.id === id);
-		if (index < 0) return;
-
-		const wasActive = activeTab.current === id;
-
-		const remainingTabs = tabs.current.filter((tab) => tab.id !== id);
-		tabs.current = remainingTabs;
-
-		if (wasActive) {
-			activeTab.current = remainingTabs[Math.max(0, index - 1)]?.id ?? remainingTabs[0]?.id ?? '';
-		}
-
-		tabToClose = null;
-		showDeleteConfirmation = false;
-
-		updateFileMeta(id, { edited: undefined });
-	}
-
-	function openFile(id: string) {
-		const alreadyOpen = tabs.current.some((tab) => tab.id === id);
-		if (!alreadyOpen) {
-			tabs.current.push({ id });
-		}
-		activeTab.current = id;
-	}
 
 	// async function deleteFile(id: string) {
 	// 	const fileIndex = filesMeta.current.findIndex((f) => f.id === id);
 	// 	if (fileIndex !== -1) filesMeta.current.splice(fileIndex, 1);
-	// 	await closeTab(id);
+	// 	await fileTabs.closeFile(id);
 	// 	await deleteFileData(id);
 	// }
 
@@ -200,12 +99,6 @@
 		draftName = activeFile.meta?.name ?? '';
 		draftDescription = activeFile.meta?.description ?? '';
 	});
-
-	let recentFiles = $derived(
-		Object.entries(filesMeta.current)
-			.map(([id, file]) => ({ ...file, id }))
-			.sort((a, b) => b.created - a.created)
-	);
 
 	// INFO: a note on how this all works:
 	// when a tab is clicked on, it will get activeFile to "open" the file with the tab id, which is a shared ID between tabs, file meta data, file data, and file data delta
@@ -299,6 +192,10 @@
 	onMount(() => {
 		mounted = true;
 	});
+
+	function checkTitle(name: string) {
+		return /^Untitled( \d+)?$/.test(name);
+	}
 </script>
 
 <svelte:window
@@ -312,7 +209,12 @@
 	}}
 />
 
-<DeleteWarning bind:showDeleteConfirmation name={tabToCloseName} id={tabToClose} {closeTab} />
+<DeleteWarning
+	bind:showDeleteConfirmation={fileTabs.showDeleteConfirmation}
+	name={fileTabs.tabToCloseName}
+	id={fileTabs.tabToClose}
+	closeFile={(id: string, force: boolean | undefined) => fileTabs.closeFile(id, force)}
+/>
 
 <section class=" flex h-full min-h-0 grow flex-col overflow-hidden p-2">
 	<header class="bg-card">
@@ -321,15 +223,18 @@
 				<IconCircuity class="size-6" />
 				<Menubar.Trigger>File</Menubar.Trigger>
 				<Menubar.Content>
-					<Menubar.Item onclick={newTab}>New File</Menubar.Item>
+					<Menubar.Item onclick={() => fileTabs.newTab()}>New File</Menubar.Item>
 					<Menubar.Sub>
 						<Menubar.SubTrigger>Open Recent...</Menubar.SubTrigger>
 						<Menubar.SubContent
 							align="start"
 							class="max-h-96 max-w-64 overflow-x-hidden overflow-y-auto"
 						>
-							{#each recentFiles as file}
-								<Menubar.Item class="flex w-full justify-between" onclick={() => openFile(file.id)}>
+							{#each fileTabs.recentFiles as file}
+								<Menubar.Item
+									class="flex w-full justify-between"
+									onclick={() => fileTabs.openFile(file.id)}
+								>
 									<span class="truncate">{file.name}</span>
 									<span class="text-foreground/50 w-max text-xs text-nowrap">
 										{formatDistanceToNow(file.created, { addSuffix: true })}
@@ -340,12 +245,14 @@
 					</Menubar.Sub>
 					<Menubar.Separator />
 					<Menubar.Item
-						disabled={tabs.current.length <= 0}
+						disabled={fileTabs.tabs.current.length <= 0}
 						onclick={() => {
-							// close tabs that do NOT have an edited timestamp on their file meta
-							for (const tab of tabs.current.filter((t) => !filesMeta.current[t.id]?.edited))
-								closeTab(tab.id);
-							if (!tabs.current.find((t) => t.id === activeTab.current)) activeTab.current = '';
+							for (const tab of fileTabs.tabs.current.filter(
+								(t) => !filesMeta.current[t.id]?.edited
+							))
+								fileTabs.closeFile(tab.id);
+							if (!fileTabs.tabs.current.find((t) => t.id === fileTabs.activeTab.current))
+								fileTabs.activeTab.current = '';
 						}}>Close all saved files</Menubar.Item
 					>
 					<Menubar.Separator />
@@ -381,9 +288,12 @@
 				<Menubar.Content>
 					<Menubar.Item
 						onclick={() => {
-							for (const tab of tabs.current.filter((t) => !filesMeta.current[t.id]?.edited))
-								closeTab(tab.id);
-							if (!tabs.current.find((t) => t.id === activeTab.current)) activeTab.current = '';
+							for (const tab of fileTabs.tabs.current.filter(
+								(t) => !filesMeta.current[t.id]?.edited
+							))
+								fileTabs.closeFile(tab.id);
+							if (!fileTabs.tabs.current.find((t) => t.id === fileTabs.activeTab.current))
+								fileTabs.activeTab.current = '';
 						}}>Close All Tabs</Menubar.Item
 					>
 					<!-- need to make these tabs go visually first instead of one by one, leave that in the backend id say -->
@@ -393,12 +303,12 @@
 	</header>
 
 	<Card.Root class=" h-full min-h-0 grow overflow-hidden border-0 bg-transparent p-0">
-		<Tabs.Root bind:value={activeTab.current} class="h-full min-h-0 grow overflow-hidden">
+		<Tabs.Root bind:value={fileTabs.activeTab.current} class="h-full min-h-0 grow overflow-hidden">
 			<Tabs.List
 				variant="seamless"
 				class="bg-background/80  no-scrollbar flex h-9!  gap-0 overflow-x-auto overflow-y-hidden border-x *:relative *:border-t-0 *:border-l-0! "
 			>
-				{#each tabs.current as tab, i}
+				{#each fileTabs.tabs.current as tab, i}
 					<div
 						class=" group relative flex h-full w-fit max-w-64 min-w-24 truncate overflow-hidden *:border-l-0!"
 					>
@@ -413,7 +323,7 @@
 												if (e.button !== 0) e.preventDefault();
 											}}
 											onauxclick={(e: MouseEvent) => {
-												if (e.button === 1) closeTab(tab.id);
+												if (e.button === 1) fileTabs.closeFile(tab.id);
 											}}
 											class="not-data-active:bg-background/80! not-data-active:hover:bg-card! peer data-active:border-t-brand-primary! w-full grow justify-start overflow-hidden pr-8"
 											><span class="truncate {filesMeta.current[tab.id]?.edited ? 'italic' : ''}"
@@ -439,7 +349,7 @@
 											{...props}
 											variant="ghost"
 											class="group-hover:text-foreground group/button peer-data-active:text-foreground hover:bg-card-foreground/20! absolute top-0 right-1.5 bottom-0 my-auto aspect-auto size-6 -translate-0 text-transparent "
-											onclick={() => closeTab(tab.id)}
+											onclick={() => fileTabs.closeFile(tab.id)}
 											><IconXRegular
 												class="peer absolute top-0 bottom-0 m-auto size-4 {filesMeta.current[tab.id]
 													?.edited
@@ -466,10 +376,12 @@
 				<div
 					class="flex h-full w-full min-w-0 flex-1 grow items-center border-y! border-r!"
 					onauxclick={(e: MouseEvent) => {
-						if (e.button === 1) newTab();
+						if (e.button === 1) fileTabs.newTab();
 					}}
 				>
-					<Button variant="ghost" onclick={newTab}><IconPlusRegular class="size-4 " /></Button>
+					<Button variant="ghost" onclick={() => fileTabs.newTab()}
+						><IconPlusRegular class="size-4 " /></Button
+					>
 				</div>
 			</Tabs.List>
 			<Card.Content class="bg-card h-full min-h-0 grow overflow-hidden border border-t-0 p-0 ">
@@ -485,7 +397,7 @@
 								class="relative min-h-0 min-w-0 overflow-hidden"
 							>
 								{#if mounted}
-									{#if tabs.current.length >= 1}
+									{#if fileTabs.tabs.current.length >= 1}
 										<Tabs.Root value="Diagram" class="relative h-full grow gap-0 overflow-hidden">
 											<header class="flex h-[85px] w-full items-center gap-4 border-b p-4">
 												<section class="flex min-w-0 flex-1 flex-col">
@@ -499,7 +411,7 @@
 																	maxlength="45"
 																	bind:value={draftName}
 																	onfocus={async (e) => {
-																		if (/^Untitled \d+$/.test(e.currentTarget.value)) {
+																		if (checkTitle(e.currentTarget.value)) {
 																			e.currentTarget.value = uniqueName(
 																				`${randomAdjective()} ${randomAnimal()}`,
 																				Object.values(filesMeta.current).map((f) => f.name)
@@ -517,7 +429,7 @@
 																	class="pointer-events-none max-w-full truncate text-xl opacity-0"
 																	>{draftName || ' '}</span
 																>
-																{#if /^Untitled \d+$/.test(draftName)}
+																{#if checkTitle(draftName)}
 																	<!-- TODO: shouldnt be a regex test everytime but ill fix this later -->
 																	<IconEditRegular
 																		class="z-0 shrink-0 opacity-50 peer-focus:opacity-0"
@@ -587,8 +499,8 @@
 														<span>file name: {activeFile.meta?.name}</span>
 														<span>file description: {activeFile.meta?.description}</span>
 														<span>files: {Object.entries(filesMeta.current).length}</span>
-														<span>tabs: {tabs.current.length}</span>
-														<span>tab id: {activeTab.current}</span>
+														<span>tabs: {fileTabs.tabs.current.length}</span>
+														<span>tab id: {fileTabs.activeTab.current}</span>
 
 														<Separator />
 														<span>selected agent client id: {sessCtx.selectedAgentClientId}</span>
@@ -637,7 +549,7 @@
 												{/if}
 											</Tabs.Content>
 										</Tabs.Root>
-									{:else if tabs?.current !== null}
+									{:else if fileTabs.tabs?.current !== null}
 										<DiagonalLines />
 										<div
 											class="absolute top-1/2 left-1/2 flex h-fit min-h-42 w-fit min-w-1/2 -translate-1/2 flex-col gap-4"
@@ -646,11 +558,11 @@
 											<div class="flex gap-4">
 												<section class="flex w-full grow flex-col gap-2">
 													<span>Recent</span>
-													{#each recentFiles as file}
+													{#each fileTabs.recentFiles as file}
 														<Button
 															variant="link"
 															class="text-brand-primary flex w-full justify-between"
-															onclick={() => openFile(file.id)}
+															onclick={() => fileTabs.openFile(file.id)}
 														>
 															<span class="truncate">{file.name}</span>
 															{#if file.saved}
@@ -669,7 +581,7 @@
 													<Button
 														variant="link"
 														class="text-brand-primary flex justify-between"
-														onclick={() => newTab()}
+														onclick={() => fileTabs.newTab()}
 													>
 														New file
 													</Button>
@@ -677,7 +589,7 @@
 														variant="link"
 														disabled
 														class="text-brand-primary flex justify-between"
-														onclick={() => newTab()}
+														onclick={() => fileTabs.newTab()}
 													>
 														Open file
 													</Button>
@@ -685,7 +597,7 @@
 														disabled
 														variant="link"
 														class="text-brand-primary flex justify-between"
-														onclick={() => newTab()}
+														onclick={() => fileTabs.newTab()}
 													>
 														Import file
 													</Button>

@@ -7,12 +7,12 @@
 		showDeleteConfirmation = $bindable(false),
 		name,
 		id,
-		closeTab
+		closeFile
 	}: {
 		showDeleteConfirmation: boolean;
 		name: string | undefined;
 		id: string | null;
-		closeTab: Function;
+		closeFile: Function;
 	} = $props();
 </script>
 
@@ -28,12 +28,12 @@
 					if (id) {
 						try {
 							await updateFileDataFromDelta(id);
-							closeTab(id, true);
+							closeFile(id, true);
 						} catch (err) {}
 					}
 				}}>Save</Button
 			>
-			<Button variant="outline" onclick={() => closeTab(id, true)}>Don't save</Button>
+			<Button variant="outline" onclick={() => closeFile(id, true)}>Don't save</Button>
 			<Dialog.Close class={buttonVariants({ variant: 'outline' })}>Cancel</Dialog.Close>
 		</Dialog.Footer>
 	</Dialog.Content>
