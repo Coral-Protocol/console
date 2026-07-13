@@ -102,7 +102,7 @@
 			return;
 		}
 		console.log(activeEl?.tagName);
-		
+
 		sessCtx.selectedAgentClientId = undefined;
 	}
 
@@ -258,10 +258,15 @@
 	onMount(() => {
 		simulation = d3Force
 			.forceSimulation()
-			.force('charge', d3Force.forceManyBody().strength(-800))
-			.force('x', d3Force.forceX().x(0).strength(0.1))
-			.force('y', d3Force.forceY().y(0).strength(0.1))
-			.force('collide', d3Force.forceCollide().radius(82 + 12))
+			.force('charge', d3Force.forceManyBody().strength(300).distanceMax(500))
+			.force(
+				'collide',
+				d3Force
+					.forceCollide()
+					.radius(82 + 12)
+					.strength(0.1)
+					.iterations(0.2)
+			)
 			.alphaTarget(0.15)
 			.stop();
 
@@ -301,7 +306,7 @@
 			d3Force
 				.forceLink(simEdges)
 				.id((d) => (d as { id: string }).id)
-				.strength(0.05)
+				.strength(0.5)
 				.distance(100)
 		);
 	}
@@ -658,6 +663,8 @@
 		onselectioncontextmenu={handleSelectionContextMenu}
 		selectNodesOnDrag={false}
 		snapGrid={[20, 20]}
+		maxZoom={2}
+		minZoom={0.5}
 		onselectionstart={() => {
 			sessCtx.selectedAgentClientId = undefined;
 		}}
