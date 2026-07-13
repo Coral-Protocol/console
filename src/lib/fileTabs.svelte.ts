@@ -54,24 +54,29 @@ class FileTabs {
 		activeFile.open(tabId);
 	}
 
-	newTab() {
-		const fileId = crypto.randomUUID();
+	async newTab() {
+		try {
+			const fileId = crypto.randomUUID();
 
-		const fileName = uniqueName(
-			'Untitled',
-			Object.values(filesMeta.current).map((f) => f.name)
-		);
+			const fileName = uniqueName(
+				'Untitled',
+				Object.values(filesMeta.current).map((f) => f.name)
+			);
 
-		filesMeta.current = {
-			...filesMeta.current,
-			[fileId]: {
-				name: fileName,
-				created: Date.now()
-			}
-		};
+			filesMeta.current = {
+				...filesMeta.current,
+				[fileId]: {
+					name: fileName,
+					created: Date.now()
+				}
+			};
 
-		this.tabs.current.push({ id: fileId });
-		this.activeTab.current = fileId;
+			this.tabs.current.push({ id: fileId });
+			this.activeTab.current = fileId;
+			return fileId;
+		} catch (error) {
+			console.error(error);
+		}
 	}
 
 	async closeFile(id: string, force = false) {

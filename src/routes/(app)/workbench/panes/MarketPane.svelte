@@ -27,6 +27,7 @@
 	import { getInitials } from '$lib/utils';
 	import { activeFile } from '$lib/activeFile.svelte';
 	import { randomAdjective, randomPlant } from '$lib/words';
+	import { fileTabs } from '$lib/fileTabs.svelte';
 
 	let ctx = appContext.get();
 	let sessCtx = getSessionContext();
@@ -84,10 +85,21 @@
 	};
 
 	const addAgent = async (agent: any, spawnPos: { x: number; y: number } | null = null) => {
-		if (!activeFile.current) {
-			
+		let file = activeFile.current;
+		if (!file) {
+			try {
+				const newFile = await fileTabs.newTab();
+				if (newFile) {
+					await activeFile.open(newFile);
+					file = activeFile.current;
+				}
+			} catch (error) {
+				console.error(
+					'Failed to create a new file when adding an agent with no existing open files.'
+				);
+			}
 		}
-		
+
 		const registrySourceId = agent.registrySourceId ?? { type: agent.source };
 
 		const lookupDetails = await ctx.server.lookupAgent({
