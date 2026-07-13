@@ -23,7 +23,7 @@
 
 	let readonly = $state(true);
 
-	let { meta, value, name }: Props = $props();
+	let { meta, value, name, errored }: Props = $props();
 
 	let open = $state(false);
 
@@ -48,7 +48,7 @@
 		<Textarea
 			class={cn('relative m-0 resize-y', !!meta.default && 'h-30')}
 			value={displayValue}
-			aria-invalid={false}
+			aria-invalid={errored}
 			onchange={(e: { currentTarget: HTMLTextAreaElement }) =>
 				($value = (e.currentTarget as HTMLTextAreaElement).value)}
 		/>
@@ -57,7 +57,7 @@
 			type="text"
 			value={displayValue}
 			class="m-0 w-full"
-			aria-invalid={false}
+			aria-invalid={errored}
 			autocomplete={meta.secret ? `section-${name} one-time-code` : undefined}
 			data-1p-ignore={meta.secret ? 'true' : undefined}
 			spellcheck={meta.secret ? 'false' : undefined}
@@ -74,11 +74,12 @@
 		<Popover.Root bind:open>
 			<Popover.Trigger
 				id={triggerId}
+				aria-invalid={errored}
 				class="{buttonVariants({
 					variant: 'outline',
 					size: 'sm',
 					class: 'w-[150px] justify-start'
-				})} shirnk grow"
+				})} aria-invalid:border-destructive! h-9! grow"
 			>
 				{#if selectedSecret}
 					{selectedSecret.name}
@@ -86,6 +87,7 @@
 					Select secret
 				{/if}
 			</Popover.Trigger>
+
 			<Popover.Content class="w-[200px] p-0" side="top" align="start">
 				<Command.Root>
 					<Command.Input placeholder="Select secret..." />

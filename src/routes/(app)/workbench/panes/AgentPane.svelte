@@ -8,6 +8,7 @@
 	import { Input } from '@coral-os/component-library/ui/input/index.js';
 	import { Spinner } from '@coral-os/component-library/ui/spinner/index.js';
 	import { TooltipLabel, Combobox } from '@coral-os/component-library';
+	import * as Tabs from '@coral-os/component-library/ui/tabs/index.js';
 
 	import OptionField from '../OptionField.svelte';
 
@@ -22,6 +23,8 @@
 	import type { Agent } from '$lib/fileStorage.svelte';
 	import { untrack } from 'svelte';
 	import { RuntimeId } from '$generated/api.zod';
+	import { Button } from '@coral-os/component-library/components/ui/button/index.js';
+	import IconRobot from '$lib/icons/robot.svelte';
 
 	let ctx = appContext.get();
 	let sessCtx = getSessionContext();
@@ -121,7 +124,7 @@
 	{@const items = Object.keys(agentLookup?.registryAgent?.runtimes ?? {})}
 	{@const reg = curCatalog?.agents[id.name]}
 
-	<header class="grid w-full grid-cols-2 gap-2 px-2">
+	<header class="grid w-full grid-cols-2 gap-2 p-2">
 		<section class="col-span-1 flex flex-col gap-2">
 			<TooltipLabel tooltip={'Name of the agent in this session'} class="m-0 w-fit">
 				Name
@@ -236,52 +239,87 @@
 			<AgentPanelIcon class="w-4/5 py-8" />
 		</section>
 	{:else}
-		<ol>
-			{#each Object.entries(groupedOptions) as [group, entries]}
-				<li>
-					{#if group !== '__ungrouped'}
-						<Card.Root class="bg-muted/50 m-2 p-0">
-							<Card.Content class="p-0">
-								<Accordion.Root type="multiple" value={[group]} class="border-0">
-									<Accordion.Item value={group} class="*:px-0 ">
-										<Accordion.Trigger>
-											{group}
-										</Accordion.Trigger>
-										<Accordion.Content class="border-t">
-											<ol>
-												{#each entries as [name, opt] (name)}
-													{#key sessionAgentObject.clientId}
-														<OptionField
-															agent={sessionAgentObject}
-															{name}
-															meta={opt}
-															class="px-4"
-														/>
-													{/key}
-												{/each}
-											</ol>
-										</Accordion.Content>
-									</Accordion.Item>
-								</Accordion.Root>
-							</Card.Content>
-						</Card.Root>
-					{:else}
-						<ol>
-							{#each entries as [name, opt] (name)}
-								<Card.Root class="bg-muted/50 m-2 p-0">
+		<Tabs.Root value="Options" class="gap-0">
+			<Tabs.List class="w-full justify-start">
+				<Tabs.Trigger value="Options">Options</Tabs.Trigger>
+				<Tabs.Trigger value="Budget">Budget</Tabs.Trigger>
+			</Tabs.List>
+			<Tabs.Content value="Options">
+				<ol>
+					{#each Object.entries(groupedOptions) as [group, entries]}
+						<li>
+							{#if group !== '__ungrouped'}
+								<Card.Root class="bg-muted/50 border-0 p-0">
 									<Card.Content class="p-0">
-										<OptionField agent={sessionAgentObject} {name} meta={opt} />
+										<Accordion.Root type="multiple" value={[group]} class="border-0">
+											<Accordion.Item value={group} class="*:px-0 ">
+												<Accordion.Trigger>
+													{group}
+												</Accordion.Trigger>
+												<Accordion.Content class="border-t">
+													<ol class="">
+														{#each entries as [name, opt] (name)}
+															{#key sessionAgentObject.clientId}
+																<OptionField
+																	agent={sessionAgentObject}
+																	{name}
+																	meta={opt}
+																	class="px-4"
+																/>
+															{/key}
+														{/each}
+													</ol>
+												</Accordion.Content>
+											</Accordion.Item>
+										</Accordion.Root>
 									</Card.Content>
 								</Card.Root>
-							{/each}
-						</ol>
-					{/if}
+							{:else}
+								<ol>
+									{#each entries as [name, opt] (name)}
+										<Card.Root class="bg-muted/50 m-2 p-0">
+											<Card.Content class="p-0">
+												<OptionField agent={sessionAgentObject} {name} meta={opt} />
+											</Card.Content>
+										</Card.Root>
+									{/each}
+								</ol>
+							{/if}
+						</li>
+					{/each}
+				</ol>
+			</Tabs.Content>
+			<Tabs.Content value="Budget" class="p-2">Agent Budget settings</Tabs.Content>
+		</Tabs.Root>
+	{/if}
+{:else}
+	<Card.Root class="bg-muted/50 m-2 ">
+		<Card.Content>Select an agent to configure it with the Inspector</Card.Content>
+	</Card.Root>
+
+	{#if activeFile.current?.agents.length}
+		<ol class="flex flex-col gap-2 p-2 pt-0">
+			{#each activeFile.current.agents as agent}
+				<li>
+					<Button
+						variant="outline"
+						onclick={() => (sessCtx.selectedAgentClientId = agent.clientId)}
+						class="h-12 w-full grow justify-start"
+					>
+						<IconRobot class="size-8" />
+						<div class="flex flex-col text-left">
+							<p class="font-medium">{agent.name}</p>
+							<p class="text-foreground/70 text-xs">{agent.id.name}</p>
+						</div>
+					</Button>
 				</li>
 			{/each}
 		</ol>
+	{:else}
+		<Card.Root class="bg-muted/50 m-4">
+			<Card.Content class="">
+				<p class="text-foreground/50">No agents in this graph yet.</p>
+			</Card.Content>
+		</Card.Root>
 	{/if}
-{:else}
-	<Card.Root class="bg-muted/50 m-4">
-		<Card.Content class="">Select an agent to configure it with the Inspector</Card.Content>
-	</Card.Root>
 {/if}

@@ -8,6 +8,8 @@ import { activeFile } from './activeFile.svelte';
 import { toSessionRequest } from './payloadConstructor.svelte';
 import { SessionRequest } from '../generated/api.zod';
 import { json } from '@sveltejs/kit';
+import type { CoralServer, RegistryAgentIdentifier } from '$lib/CoralServer.svelte';
+import type { components } from '$generated/api';
 
 function log(...args: unknown[]) {
 	if (debugMode.current) console.log('%c[fileStorage]', 'color:#888', ...args);
@@ -78,26 +80,75 @@ export type FileData = {
 	errors?: FileValidationErrors;
 };
 
-function describeValue(input: unknown): string {
-	if (input === undefined) return 'undefined';
-	if (input === null) return 'null';
-	if (Array.isArray(input)) return 'an array';
-	return typeof input;
+function agentKeyOf(id: RegistryAgentIdentifier) {
+	return `${id.registrySourceId}:${id.name}:${id.version}`;
 }
 
-export async function validateRequest(): Promise<{ errors: FileValidationErrors } | void> {
-	if (activeFile.current) {
-		const convertedRequest = toSessionRequest(activeFile.current as FileData);
-		const result = SessionRequest.safeParse(convertedRequest);
+type RegistryOption = components['schemas']['RegistryAgent']['options'][string];
 
-		if (!result.success) {
-			const errors = zodErrorsToFileErrors(result.error, activeFile.current);
+export function isOptionValueMissing(meta: RegistryOption, value: unknown): boolean {
+	if (!meta.required) return false;
 
-			return { errors };
-		}
+	if (value === undefined || value === null) return true;
 
-		activeFile.current.errors = undefined;
+	if (meta.type.startsWith('list[')) {
+		return !Array.isArray(value) || value.length === 0;
 	}
+
+	if (meta.type === 'string' || meta.type === 'blob') {
+		return value === '';
+	}
+
+	return false;
+}
+
+export async function validateRequest(
+	server: CoralServer
+): Promise<{ errors: FileValidationErrors } | void> {
+	if (!activeFile.current) return;
+
+	const convertedRequest = toSessionRequest(activeFile.current as FileData);
+	const result = SessionRequest.safeParse(convertedRequest);
+
+	const errors: FileValidationErrors = result.success
+		? { agent: {}, group: {}, session: {} }
+		: zodErrorsToFileErrors(result.error, activeFile.current);
+
+	const lookupCache = new Map<string, Awaited<ReturnType<CoralServer['lookupAgent']>> | null>();
+
+	await Promise.all(
+		activeFile.current.agents.map(async (agent) => {
+			const key = agentKeyOf(agent.id);
+			if (!lookupCache.has(key)) {
+				try {
+					lookupCache.set(key, await server.lookupAgent(agent.id));
+				} catch {
+					lookupCache.set(key, null);
+				}
+			}
+			const registryAgent = lookupCache.get(key)?.registryAgent;
+			if (!registryAgent) return;
+
+			for (const [name, meta] of Object.entries(registryAgent.options)) {
+				const value = agent.options?.[name]?.value;
+				if (isOptionValueMissing(meta, value)) {
+					const agentErrors = (errors.agent[agent.clientId] ??= {});
+					agentErrors[`options.${name}.value`] = {
+						code: 'custom',
+						message: `${meta.display?.label ?? name} is required`
+					} as ValidationError;
+				}
+			}
+		})
+	);
+
+	const hasErrors =
+		Object.keys(errors.agent).length ||
+		Object.keys(errors.group).length ||
+		Object.keys(errors.session).length;
+
+	activeFile.current.errors = hasErrors ? errors : undefined;
+	return hasErrors ? { errors } : undefined;
 }
 
 export function zodErrorsToFileErrors(error: ZodError, fileData: FileData): FileValidationErrors {

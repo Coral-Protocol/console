@@ -110,7 +110,7 @@
 
 		return `${base} ${max + 1}`;
 	}
-
+	
 	function newTab() {
 		const fileId = crypto.randomUUID();
 
@@ -704,7 +704,7 @@
 									<Resizable.Pane defaultSize={35} minSize={10}>
 										<Tabs.Root
 											value={sessCtx.selectedAgentClientId ? 'Inspector' : 'Agents'}
-											class="h-full grow"
+											class="h-full grow gap-0"
 										>
 											<Tabs.List
 												variant="line"
@@ -712,11 +712,10 @@
 											>
 												<Tabs.Trigger value="Agents">Agents</Tabs.Trigger>
 												<Tabs.Trigger value="Inspector">Inspector</Tabs.Trigger>
-												<Tabs.Trigger value="Session">Session</Tabs.Trigger>
-												<Tabs.Trigger value="Tools">Tools</Tabs.Trigger>
 												<Tabs.Trigger value="Groups">Groups</Tabs.Trigger>
-												<Tabs.Trigger value="Budget">Budget</Tabs.Trigger>
-												<Tabs.Trigger value="Errors">Errors</Tabs.Trigger>
+												<Tabs.Trigger value="Tools">Tools</Tabs.Trigger>
+												<Tabs.Trigger value="Session">Settings</Tabs.Trigger>
+												<!-- <Tabs.Trigger value="Errors">Errors</Tabs.Trigger> -->
 											</Tabs.List>
 											<Tabs.Content
 												value="Agents"
@@ -745,7 +744,6 @@
 											<Tabs.Content value="Groups" class="p-2">
 												<GroupsPane />
 											</Tabs.Content>
-											<Tabs.Content value="Budget" class="p-2">Budget settings</Tabs.Content>
 											<Tabs.Content value="Errors" class="p-2">
 												{#each Object.entries(activeFile.current?.errors ?? {}) as error}
 													{JSON.stringify(error)}
@@ -773,7 +771,7 @@
 
 										<Button
 											onclick={async (e: { shiftKey: any }) => {
-												const validationErrors = await validateRequest();
+												const validationErrors = await validateRequest(ctx.server);
 
 												if (!validationErrors || e.shiftKey) {
 													createSession();

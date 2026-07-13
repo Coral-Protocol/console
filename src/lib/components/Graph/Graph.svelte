@@ -636,11 +636,14 @@
 		onnodeclick={(nodes) => {
 			sessCtx.selectedAgentClientId = nodes.node.id;
 		}}
+		onpaneclick={() => {
+			sessCtx.selectedAgentClientId = undefined;
+		}}
 		onselectiondragstop={handleSelectionDragStop}
 		onselectioncontextmenu={handleSelectionContextMenu}
 		selectNodesOnDrag={false}
 		snapGrid={[20, 20]}
-		onselectionend={() => {
+		onselectionstart={() => {
 			sessCtx.selectedAgentClientId = undefined;
 		}}
 		selectionOnDrag={true}
