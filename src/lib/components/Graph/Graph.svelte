@@ -89,6 +89,23 @@
 			nodeData: { position, locked: !currentlyLocked }
 		});
 	}
+
+	function clearSelectedAgentIfNotInInput() {
+		const activeEl = document.activeElement;
+		if (
+			activeEl instanceof HTMLElement &&
+			(activeEl.tagName === 'INPUT' ||
+				activeEl.tagName === 'TEXTAREA' ||
+				activeEl.tagName === 'SELECT' ||
+				activeEl.isContentEditable)
+		) {
+			return;
+		}
+		console.log(activeEl?.tagName);
+		
+		sessCtx.selectedAgentClientId = undefined;
+	}
+
 	const { setCenter, screenToFlowPosition, setViewport } = useSvelteFlow();
 
 	const pendingPositions = new Map<string, { x: number; y: number }>();
@@ -636,9 +653,7 @@
 		onnodeclick={(nodes) => {
 			sessCtx.selectedAgentClientId = nodes.node.id;
 		}}
-		onpaneclick={() => {
-			sessCtx.selectedAgentClientId = undefined;
-		}}
+		onpaneclick={clearSelectedAgentIfNotInInput}
 		onselectiondragstop={handleSelectionDragStop}
 		onselectioncontextmenu={handleSelectionContextMenu}
 		selectNodesOnDrag={false}

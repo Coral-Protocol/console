@@ -199,7 +199,7 @@
 			<TooltipLabel tooltip={'What custom tools this agent has access to.'} class="m-0 w-fit">
 				Custom Tools
 			</TooltipLabel>
-			<!-- <Select.Root
+			<Select.Root
 				type="multiple"
 				value={tools}
 				disabled={!agentLookup}
@@ -209,16 +209,16 @@
 					<span>{tools.length} tools</span>
 				</Select.Trigger>
 				<Select.Content>
-					{#if !activeFile.current?.sessionSettings.customTools || Object.keys(activeFile.current.sessionSettings.customTools).length === 0}
+					{#if !activeFile.current?.tools || Object.keys(activeFile.current.tools).length === 0}
 						<span class="text-muted-foreground h-9 px-2 text-sm italic">
 							No tools found, add some in the tools pane
 						</span>
 					{/if}
-					{#each Object.values(activeFile.current?.sessionSettings.customTools ?? {} as ) as tool}
-						<Select.Item value={tool.title ?? ''}>{tool.title ?? ''}</Select.Item>
+					{#each Object.values(activeFile.current?.tools ?? {}) as tool}
+						<Select.Item value={tool.name ?? ''}>{tool.name ?? ''}</Select.Item>
 					{/each}
 				</Select.Content>
-			</Select.Root> -->
+			</Select.Root>
 		</section>
 	</header>
 
@@ -321,10 +321,6 @@
 			{/each}
 		</ol>
 	{:else}
-		<Card.Root class="bg-muted/50 m-4">
-			<Card.Content class="">
-				<p class="text-foreground/50">No agents in this graph yet.</p>
-			</Card.Content>
-		</Card.Root>
+		<p class="text-foreground/50 px-2">No agents to display, add some from the Agents tab!</p>
 	{/if}
 {/if}

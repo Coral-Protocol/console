@@ -1,5 +1,5 @@
 import type { FileData, Agent, Group, Tool } from './fileStorage.svelte';
-import type { components } from '$generated/api.ts'; // adjust path
+import type { components } from '$generated/api.ts';
 import { getSecretFromId } from './components/dialogs/secretManager.svelte';
 
 type AgentGraphRequest = components['schemas']['AgentGraphRequest'];

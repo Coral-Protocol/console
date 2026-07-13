@@ -14,6 +14,8 @@
 	import { activeFile } from '$lib/activeFile.svelte';
 
 	let selectedTool: string | undefined = $state(undefined);
+
+	// TODO: currently agents are taking tools by name but i need to use it by clientId cause rn if you add a tool, tell an agent to use it, then rename it, its broken!
 </script>
 
 <header class="flex w-full flex-col gap-4 border-b p-4">
@@ -35,7 +37,7 @@
 	>
 </header>
 <section class="flex flex-col gap-4 px-4 pt-4">
-	<Item.Root variant="outline" class="p-2">
+	<Item.Root variant="outline" class="p-2 ">
 		<Item.Content>
 			<ScrollArea class="max-h-60 overflow-scroll">
 				{#if (activeFile.current?.tools ?? []).length === 0}
