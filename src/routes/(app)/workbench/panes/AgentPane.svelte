@@ -294,7 +294,12 @@
 	{/if}
 {:else}
 	<Card.Root class="bg-muted/50 m-2 ">
-		<Card.Content>Select an agent to configure it with the Inspector</Card.Content>
+		<Card.Content class="flex flex-col"
+			>Select an agent to configure it with the Inspector
+			<span class="text-muted-foreground"
+				>You can also select agents in the graph or outline view.</span
+			>
+		</Card.Content>
 	</Card.Root>
 
 	{#if activeFile.current?.agents.length}

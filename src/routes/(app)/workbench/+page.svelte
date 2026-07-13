@@ -196,6 +196,19 @@
 	function checkTitle(name: string) {
 		return /^Untitled( \d+)?$/.test(name);
 	}
+
+	let draggedIndex: number | null = null;
+
+	function moveTab(from: number, to: number) {
+		if (from === to) return;
+
+		const tabs = fileTabs.tabs.current;
+		const [moved] = tabs.splice(from, 1);
+		if (!moved) return;
+		tabs.splice(to, 0, moved);
+
+		// If tabs.current is a store/state object, trigger whatever update mechanism it uses here
+	}
 </script>
 
 <svelte:window
@@ -309,8 +322,27 @@
 				class="bg-background/80  no-scrollbar flex h-9!  gap-0 overflow-x-auto overflow-y-hidden border-x *:relative *:border-t-0 *:border-l-0! "
 			>
 				{#each fileTabs.tabs.current as tab, i}
+					<!-- svelte-ignore a11y_no_static_element_interactions -->
+					<!-- TODO: ill make this better later -->
 					<div
-						class=" group relative flex h-full w-fit max-w-64 min-w-24 truncate overflow-hidden *:border-l-0!"
+						draggable="true"
+						class="group relative flex h-full w-fit max-w-64 min-w-24 truncate overflow-hidden *:border-l-0!"
+						ondragstart={() => {
+							draggedIndex = i;
+						}}
+						ondragover={(e) => {
+							e.preventDefault();
+						}}
+						ondrop={() => {
+							if (draggedIndex !== null) {
+								moveTab(draggedIndex, i);
+							}
+							draggedIndex = null;
+						}}
+						class:opacity-50={draggedIndex === i}
+						ondragend={() => {
+							draggedIndex = null;
+						}}
 					>
 						<Tooltip.Provider delayDuration={700}>
 							<Tooltip.Root>
@@ -631,13 +663,13 @@
 											</Tabs.List>
 											<Tabs.Content
 												value="Agents"
-												class="flex min-h-0 grow flex-col overflow-y-auto p-2 "
+												class="flex min-h-0 grow flex-col overflow-y-auto  "
 											>
 												<MarketPane source="marketplace" />
 											</Tabs.Content>
 											<Tabs.Content
 												value="Local"
-												class="flex min-h-0 grow flex-col overflow-y-auto p-2"
+												class="flex min-h-0 grow flex-col overflow-y-auto "
 											>
 												<MarketPane source="local" />
 											</Tabs.Content>
@@ -647,16 +679,16 @@
 											>
 												<AgentPane />
 											</Tabs.Content>
-											<Tabs.Content value="Session" class="p-2">
+											<Tabs.Content value="Session">
 												<SessionPane />
 											</Tabs.Content>
-											<Tabs.Content value="Tools" class="p-2">
-												<!-- <ToolsPane /> -->
+											<Tabs.Content value="Tools">
+												<ToolsPane />
 											</Tabs.Content>
-											<Tabs.Content value="Groups" class="p-2">
+											<Tabs.Content value="Groups">
 												<GroupsPane />
 											</Tabs.Content>
-											<Tabs.Content value="Errors" class="p-2">
+											<Tabs.Content value="Errors">
 												{#each Object.entries(activeFile.current?.errors ?? {}) as error}
 													{JSON.stringify(error)}
 												{/each}

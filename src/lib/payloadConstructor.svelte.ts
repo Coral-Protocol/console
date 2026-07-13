@@ -1,4 +1,4 @@
-import type { FileData, Agent, Group } from './fileStorage.svelte';
+import type { FileData, Agent, Group, Tool } from './fileStorage.svelte';
 import type { components } from '$generated/api.ts'; // adjust path
 import { getSecretFromId } from './components/dialogs/secretManager.svelte';
 
@@ -12,6 +12,9 @@ export function toSessionRequest(file: FileData, format?: 'submission' | 'check'
 	);
 	let agents: AgentGraphRequest['agents'] = sessionRequest.agents.map(
 		({ clientId, nodeData, ...rest }) => rest
+	);
+	const tools: AgentGraphRequest['customTools'] = Object.fromEntries(
+		sessionRequest.tools.map(({ clientId, name, ...rest }) => [name, rest])
 	);
 
 	if (format !== 'submission') {
@@ -46,28 +49,30 @@ export function toSessionRequest(file: FileData, format?: 'submission' | 'check'
 		});
 	}
 
-	const groups: AgentGraphRequest['groups'] = sessionRequest.groups.map((group) =>
-		group.agentClientIds.map((clientId) => {
-			const name = clientIdToName.get(clientId);
-			if (!name) {
-				throw new Error(
-					`Group "${group.name}" (${group.clientId}) references unknown agent clientId "${clientId}"`
-				);
-			}
-			return name;
-		})
-	);
+	const groups: AgentGraphRequest['groups'] = sessionRequest.groups
+		.map((group) =>
+			group.agentClientIds.map((clientId) => {
+				const name = clientIdToName.get(clientId);
+				if (!name) {
+					throw new Error(
+						`Group "${group.name}" (${group.clientId}) references unknown agent clientId "${clientId}"`
+					);
+				}
+				return name;
+			})
+		)
+		.filter((groupNames) => groupNames.length > 0);
 
 	return {
 		agentGraphRequest: {
 			agents,
 			groups,
-			customTools: sessionRequest.sessionSettings.customTools
+			customTools: tools
 		},
-		namespaceProvider: sessionRequest.sessionSettings.namespaceProvider,
-		execution: sessionRequest.sessionSettings.execution,
-		budgetSettings: sessionRequest.sessionSettings.budgetSettings,
-		annotations: sessionRequest.sessionSettings.annotations
+		namespaceProvider: sessionRequest.namespaceProvider,
+		execution: sessionRequest.execution,
+		budgetSettings: sessionRequest.budgetSettings,
+		annotations: sessionRequest.annotations
 	};
 }
 
@@ -83,6 +88,19 @@ export function fromSessionRequest(request: SessionRequest, previous: FileData):
 	});
 
 	const nameToClientId = new Map(agents.map((a) => [a.name, a.clientId]));
+
+	const prevToolByName = new Map(previous.tools.map((t) => [t.name, t]));
+
+	const tools: Tool[] = Object.entries(request.agentGraphRequest?.customTools ?? {}).map(
+		([name, serverTool]) => {
+			const existing = prevToolByName.get(name);
+			return {
+				...serverTool,
+				name,
+				clientId: existing?.clientId ?? crypto.randomUUID()
+			};
+		}
+	);
 
 	const prevGroupByMemberKey = new Map(
 		previous.groups.map((g) => {
@@ -112,12 +130,10 @@ export function fromSessionRequest(request: SessionRequest, previous: FileData):
 		id: previous.id,
 		agents,
 		groups,
-		sessionSettings: {
-			customTools: request.agentGraphRequest?.customTools ?? {},
-			namespaceProvider: request.namespaceProvider,
-			execution: request.execution,
-			budgetSettings: request.budgetSettings,
-			annotations: request.annotations ?? {}
-		}
+		tools,
+		namespaceProvider: request.namespaceProvider,
+		execution: request.execution,
+		budgetSettings: request.budgetSettings,
+		annotations: request.annotations ?? {}
 	};
 }

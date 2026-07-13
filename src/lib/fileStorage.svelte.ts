@@ -3,7 +3,7 @@ import { PersistedState } from 'runed';
 import type { SessionCreatorContext } from './sessionCreatorContext';
 import { debugMode } from './debugMode.svelte';
 import type { Viewport } from '@xyflow/svelte';
-import type { z, ZodError } from 'zod';
+import { string, type z, type ZodError } from 'zod';
 import { activeFile } from './activeFile.svelte';
 import { toSessionRequest } from './payloadConstructor.svelte';
 import { SessionRequest } from '../generated/api.zod';
@@ -49,6 +49,7 @@ export type ValidationError = Omit<z.core.$ZodIssue, 'path'>;
 
 export type FileValidationErrors = {
 	agent: Record<string, Record<string, ValidationError>>;
+	tool: Record<string, Record<string, ValidationError>>;
 	group: Record<string, Record<string, ValidationError>>;
 	session: Record<string, ValidationError>;
 };
@@ -57,6 +58,17 @@ export type Group = {
 	clientId: string;
 	name: string;
 	agentClientIds: string[];
+};
+
+export type Tool = {
+	clientId: string;
+	name: string;
+	transport: components['schemas']['GraphAgentTool']['transport'];
+	inputSchema: components['schemas']['ToolSchema'];
+	outputSchema: components['schemas']['ToolSchema'];
+	annotations?: components['schemas']['ToolAnnotations'];
+	description?: string;
+	title?: string;
 };
 
 export type Annotation = {
@@ -76,7 +88,11 @@ export type FileData = {
 	id: string;
 	agents: Agent[];
 	groups: Group[];
-	sessionSettings: SessionSettings;
+	tools: Tool[];
+	annotations: {};
+	namespaceProvider: SessionSettings['namespaceProvider'];
+	execution: SessionSettings['execution'];
+	budgetSettings: SessionSettings['budgetSettings'];
 	errors?: FileValidationErrors;
 };
 
@@ -111,7 +127,7 @@ export async function validateRequest(
 	const result = SessionRequest.safeParse(convertedRequest);
 
 	const errors: FileValidationErrors = result.success
-		? { agent: {}, group: {}, session: {} }
+		? { agent: {}, group: {}, tool: {}, session: {} }
 		: zodErrorsToFileErrors(result.error, activeFile.current);
 
 	const lookupCache = new Map<string, Awaited<ReturnType<CoralServer['lookupAgent']>> | null>();
@@ -154,6 +170,7 @@ export async function validateRequest(
 export function zodErrorsToFileErrors(error: ZodError, fileData: FileData): FileValidationErrors {
 	const errors: FileValidationErrors = {
 		agent: {},
+		tool: {},
 		group: {},
 		session: {}
 	};
@@ -469,32 +486,32 @@ export function defaultFileData(id: string): FileData {
 		id,
 		agents: [],
 		groups: [],
-		sessionSettings: {
-			customTools: {},
-			namespaceProvider: {
-				type: 'create_if_not_exists',
-				namespaceRequest: {
-					name: 'default',
-					annotations: {},
-					deleteOnLastSessionExit: false
-				}
-			},
-			execution: {
-				mode: 'immediate',
-				runtimeSettings: {
-					extendedEndReport: true,
-					persistenceMode: { mode: 'hold_after_exit', duration: 1800000 },
-					ttl: 50000
-				}
-			},
-			budgetSettings: {
-				budget: 100000000,
-				exhaustionBehavior: { type: 'kill_session', minimum: 1000000 }
-			},
-			annotations: {
-				createdWith: 'coral console',
-				sourceFileId: id
+		tools: [],
+
+		namespaceProvider: {
+			type: 'create_if_not_exists',
+			namespaceRequest: {
+				name: 'default',
+				annotations: {},
+				deleteOnLastSessionExit: false
 			}
+		},
+		execution: {
+			mode: 'immediate',
+			runtimeSettings: {
+				extendedEndReport: true,
+				persistenceMode: { mode: 'hold_after_exit', duration: 1800000 },
+				ttl: 50000
+			}
+		},
+		budgetSettings: {
+			budget: 100000000,
+			exhaustionBehavior: { type: 'kill_session', minimum: 1000000 }
+		},
+
+		annotations: {
+			createdWith: 'coral console',
+			sourceFileId: id
 		}
 	};
 }

@@ -13,7 +13,8 @@ import {
 	type Annotation,
 	type SessionSettings,
 	updateFileMeta,
-	defaultFileMeta
+	defaultFileMeta,
+	type Tool
 } from '$lib/fileStorage.svelte';
 import { debugMode } from './debugMode.svelte';
 
@@ -132,17 +133,17 @@ class ActiveFileStore {
 		});
 	}
 
+	updateMeta(patch: Partial<Omit<FileMeta, 'created'>>) {
+		if (!this.#id) return;
+		log('updateMeta', $state.snapshot(patch));
+		this.meta = updateFileMeta(this.#id, patch);
+	}
+
 	addGroup(group: Omit<Group, 'clientId'>) {
 		if (!this.current) return;
 		const newGroup: Group = { ...group, clientId: crypto.randomUUID() };
 		log('addGroup', $state.snapshot(newGroup));
 		this.#commit({ ...this.current, groups: [...this.current.groups, newGroup] });
-	}
-
-	updateMeta(patch: Partial<Omit<FileMeta, 'created'>>) {
-		if (!this.#id) return;
-		log('updateMeta', $state.snapshot(patch));
-		this.meta = updateFileMeta(this.#id, patch);
 	}
 
 	updateGroup(clientId: string, patch: Partial<Omit<Group, 'clientId'>>) {
@@ -163,154 +164,38 @@ class ActiveFileStore {
 		});
 	}
 
-	updateSessionSettings(patch: Partial<SessionSettings>) {
+	addTool(tool: Omit<Tool, 'clientId'>) {
 		if (!this.current) return;
-		log('updateSessionSettings', $state.snapshot(patch));
+		const newTool: Tool = { ...tool, clientId: crypto.randomUUID() };
+		log('addTool', $state.snapshot(newTool));
+		this.#commit({ ...this.current, tools: [...this.current.tools, newTool] });
+		return newTool.clientId
+	}
+
+	updateTool(clientId: string, patch: Partial<Omit<Tool, 'clientId'>>) {
+		if (!this.current) return;
+		log('updateTool', clientId, $state.snapshot(patch));
 		this.#commit({
 			...this.current,
-			sessionSettings: { ...this.current.sessionSettings, ...patch }
+			tools: this.current.tools.map((t) => (t.clientId === clientId ? { ...t, ...patch } : t))
 		});
 	}
 
-	// updateNamespaceProvider(patch: Partial<SessionSettings['namespaceProvider']>) {
-	// 	if (!this.current) return;
-	// 	log('updateNamespaceProvider', $state.snapshot(patch));
-	// 	this.#commit({
-	// 		...this.current,
-	// 		sessionSettings: {
-	// 			...this.current.sessionSettings,
-	// 			namespaceProvider: {
-	// 				...this.current.sessionSettings.namespaceProvider,
-	// 				...patch
-	// 			} as SessionSettings['namespaceProvider']
-	// 		}
-	// 	});
-	// }
+	removeTool(clientId: string) {
+		if (!this.current) return;
+		log('removeTool', clientId);
+		this.#commit({
+			...this.current,
+			tools: this.current.tools.filter((t) => t.clientId !== clientId)
+		});
+	}
 
-	// updateNamespaceRequestAnnotations(patch: Record<string, string>) {
+	// updateSessionSettings(patch: Partial<SessionSettings>) {
 	// 	if (!this.current) return;
-	// 	const provider = this.current.sessionSettings.namespaceProvider;
-	// 	if (!('namespaceRequest' in provider) || !provider.namespaceRequest) return;
-	// 	log('updateNamespaceRequestAnnotations', $state.snapshot(patch));
+	// 	log('updateSessionSettings', $state.snapshot(patch));
 	// 	this.#commit({
 	// 		...this.current,
-	// 		sessionSettings: {
-	// 			...this.current.sessionSettings,
-	// 			namespaceProvider: {
-	// 				...provider,
-	// 				namespaceRequest: {
-	// 					...provider.namespaceRequest,
-	// 					annotations: { ...provider.namespaceRequest.annotations, ...patch }
-	// 				}
-	// 			} as SessionSettings['namespaceProvider']
-	// 		}
-	// 	});
-	// }
-
-	// updateExecution(patch: Partial<SessionSettings['execution']>) {
-	// 	if (!this.current) return;
-	// 	log('updateExecution', $state.snapshot(patch));
-	// 	this.#commit({
-	// 		...this.current,
-	// 		sessionSettings: {
-	// 			...this.current.sessionSettings,
-	// 			execution: { ...this.current.sessionSettings.execution, ...patch } as SessionSettings['execution']
-	// 		}
-	// 	});
-	// }
-
-	// updateRuntimeSettings(
-	// 	patch: Partial<Extract<SessionSettings['execution'], { runtimeSettings: any }>['runtimeSettings']>
-	// ) {
-	// 	if (!this.current) return;
-	// 	const execution = this.current.sessionSettings.execution as any;
-	// 	if (!execution?.runtimeSettings) return;
-	// 	log('updateRuntimeSettings', $state.snapshot(patch));
-	// 	this.#commit({
-	// 		...this.current,
-	// 		sessionSettings: {
-	// 			...this.current.sessionSettings,
-	// 			execution: {
-	// 				...execution,
-	// 				runtimeSettings: { ...execution.runtimeSettings, ...patch }
-	// 			}
-	// 		}
-	// 	});
-	// }
-
-	// updatePersistenceMode(patch: Partial<{ mode: string; duration: number }>) {
-	// 	if (!this.current) return;
-	// 	const execution = this.current.sessionSettings.execution as any;
-	// 	if (!execution?.runtimeSettings?.persistenceMode) return;
-	// 	log('updatePersistenceMode', $state.snapshot(patch));
-	// 	this.#commit({
-	// 		...this.current,
-	// 		sessionSettings: {
-	// 			...this.current.sessionSettings,
-	// 			execution: {
-	// 				...execution,
-	// 				runtimeSettings: {
-	// 					...execution.runtimeSettings,
-	// 					persistenceMode: { ...execution.runtimeSettings.persistenceMode, ...patch }
-	// 				}
-	// 			}
-	// 		}
-	// 	});
-	// }
-
-	// updateBudgetSettings(patch: Partial<SessionSettings['budgetSettings']>) {
-	// 	if (!this.current) return;
-	// 	log('updateBudgetSettings', $state.snapshot(patch));
-	// 	this.#commit({
-	// 		...this.current,
-	// 		sessionSettings: {
-	// 			...this.current.sessionSettings,
-	// 			budgetSettings: { ...this.current.sessionSettings.budgetSettings, ...patch }
-	// 		}
-	// 	});
-	// }
-
-	// updateExhaustionBehavior(patch: Partial<SessionSettings['budgetSettings']['exhaustionBehavior']>) {
-	// 	if (!this.current) return;
-	// 	log('updateExhaustionBehavior', $state.snapshot(patch));
-	// 	this.#commit({
-	// 		...this.current,
-	// 		sessionSettings: {
-	// 			...this.current.sessionSettings,
-	// 			budgetSettings: {
-	// 				...this.current.sessionSettings.budgetSettings,
-	// 				exhaustionBehavior: {
-	// 					...this.current.sessionSettings.budgetSettings.exhaustionBehavior,
-	// 					...patch
-	// 				} as SessionSettings['budgetSettings']['exhaustionBehavior']
-	// 			}
-	// 		}
-	// 	});
-	// }
-
-	// updateCustomTools(patch: Partial<SessionSettings['customTools']>) {
-	// 	if (!this.current) return;
-	// 	log('updateCustomTools', $state.snapshot(patch));
-	// 	this.#commit({
-	// 		...this.current,
-	// 		sessionSettings: {
-	// 			...this.current.sessionSettings,
-	// 			customTools: { ...this.current.sessionSettings.customTools, ...patch }
-	// 		}
-	// 	});
-	// }
-
-	// removeCustomTool(key: string) {
-	// 	if (!this.current) return;
-	// 	log('removeCustomTool', key);
-	// 	const customTools = { ...this.current.sessionSettings.customTools } as Record<string, unknown>;
-	// 	delete customTools[key];
-	// 	this.#commit({
-	// 		...this.current,
-	// 		sessionSettings: {
-	// 			...this.current.sessionSettings,
-	// 			customTools: customTools as SessionSettings['customTools']
-	// 		}
+	// 		sessionSettings: { ...this.current.sessionSettings, ...patch }
 	// 	});
 	// }
 
@@ -319,10 +204,7 @@ class ActiveFileStore {
 		log('updateAnnotations', $state.snapshot(patch));
 		this.#commit({
 			...this.current,
-			sessionSettings: {
-				...this.current.sessionSettings,
-				annotations: { ...this.current.sessionSettings.annotations, ...patch }
-			}
+			annotations: { ...this.current.annotations, ...patch }
 		});
 	}
 

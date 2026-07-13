@@ -136,112 +136,117 @@
 	};
 </script>
 
-<InputGroup.Root>
-	<InputGroup.Input placeholder="Search agents" bind:value={search} />
-	<InputGroup.Addon>
-		<IconMagnifyingGlassRegular />
-	</InputGroup.Addon>
-
-	<InputGroup.Addon align="inline-end"
-		>{#if search.length > 0}
-			<span transition:fade={{ duration: 100 }}>{filteredCount} results</span>
-		{/if}
-	</InputGroup.Addon>
-</InputGroup.Root>
-{#each filtered as catalog}
-	<!-- {#if catalog.identifier.type == source} -->
-	<ol class="flex w-full grow flex-col justify-center pt-2">
-		{#each catalog.agents as agent}
-			{#await ctx.server.lookupAgent( { name: agent.name, version: agent.versions[0]!, registrySourceId: catalog.identifier } )}
-				<div class="bg-card/50 h-[42px] w-full border"></div>
-			{:then details}
-				<li
-					class="group hover:dark:bg-ring/20 flex max-h-32 min-h-28 w-full items-center gap-3 overflow-hidden border-b p-1"
-				>
-					<button
-						class="min-w-0 flex-1"
-						onclick={() => {
-							selectedAgentClientId = { agent, details };
-							dialogOpen = true;
-						}}
-						ondragstart={(event) =>
-							onDragStart(event, {
-								name: agent.name,
-								version: agent.versions[0]!,
-								source: catalog.identifier.type
-							})}
-						draggable={true}
-						type="button"
+<section class="flex flex-col gap-0">
+	<div class="p-2">
+		<InputGroup.Root class="">
+			<InputGroup.Input placeholder="Search agents" bind:value={search} />
+			<InputGroup.Addon>
+				<IconMagnifyingGlassRegular />
+			</InputGroup.Addon>
+			<InputGroup.Addon align="inline-end"
+				>{#if search.length > 0}
+					<span transition:fade={{ duration: 100 }}>{filteredCount} results</span>
+				{/if}
+			</InputGroup.Addon>
+		</InputGroup.Root>
+	</div>
+	{#each filtered as catalog}
+		<!-- {#if catalog.identifier.type == source} -->
+		<ol class="flex w-full grow flex-col justify-center">
+			{#each catalog.agents as agent}
+				{#await ctx.server.lookupAgent( { name: agent.name, version: agent.versions[0]!, registrySourceId: catalog.identifier } )}
+					<div class="bg-card/50 h-[42px] w-full border"></div>
+				{:then details}
+					<li
+						class="group hover:dark:bg-ring/20 flex max-h-32 min-h-28 w-full items-center gap-3 overflow-hidden border-b p-1"
 					>
-						<Card.Root class="gap-1 border-0 bg-transparent p-1 text-left shadow-none">
-							<Card.Header class="flex gap-2 p-0">
-								<Avatar.Root class="size-8 shrink-0">
-									<Avatar.Image
-										class="bg-cover object-cover"
-										src={details.extension?.iconUrl}
-										alt={getInitials(agent.name)}
-									/>
-									<Avatar.Fallback>
-										{getInitials(agent.name)}
-									</Avatar.Fallback>
-								</Avatar.Root>
-								<div class="flex min-w-0 flex-col items-start gap-1">
-									<Card.Title class="truncate font-bold">
-										{agent.name}
-									</Card.Title>
+						<button
+							class="min-w-0 flex-1"
+							onclick={() => {
+								selectedAgentClientId = { agent, details };
+								dialogOpen = true;
+							}}
+							ondragstart={(event) =>
+								onDragStart(event, {
+									name: agent.name,
+									version: agent.versions[0]!,
+									source: catalog.identifier.type
+								})}
+							draggable={true}
+							type="button"
+						>
+							<Card.Root class="gap-1 border-0 bg-transparent p-1 text-left shadow-none">
+								<Card.Header class="flex gap-2 p-0">
+									<Avatar.Root class="size-8 shrink-0">
+										<Avatar.Image
+											class="bg-cover object-cover"
+											src={details.extension?.iconUrl}
+											alt={getInitials(agent.name)}
+										/>
+										<Avatar.Fallback>
+											{getInitials(agent.name)}
+										</Avatar.Fallback>
+									</Avatar.Root>
+									<div class="flex min-w-0 flex-col items-start gap-1">
+										<Card.Title class="truncate font-bold">
+											{agent.name}
+										</Card.Title>
 
-									<Card.Description class="truncate text-xs">
-										{details.extension?.developer
-											? 'By ' + details.extension.developer
-											: 'Unknown developer'}
-									</Card.Description>
-								</div>
-							</Card.Header>
-							<Card.Content
-								class="text-foreground/90 group-hover:text-foreground flex flex-col gap-2 p-0"
-							>
-								<p class="line-clamp-2">
-									{details.registryAgent.info.description}
-								</p>
-								{#if details.registryAgent?.marketplace?.keywords?.length}
-									<div class="flex flex-wrap gap-1">
-										{#each details.registryAgent.marketplace.keywords.slice(0, 3) as keyword}
-											<span class="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs">
-												{keyword}
-											</span>
-										{/each}
+										<Card.Description class="truncate text-xs">
+											{details.extension?.developer
+												? 'By ' + details.extension.developer
+												: 'Unknown developer'}
+										</Card.Description>
 									</div>
-								{/if}
-							</Card.Content>
-						</Card.Root>
-					</button>
-					<Button
-						variant="outline"
-						size="sm"
-						class="shrink-0 opacity-0 transition group-hover:opacity-100"
-						onclick={() =>
-							addAgent({
-								name: agent.name,
-								version: agent.versions[0]!,
-								source: catalog.identifier.type
-							})}
-					>
-						Add
-					</Button>
-				</li>
-			{:catch err}
-				<!-- skip -->
-			{/await}
-		{/each}
-	</ol>
-	<!-- {/if} -->
-{/each}
+								</Card.Header>
+								<Card.Content
+									class="text-foreground/90 group-hover:text-foreground flex flex-col gap-2 p-0"
+								>
+									<p class="line-clamp-2">
+										{details.registryAgent.info.description}
+									</p>
+									{#if details.registryAgent?.marketplace?.keywords?.length}
+										<div class="flex flex-wrap gap-1">
+											{#each details.registryAgent.marketplace.keywords.slice(0, 3) as keyword}
+												<span
+													class="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs"
+												>
+													{keyword}
+												</span>
+											{/each}
+										</div>
+									{/if}
+								</Card.Content>
+							</Card.Root>
+						</button>
+						<Button
+							variant="outline"
+							size="sm"
+							class="shrink-0 opacity-0 transition group-hover:opacity-100"
+							onclick={() =>
+								addAgent({
+									name: agent.name,
+									version: agent.versions[0]!,
+									source: catalog.identifier.type
+								})}
+						>
+							Add
+						</Button>
+					</li>
+				{:catch err}
+					<!-- skip -->
+				{/await}
+			{/each}
+		</ol>
+		<!-- {/if} -->
+	{/each}
 
-{#if filteredCount === 0 && !loading}
-	<p class="text-muted-foreground h-full w-full grow content-center text-center text-sm">
-		No agents found
-	</p>
-{/if}
+	{#if filteredCount === 0 && !loading}
+		<p class="text-muted-foreground h-full w-full grow content-center text-center text-sm">
+			No agents found
+		</p>
+	{/if}
+</section>
 
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Content class="bg-card h-full max-h-4/5 max-w-4/5! overflow-hidden" showClose={false}>
