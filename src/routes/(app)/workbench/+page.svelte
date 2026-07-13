@@ -28,18 +28,17 @@
 
 	import { SvelteFlowProvider } from '@xyflow/svelte';
 	import Graph from '$lib/components/Graph/Graph.svelte';
-	import CodePane from './panes/CodePane.svelte';
+	import CodePane from './panes/Code.svelte';
 	import { Input } from '@coral-os/component-library/ui/input/index.js';
 	import { format, formatDistanceToNow } from 'date-fns';
-	import MarketPane from './panes/MarketPane.svelte';
+	import MarketPane from './panes/Agents.svelte';
 	import { appContext } from '$lib/context';
 	import { setSessionContext, type SessionCreatorContext } from '$lib/sessionCreatorContext';
-	import AgentPane from './panes/AgentPane.svelte';
+	import AgentPane from './panes/Inspector.svelte';
 	import { superForm, defaults } from 'sveltekit-superforms';
 	import { zod4 } from 'sveltekit-superforms/adapters';
-	import ToolsPane from './panes/ToolsPane.svelte';
-	import GroupsPane from './panes/GroupsPane.svelte';
-	import SessionPane from './panes/SessionPane.svelte';
+	import ToolsPane from './panes/Tools.svelte';
+	import GroupsPane from './panes/Groups.svelte';
 	import {
 		filesMeta,
 		deleteFileData,
@@ -678,9 +677,6 @@
 												class="flex min-h-0 grow flex-col overflow-y-auto"
 											>
 												<AgentPane />
-											</Tabs.Content>
-											<Tabs.Content value="Session">
-												<SessionPane />
 											</Tabs.Content>
 											<Tabs.Content value="Tools">
 												<ToolsPane />
