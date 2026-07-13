@@ -197,7 +197,7 @@
 		return /^Untitled( \d+)?$/.test(name);
 	}
 
-	let draggedIndex: number | null = null;
+	let draggedIndex: number | null = $state(null);
 
 	function moveTab(from: number, to: number) {
 		if (from === to) return;
