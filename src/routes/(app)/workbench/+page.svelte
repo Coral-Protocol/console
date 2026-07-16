@@ -67,6 +67,8 @@
 	import { SessionRequest } from '$generated/api.zod';
 	import { randomAdjective, randomAnimal, randomPlant } from '$lib/words';
 	import { fileTabs, uniqueName } from '$lib/fileTabs.svelte';
+	import Outline from './panes/Outline.svelte';
+	import SessionSettings from './panes/SessionSettings.svelte';
 
 	const isShiftPressed = $derived(keys.has('Shift'));
 	const isMobile = new IsMobile();
@@ -540,19 +542,8 @@
 												{/if}
 											</Tabs.Content>
 
-											<Tabs.Content value="Outline" class="overflow-y-auto p-4">
-												{#if activeFile.current?.agents.length}
-													<ul class="flex flex-col gap-2">
-														{#each activeFile.current.agents as agent}
-															<li class="rounded-md border p-2">
-																<p class="font-medium">{agent.name}</p>
-																<p class="text-foreground/70 text-sm">{agent.description}</p>
-															</li>
-														{/each}
-													</ul>
-												{:else}
-													<p class="text-foreground/50">No agents in this graph yet.</p>
-												{/if}
+											<Tabs.Content value="Outline" class="overflow-y-auto ">
+												<Outline />
 											</Tabs.Content>
 
 											<Tabs.Content
@@ -657,7 +648,7 @@
 												<Tabs.Trigger value="Inspector">Inspector</Tabs.Trigger>
 												<Tabs.Trigger value="Groups">Groups</Tabs.Trigger>
 												<Tabs.Trigger value="Tools">Tools</Tabs.Trigger>
-												<Tabs.Trigger value="Session">Settings</Tabs.Trigger>
+												<Tabs.Trigger value="Session">Session</Tabs.Trigger>
 												<!-- <Tabs.Trigger value="Errors">Errors</Tabs.Trigger> -->
 											</Tabs.List>
 											<Tabs.Content
@@ -678,11 +669,23 @@
 											>
 												<AgentPane />
 											</Tabs.Content>
-											<Tabs.Content value="Tools">
+											<Tabs.Content
+												value="Tools"
+												class="flex min-h-0 grow flex-col overflow-y-auto"
+											>
 												<ToolsPane />
 											</Tabs.Content>
-											<Tabs.Content value="Groups">
+											<Tabs.Content
+												value="Groups"
+												class="flex min-h-0 grow flex-col overflow-y-auto"
+											>
 												<GroupsPane />
+											</Tabs.Content>
+											<Tabs.Content
+												value="Session"
+												class="flex min-h-0 grow flex-col overflow-y-auto"
+											>
+												<SessionSettings />
 											</Tabs.Content>
 											<Tabs.Content value="Errors">
 												{#each Object.entries(activeFile.current?.errors ?? {}) as error}

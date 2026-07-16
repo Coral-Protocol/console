@@ -22,5 +22,11 @@ export const tips = [
 	},
 	{
 		tip: 'Holding Shift while dragging a node will lock its position, preventing it from being moved by the simulation.'
+	},
+	{
+		tip: 'Hold space and drag click or drag with two fingers on a touchpad to pan the agent node graph.'
+	},
+	{
+		tip: 'CTRL + B will toggle the sidebar, alternatively, double click its border.'
 	}
 ];

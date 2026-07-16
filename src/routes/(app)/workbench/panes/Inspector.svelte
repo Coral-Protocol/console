@@ -25,6 +25,8 @@
 	import { RuntimeId } from '$generated/api.zod';
 	import { Button } from '@coral-os/component-library/components/ui/button/index.js';
 	import IconRobot from '$lib/icons/robot.svelte';
+	import AgentBudget from './AgentBudget.svelte';
+
 
 	let ctx = appContext.get();
 	let sessCtx = getSessionContext();
@@ -289,7 +291,9 @@
 					{/each}
 				</ol>
 			</Tabs.Content>
-			<Tabs.Content value="Budget" class="p-2">Agent Budget settings</Tabs.Content>
+			<Tabs.Content value="Budget" class="p-2">
+				<AgentBudget/>
+			</Tabs.Content>
 		</Tabs.Root>
 	{/if}
 {:else}
@@ -321,6 +325,8 @@
 			{/each}
 		</ol>
 	{:else}
-		<p class="text-foreground/50 px-2">No agents to display, add some from the Agents tab!</p>
+		<p class="text-muted-foreground m-auto text-center">
+			Explore the Agents tab to add to get started.
+		</p>
 	{/if}
 {/if}
