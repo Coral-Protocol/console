@@ -158,10 +158,10 @@
 					<div class="bg-card/50 h-[42px] w-full border"></div>
 				{:then details}
 					<li
-						class="group hover:dark:bg-ring/20 flex max-h-32 min-h-28 w-full items-start gap-3 overflow-hidden border-b p-1"
+						class="group hover:dark:bg-ring/20 p- relative flex w-full items-start gap-3 overflow-hidden border-b"
 					>
 						<button
-							class="min-w-0 flex-1"
+							class="flex h-full max-h-32 min-h-28 w-full grow"
 							onclick={() => {
 								selectedAgentClientId = { agent, details };
 								dialogOpen = true;
@@ -175,7 +175,7 @@
 							draggable={true}
 							type="button"
 						>
-							<Card.Root class="gap-1 border-0 bg-transparent p-1 text-left shadow-none">
+							<Card.Root class="gap-1 border-0 bg-transparent p-2 text-left shadow-none">
 								<Card.Header class="flex gap-2 p-0">
 									<Avatar.Root class="size-8 shrink-0">
 										<Avatar.Image
@@ -222,7 +222,7 @@
 						<Button
 							variant="outline"
 							size="sm"
-							class="shrink-0 opacity-0 transition group-hover:opacity-100"
+							class="absolute top-2 right-2 shrink-0 opacity-0 transition group-hover:opacity-100"
 							onclick={() =>
 								addAgent({
 									name: agent.name,
