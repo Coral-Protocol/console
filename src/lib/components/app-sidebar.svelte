@@ -426,7 +426,7 @@
 										type="single"
 										bind:value={connectedSessionId}
 										class="w-full gap-2  border-0 *:border-0!"
-										onValueChange={(id) => {
+										onValueChange={(id: string) => {
 											ctx.session?.close();
 											ctx.session = id
 												? new Session({

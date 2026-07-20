@@ -90,18 +90,31 @@
 		});
 	}
 
+	let lastFocusedBeforePointerDown = $state<Element | null>(null);
+
+	function capturePointerDown() {
+		lastFocusedBeforePointerDown = document.activeElement;
+	}
+
+	onMount(() => {
+		window.addEventListener('pointerdown', capturePointerDown, true);
+		return () => window.removeEventListener('pointerdown', capturePointerDown, true);
+	});
+
+	// todo: i hate how this (the above and below) is done
+
 	function clearSelectedAgentIfNotInInput() {
-		const activeEl = document.activeElement;
+		const el = lastFocusedBeforePointerDown;
+
 		if (
-			activeEl instanceof HTMLElement &&
-			(activeEl.tagName === 'INPUT' ||
-				activeEl.tagName === 'TEXTAREA' ||
-				activeEl.tagName === 'SELECT' ||
-				activeEl.isContentEditable)
+			el instanceof HTMLElement &&
+			(el.tagName === 'INPUT' ||
+				el.tagName === 'TEXTAREA' ||
+				el.tagName === 'SELECT' ||
+				el.isContentEditable)
 		) {
 			return;
 		}
-		console.log(activeEl?.tagName);
 
 		sessCtx.selectedAgentClientId = undefined;
 	}
