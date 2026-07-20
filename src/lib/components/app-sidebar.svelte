@@ -15,6 +15,7 @@
 	import DebugTools from '$lib/components/dialogs/debugtools.svelte';
 	import Login from './Login.svelte';
 	import Welcome from './dialogs/welcome.svelte';
+	import * as Select from '@coral-os/component-library/ui/select/index.js';
 
 	import IconFileArchive from 'phosphor-icons-svelte/IconFileArchiveRegular.svelte';
 	import MoonIcon from 'phosphor-icons-svelte/IconMoonRegular.svelte';
@@ -401,14 +402,23 @@
 
 		<Sidebar.Group class="">
 			<Sidebar.GroupLabel class="text-muted-foreground">Sessions</Sidebar.GroupLabel>
-			<Sidebar.GroupAction class="text-muted-foreground aspect-auto w-fit text-sm"
-				><select bind:value={ctx.server.namespaceFilter}>
-					<option value={undefined}>All namespaces</option>
-					{#each ctx.server.namespaces as ns}
-						<option value={ns}>{ns}</option>
-					{/each}
-				</select></Sidebar.GroupAction
-			>
+			<Sidebar.GroupAction class="text-muted-foreground aspect-auto w-fit text-sm">
+				<Select.Root type="single" bind:value={ctx.server.namespaceFilter}>
+					<Select.Trigger
+						class="h-6! w-fit max-w-[140px] justify-start overflow-hidden border-0 bg-transparent! p-1 text-left"
+						><span class="truncate"
+							>{ctx.server.namespaceFilter ? ctx.server.namespaceFilter : 'All namespaces'}</span
+						></Select.Trigger
+					>
+					<Select.Content>
+						<Select.Item value="">All namespaces</Select.Item>
+
+						{#each ctx.server.namespaces as ns}
+							<Select.Item value={ns}>{ns}</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+			</Sidebar.GroupAction>
 
 			<Sidebar.GroupContent class="">
 				<div use:tourTarget={'session-section'} class="h-full">
@@ -416,7 +426,11 @@
 						<Command.Input placeholder="Search" />
 						<Command.List class="max-h-full overflow-y-auto">
 							{#if Object.values(ctx.server.sessions).length === 0}
-								<Command.Empty class="text-foreground/20">No sessions found</Command.Empty>
+								<Command.Empty class="text-foreground/20"
+									>No sessions found <span class="font-semibold">
+										{ctx.server.namespaceFilter ? `in ${ctx.server.namespaceFilter}` : ''}
+									</span></Command.Empty
+								>
 							{:else}
 								<Command.Group class="px-0">
 									<Accordion.Root

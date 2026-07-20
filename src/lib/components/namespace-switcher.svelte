@@ -65,9 +65,9 @@
 			</Button>
 		{/snippet}
 	</Popover.Trigger>
-	<Button onclick={() => (createOpen = true)} size="icon" variant="outline">
+	<!-- <Button onclick={() => (createOpen = true)} size="icon" variant="outline">
 		<IconPlus />
-	</Button>
+	</Button> -->
 	<Popover.Content align="start" class="p-1">
 		<Command.Root>
 			<Command.Input placeholder="Search" />

@@ -14,6 +14,7 @@
 	import IconMinusRegular from 'phosphor-icons-svelte/IconMinusRegular.svelte';
 	import { Separator } from '@coral-os/component-library/ui/separator/index.js';
 	import type { components, paths } from '$generated/api';
+	import * as ContextMenu from '@coral-os/component-library/ui/context-menu/index.js';
 
 	import * as Tooltip from '@coral-os/component-library/ui/tooltip/index.js';
 	import IconCircuity from 'phosphor-icons-svelte/IconCircuitryRegular.svelte';
@@ -128,14 +129,16 @@
 			validation === 'successful' &&
 			activeFile.current?.agents.length > 0
 		) {
-			activeFile.updateAnnotations({
-				sessionName: uniqueName(
-					draftName,
-					Object.values(ctx.server.sessions)
-						.map((f) => f.annotations.sessionName)
-						.filter((name): name is string => typeof name === 'string')
-				)
-			});
+			if (!(activeFile.current?.annotations as any)?.sessionName) {
+				activeFile.updateAnnotations({
+					sessionName: uniqueName(
+						draftName,
+						Object.values(ctx.server.sessions)
+							.map((f) => (f.annotations as any)?.sessionName)
+							.filter((name): name is string => typeof name === 'string')
+					)
+				});
+			}
 
 			sendingRequest = true;
 			if (activeFile.current !== null) {
@@ -208,8 +211,51 @@
 		const [moved] = tabs.splice(from, 1);
 		if (!moved) return;
 		tabs.splice(to, 0, moved);
+		fileTabs.tabs.current = tabs;
+	}
+	async function closeOthers(index: number) {
+		const keepId = fileTabs.tabs.current[index]?.id;
+		if (!keepId) return;
+		for (const t of [...fileTabs.tabs.current]) {
+			if (t.id !== keepId) await fileTabs.closeFile(t.id);
+		}
+	}
 
-		// If tabs.current is a store/state object, trigger whatever update mechanism it uses here
+	async function closeToRight(index: number) {
+		const toClose = fileTabs.tabs.current.slice(index + 1);
+		for (const t of toClose) await fileTabs.closeFile(t.id);
+	}
+
+	async function closeAllTabs() {
+		for (const t of [...fileTabs.tabs.current]) {
+			await fileTabs.closeFile(t.id);
+		}
+	}
+
+	async function copyTabId(id: string) {
+		await navigator.clipboard.writeText(id);
+		toast.success('Copied file ID');
+	}
+
+	async function copyTabName(id: string) {
+		const name = filesMeta.current[id]?.name ?? '';
+		await navigator.clipboard.writeText(name);
+		toast.success('Copied file name');
+	}
+
+	function downloadTab(id: string) {
+		if (activeFile.current?.id !== id) {
+			toast.error('Open this file to download it');
+			return;
+		}
+		const payload = JSON.stringify(toSessionRequest(activeFile.current), null, 2);
+		const blob = new Blob([payload], { type: 'application/json' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = `${filesMeta.current[id]?.name ?? 'session'}.json`;
+		a.click();
+		URL.revokeObjectURL(url);
 	}
 </script>
 
@@ -239,13 +285,13 @@
 				<Menubar.Trigger>File</Menubar.Trigger>
 				<Menubar.Content>
 					<Menubar.Item onclick={() => fileTabs.newTab()}>New File</Menubar.Item>
-					<Menubar.Sub>
+					<Menubar.Sub disabled={fileTabs.recentFiles.length === 0}>
 						<Menubar.SubTrigger>Open Recent...</Menubar.SubTrigger>
 						<Menubar.SubContent
 							align="start"
 							class="max-h-96 max-w-64 overflow-x-hidden overflow-y-auto"
 						>
-							{#each fileTabs.recentFiles as file}
+							{#each fileTabs.recentFiles.slice(0, 15) as file}
 								<Menubar.Item
 									class="flex w-full justify-between"
 									onclick={() => fileTabs.openFile(file.id)}
@@ -324,88 +370,113 @@
 				class="bg-background/80  no-scrollbar flex h-9!  gap-0 overflow-x-auto overflow-y-hidden border-x *:relative *:border-t-0 *:border-l-0! "
 			>
 				{#each fileTabs.tabs.current as tab, i}
-					<!-- svelte-ignore a11y_no_static_element_interactions -->
-					<!-- TODO: ill make this better later -->
-					<div
-						draggable="true"
-						class="group relative flex h-full w-fit max-w-64 min-w-24 truncate overflow-hidden *:border-l-0!"
-						ondragstart={() => {
-							draggedIndex = i;
-						}}
-						ondragover={(e) => {
-							e.preventDefault();
-						}}
-						ondrop={() => {
-							if (draggedIndex !== null) {
-								moveTab(draggedIndex, i);
-							}
-							draggedIndex = null;
-						}}
-						class:opacity-50={draggedIndex === i}
-						ondragend={() => {
-							draggedIndex = null;
-						}}
-					>
-						<Tooltip.Provider delayDuration={700}>
-							<Tooltip.Root>
-								<Tooltip.Trigger>
-									{#snippet child({ props }: any)}
-										<Tabs.Trigger
-											{...props}
-											value={tab.id}
-											onpointerdown={(e: PointerEvent) => {
-												if (e.button !== 0) e.preventDefault();
-											}}
-											onauxclick={(e: MouseEvent) => {
-												if (e.button === 1) fileTabs.closeFile(tab.id);
-											}}
-											class="not-data-active:bg-background/80! not-data-active:hover:bg-card! peer data-active:border-t-brand-primary! w-full grow justify-start overflow-hidden pr-8"
-											><span class="truncate {filesMeta.current[tab.id]?.edited ? 'italic' : ''}"
-												>{filesMeta.current[tab.id]?.name ?? ''}
-											</span></Tabs.Trigger
-										>
-									{/snippet}
-								</Tooltip.Trigger>
-								<Tooltip.Content>
-									<p>
-										{filesMeta.current[tab.id]?.name ?? ''}
-										{#if filesMeta.current[tab.id]?.edited}
-											<span class="text-muted-foreground text-xs">(unsaved)</span>
-										{/if}
-									</p>
-								</Tooltip.Content>
-							</Tooltip.Root>
+					<ContextMenu.Root>
+						<ContextMenu.Trigger
+							draggable="true"
+							class="group relative flex h-full w-fit max-w-64 min-w-24 truncate overflow-hidden *:border-l-0!"
+							ondragstart={() => {
+								draggedIndex = i;
+							}}
+							ondragover={(e: { preventDefault: () => void }) => {
+								e.preventDefault();
+							}}
+							ondrop={() => {
+								if (draggedIndex !== null) {
+									moveTab(draggedIndex, i);
+								}
+								draggedIndex = null;
+							}}
+							ondragend={() => {
+								draggedIndex = null;
+							}}
+						>
+							<Tooltip.Provider delayDuration={700}>
+								<Tooltip.Root>
+									<Tooltip.Trigger>
+										{#snippet child({ props }: any)}
+											<Tabs.Trigger
+												{...props}
+												value={tab.id}
+												onpointerdown={(e: PointerEvent) => {
+													if (e.button !== 0) e.preventDefault();
+												}}
+												onauxclick={(e: MouseEvent) => {
+													if (e.button === 1) fileTabs.closeFile(tab.id);
+												}}
+												class="not-data-active:bg-background/80! not-data-active:hover:bg-card! peer data-active:border-t-brand-primary! w-full grow justify-start overflow-hidden pr-8"
+												><span class="truncate {filesMeta.current[tab.id]?.edited ? 'italic' : ''}"
+													>{filesMeta.current[tab.id]?.name ?? ''}
+												</span></Tabs.Trigger
+											>
+										{/snippet}
+									</Tooltip.Trigger>
+									<Tooltip.Content>
+										<p>
+											{filesMeta.current[tab.id]?.name ?? ''}
+											{#if filesMeta.current[tab.id]?.edited}
+												<span class="text-muted-foreground text-xs">(unsaved)</span>
+											{/if}
+										</p>
+									</Tooltip.Content>
+								</Tooltip.Root>
 
-							<Tooltip.Root>
-								<Tooltip.Trigger>
-									{#snippet child({ props }: any)}
-										<Button
-											{...props}
-											variant="ghost"
-											class="group-hover:text-foreground group/button peer-data-active:text-foreground hover:bg-card-foreground/20! absolute top-0 right-1.5 bottom-0 my-auto aspect-auto size-6 -translate-0 text-transparent "
-											onclick={() => fileTabs.closeFile(tab.id)}
-											><IconXRegular
-												class="peer absolute top-0 bottom-0 m-auto size-4 {filesMeta.current[tab.id]
-													?.edited
-													? 'opacity-0 group-hover/button:opacity-100'
-													: ''}"
-											/>
-											<IconCircle
-												class="absolute top-0 bottom-0 m-auto size-2.5 opacity-0 {filesMeta.current[
-													tab.id
-												]?.edited
-													? 'text-foreground/80 opacity-100 group-hover/button:opacity-0'
-													: ''}"
-											/></Button
-										>
-									{/snippet}
-								</Tooltip.Trigger>
-								<Tooltip.Content sideOffset={4}>
-									<p>close</p>
-								</Tooltip.Content>
-							</Tooltip.Root>
-						</Tooltip.Provider>
-					</div>
+								<Tooltip.Root>
+									<Tooltip.Trigger>
+										{#snippet child({ props }: any)}
+											<Button
+												{...props}
+												variant="ghost"
+												class="group-hover:text-foreground group/button peer-data-active:text-foreground hover:bg-card-foreground/20! absolute top-0 right-1.5 bottom-0 my-auto aspect-auto size-6 -translate-0 text-transparent "
+												onclick={() => fileTabs.closeFile(tab.id)}
+												><IconXRegular
+													class="peer absolute top-0 bottom-0 m-auto size-4 {filesMeta.current[
+														tab.id
+													]?.edited
+														? 'opacity-0 group-hover/button:opacity-100'
+														: ''}"
+												/>
+												<IconCircle
+													class="absolute top-0 bottom-0 m-auto size-2.5 opacity-0 {filesMeta
+														.current[tab.id]?.edited
+														? 'text-foreground/80 opacity-100 group-hover/button:opacity-0'
+														: ''}"
+												/></Button
+											>
+										{/snippet}
+									</Tooltip.Trigger>
+									<Tooltip.Content sideOffset={4}>
+										<p>close</p>
+									</Tooltip.Content>
+								</Tooltip.Root>
+							</Tooltip.Provider>
+						</ContextMenu.Trigger>
+						<ContextMenu.Content>
+							<ContextMenu.Item onclick={() => fileTabs.closeFile(tab.id)}>Close</ContextMenu.Item>
+							<ContextMenu.Item
+								disabled={fileTabs.tabs.current.length <= 1}
+								onclick={() => closeOthers(i)}
+							>
+								Close others
+							</ContextMenu.Item>
+							<ContextMenu.Item
+								disabled={i === fileTabs.tabs.current.length - 1}
+								onclick={() => closeToRight(i)}
+							>
+								Close to the right
+							</ContextMenu.Item>
+							<ContextMenu.Item onclick={closeAllTabs}>Close all</ContextMenu.Item>
+							<ContextMenu.Separator />
+							<ContextMenu.Item onclick={() => copyTabId(tab.id)}>Copy ID</ContextMenu.Item>
+							<ContextMenu.Item onclick={() => copyTabName(tab.id)}>Copy Name</ContextMenu.Item>
+							<ContextMenu.Separator />
+							<ContextMenu.Item
+								disabled={activeFile.current?.id !== tab.id}
+								onclick={() => downloadTab(tab.id)}
+							>
+								Download
+							</ContextMenu.Item>
+						</ContextMenu.Content>
+					</ContextMenu.Root>
 				{/each}
 				<div
 					class="flex h-full w-full min-w-0 flex-1 grow items-center border-y! border-r!"
@@ -584,7 +655,7 @@
 											<div class="flex gap-4">
 												<section class="flex w-full grow flex-col gap-2">
 													<span>Recent</span>
-													{#each fileTabs.recentFiles as file}
+													{#each fileTabs.recentFiles.slice(0, 5) as file}
 														<Button
 															variant="link"
 															class="text-brand-primary flex w-full justify-between"
@@ -641,7 +712,7 @@
 								<Resizable.PaneGroup direction="vertical">
 									<Resizable.Pane defaultSize={35} minSize={10}>
 										<Tabs.Root bind:value={workbenchTabSide.current} class="h-full grow gap-0">
-										<Tabs.List
+											<Tabs.List
 												variant="line"
 												class="*:after:bg-brand-primary w-full justify-start border-b"
 											>
@@ -727,7 +798,7 @@
 													});
 												}
 											}}
-											disabled={sendingRequest}
+											disabled={sendingRequest || activeFile.current?.agents.length === 0}
 										>
 											{#if sendingRequest}
 												<Spinner />
