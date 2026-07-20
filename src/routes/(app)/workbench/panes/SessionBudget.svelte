@@ -29,7 +29,9 @@
 
 	function setBehavior(behavior: any) {
 		if (!activeFile.current?.budgetSettings) return;
-		activeFile.current.budgetSettings.exhaustionBehavior = behavior;
+		activeFile.updateBudgetSettings({
+			exhaustionBehavior: behavior
+		});
 	}
 
 	function getMinimum() {
@@ -40,7 +42,9 @@
 
 	function setBudget(micro: number) {
 		if (!activeFile.current?.budgetSettings) return;
-		activeFile.current.budgetSettings.budget = micro;
+		activeFile.updateBudgetSettings({
+			budget: micro
+		});
 	}
 
 	const exhaustionOptions = [
@@ -147,10 +151,15 @@
 					class="w-full grow"
 					variant="outline"
 					value={String(exhaustionBehavior.force)}
-					onValueChange={(v: string) => {
-						if (v && exhaustionBehavior.type === 'kill_agent') {
-							exhaustionBehavior.force = v === 'true';
-						}
+					onValueChange={async (v: string) => {
+						if (exhaustionBehavior?.type !== 'kill_agent') return;
+
+						exhaustionBehavior.force = v === 'true';
+						activeFile.updateBudgetSettings({
+							exhaustionBehavior: {
+								...exhaustionBehavior
+							}
+						});
 					}}
 				>
 					<ToggleGroup.Item value="true">True</ToggleGroup.Item>
@@ -172,12 +181,17 @@
 				<CurrencyInput
 					value={exhaustionBehavior.minimum ?? 0}
 					disabled={isWarnOnly}
-					onchange={(micro) => {
+					onchange={async (micro) => {
 						if (
 							exhaustionBehavior?.type === 'kill_agent' ||
 							exhaustionBehavior?.type === 'kill_session'
 						) {
 							exhaustionBehavior.minimum = micro;
+							activeFile.updateBudgetSettings({
+								exhaustionBehavior: {
+									...exhaustionBehavior
+								}
+							});
 						}
 					}}
 				/>

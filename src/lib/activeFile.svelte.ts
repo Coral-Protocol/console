@@ -17,7 +17,7 @@ import {
 	type Tool
 } from '$lib/fileStorage.svelte';
 import { debugMode } from './debugMode.svelte';
-
+import merge from 'lodash/merge';
 function log(...args: unknown[]) {
 	if (debugMode.current) console.log('%c[activeFile]', 'color:#c084fc', ...args);
 }
@@ -121,15 +121,7 @@ class ActiveFileStore {
 		log('updateAgent', clientId, $state.snapshot(patch));
 		this.#commit({
 			...this.current,
-			agents: this.current.agents.map((a) =>
-				a.clientId === clientId
-					? {
-							...a,
-							...patch,
-							nodeData: patch.nodeData ? { ...a.nodeData, ...patch.nodeData } : a.nodeData
-						}
-					: a
-			)
+			agents: this.current.agents.map((a) => (a.clientId === clientId ? merge({}, a, patch) : a))
 		});
 	}
 
@@ -199,15 +191,18 @@ class ActiveFileStore {
 		});
 	}
 
+	replaceAnnotations(annotations: Record<string, string>) {
+		if (!this.current) return;
+		log('replaceAnnotations', $state.snapshot(annotations));
+		this.#commit({ ...this.current, annotations });
+	}
+
 	updateBudgetSettings(patch: Partial<FileData['budgetSettings']>) {
 		if (!this.current) return;
 		log('updateBudgetSettings', $state.snapshot(patch));
 		this.#commit({
 			...this.current,
-			budgetSettings: {
-				...this.current.budgetSettings,
-				...patch
-			} as FileData['budgetSettings']
+			budgetSettings: merge({}, this.current.budgetSettings, patch) as FileData['budgetSettings']
 		});
 	}
 
@@ -216,10 +211,11 @@ class ActiveFileStore {
 		log('updateNamespaceSettings', $state.snapshot(patch));
 		this.#commit({
 			...this.current,
-			namespaceProvider: {
-				...this.current.namespaceProvider,
-				...patch
-			} as FileData['namespaceProvider']
+			namespaceProvider: merge(
+				{},
+				this.current.namespaceProvider,
+				patch
+			) as FileData['namespaceProvider']
 		});
 	}
 
@@ -228,7 +224,7 @@ class ActiveFileStore {
 		log('updateExecutionSettings', $state.snapshot(patch));
 		this.#commit({
 			...this.current,
-			execution: { ...this.current.execution, ...patch } as FileData['execution']
+			execution: merge({}, this.current.execution, patch) as FileData['execution']
 		});
 	}
 
