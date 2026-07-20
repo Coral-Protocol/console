@@ -386,6 +386,12 @@
 					</Menubar.Item>
 					<Menubar.Item disabled>Save as</Menubar.Item>
 					<Menubar.Separator />
+
+					<Menubar.Item onclick={() => downloadTab(fileTabs.activeTab.current)}
+						>Download</Menubar.Item
+					>
+					<Menubar.Separator />
+
 					<Menubar.Item onclick={() => window.print()}>
 						Print <Menubar.Shortcut>⌘P</Menubar.Shortcut>
 					</Menubar.Item>
