@@ -2,6 +2,7 @@
 	import * as Dialog from '@coral-os/component-library/ui/dialog/index.js';
 	import { Button, buttonVariants } from '@coral-os/component-library/ui/button/index.js';
 	import { updateFileDataFromDelta } from '$lib/fileStorage.svelte';
+	import { toast } from 'svelte-sonner';
 
 	let {
 		open = $bindable(false),
@@ -30,7 +31,7 @@
 			closeFile?.(id, true);
 			open = false;
 		} catch (err) {
-			// consider surfacing this to the user rather than swallowing it
+			toast.error(err as string);
 		} finally {
 			saving = false;
 		}
@@ -47,7 +48,7 @@
 			await deleteFile?.(id);
 			open = false;
 		} catch (err) {
-			// consider surfacing this to the user rather than swallowing it
+			toast.error(err as string);
 		} finally {
 			deleting = false;
 		}

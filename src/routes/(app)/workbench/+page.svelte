@@ -275,6 +275,10 @@
 	function deleteCurrentFile() {
 		const id = activeFile.current?.id;
 		if (!id) return;
+		if (activeFile.current && activeFile.current.agents.length === 0) {
+			fileTabs.closeFile(fileTabs.activeTab.current);
+			return;
+		}
 		fileTabs.requestDeleteFile(id);
 	}
 
