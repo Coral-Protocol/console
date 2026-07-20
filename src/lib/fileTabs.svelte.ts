@@ -2,6 +2,7 @@ import { PersistedState } from 'runed';
 import {
 	filesMeta,
 	deleteFileDataDelta,
+	deleteFileData, // <-- assumed to exist alongside deleteFileDataDelta; adjust name if different
 	hasFileDataDelta,
 	hasFileData,
 	updateFileMeta,
@@ -39,11 +40,23 @@ class FileTabs {
 	tabs = new PersistedState<Tab[]>('workbench:tabs', []);
 	activeTab = new PersistedState<string>('workbench:activeTab', '');
 
-	showDeleteConfirmation = $state(false);
+	dialogOpen = $state(false);
+	dialogMode = $state<'unsaved' | 'delete'>('unsaved');
+
 	tabToClose = $state<string | null>(null);
+	fileToDelete = $state<string | null>(null);
 
 	tabToCloseName = $derived(
 		this.tabToClose ? (filesMeta.current[this.tabToClose]?.name ?? '') : ''
+	);
+
+	fileToDeleteName = $derived(
+		this.fileToDelete ? (filesMeta.current[this.fileToDelete]?.name ?? '') : ''
+	);
+
+	dialogFileId = $derived(this.dialogMode === 'unsaved' ? this.tabToClose : this.fileToDelete);
+	dialogFileName = $derived(
+		this.dialogMode === 'unsaved' ? this.tabToCloseName : this.fileToDeleteName
 	);
 
 	recentFiles = $derived(
@@ -92,7 +105,8 @@ class FileTabs {
 
 			if (hasDelta && !force) {
 				this.tabToClose = id;
-				this.showDeleteConfirmation = true;
+				this.dialogMode = 'unsaved';
+				this.dialogOpen = true;
 				return;
 			}
 
@@ -102,8 +116,33 @@ class FileTabs {
 			}
 			await deleteFileDataDelta(id);
 
-			this.showDeleteConfirmation = false;
+			this.dialogOpen = false;
 			this.removeTab(id);
+		} catch (error) {
+			console.error(error);
+		}
+	}
+
+	requestDeleteFile(id: string) {
+		this.fileToDelete = id;
+		this.dialogMode = 'delete';
+		this.dialogOpen = true;
+	}
+
+	async deleteFile(id: string | null) {
+		if (!id) return;
+		try {
+			await Promise.all([deleteFileData(id), deleteFileDataDelta(id)]);
+
+			const { [id]: _, ...rest } = filesMeta.current;
+			filesMeta.current = rest;
+
+			if (this.tabs.current.some((tab) => tab.id === id)) {
+				this.removeTab(id);
+			}
+
+			this.fileToDelete = null;
+			this.dialogOpen = false;
 		} catch (error) {
 			console.error(error);
 		}
@@ -124,7 +163,7 @@ class FileTabs {
 		}
 
 		this.tabToClose = null;
-		this.showDeleteConfirmation = false;
+		this.dialogOpen = false;
 	}
 
 	openFile(id: string) {

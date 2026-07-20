@@ -1,7 +1,7 @@
 <script lang="ts">
 	import DiagonalLines from './DiagonalLines.svelte';
 
-	import DeleteWarning from './DeleteWarning.svelte';
+	import ConfirmDialog from './ConfirmDialog.svelte';
 
 	import * as Tabs from '@coral-os/component-library/ui/tabs/index.js';
 	import * as Menubar from '@coral-os/component-library/ui/menubar/index.js';
@@ -72,6 +72,8 @@
 	import SessionSettings from './panes/SessionSettings.svelte';
 	import NamespaceSwitcher from '$lib/components/namespace-switcher.svelte';
 	import { graphSelection } from '$lib/graphSelection.svelte';
+	import Logo from '$lib/icons/logo.svelte';
+	import { base } from '$app/paths';
 
 	const isShiftPressed = $derived(keys.has('Shift'));
 	const isMobile = new IsMobile();
@@ -88,13 +90,6 @@
 	$effect(() => {
 		fileTabs.syncActiveFile();
 	});
-
-	// async function deleteFile(id: string) {
-	// 	const fileIndex = filesMeta.current.findIndex((f) => f.id === id);
-	// 	if (fileIndex !== -1) filesMeta.current.splice(fileIndex, 1);
-	// 	await fileTabs.closeFile(id);
-	// 	await deleteFileData(id);
-	// }
 
 	let draftName = $state('');
 	let draftDescription = $state('');
@@ -277,15 +272,10 @@
 		toast.success('Duplicated file');
 	}
 
-	async function deleteCurrentFile() {
+	function deleteCurrentFile() {
 		const id = activeFile.current?.id;
 		if (!id) return;
-
-		await deleteFileData(id);
-		await deleteFileDataDelta(id);
-		await fileTabs.closeFile(id, true);
-		delete filesMeta.current[id];
-		toast.success('File deleted');
+		fileTabs.requestDeleteFile(id);
 	}
 
 	async function renameCurrentFile() {
@@ -308,11 +298,15 @@
 	}}
 />
 
-<DeleteWarning
-	bind:showDeleteConfirmation={fileTabs.showDeleteConfirmation}
-	name={fileTabs.tabToCloseName}
-	id={fileTabs.tabToClose}
-	closeFile={(id: string, force: boolean | undefined) => fileTabs.closeFile(id, force)}
+<ConfirmDialog
+	bind:open={fileTabs.dialogOpen}
+	mode={fileTabs.dialogMode}
+	name={fileTabs.dialogFileName}
+	id={fileTabs.dialogFileId}
+	closeFile={(id: string | null, force: boolean) => {
+		if (id !== null) void fileTabs.closeFile(id, force);
+	}}
+	deleteFile={(id: string | null) => fileTabs.deleteFile(id)}
 />
 
 <section class=" flex h-full min-h-0 grow flex-col overflow-hidden p-2">
@@ -788,9 +782,27 @@
 									{:else if fileTabs.tabs?.current !== null}
 										<DiagonalLines />
 										<div
-											class="absolute top-1/2 left-1/2 flex h-fit min-h-42 w-fit min-w-1/2 -translate-1/2 flex-col gap-4"
+											class="absolute top-1/2 left-1/2 flex h-fit min-h-42 w-fit min-w-1/2 -translate-1/2 flex-col justify-center gap-4 select-none"
 										>
-											<h1 class="text-center text-xl">Coral Console Workbench</h1>
+											<div class="m-auto flex -translate-y-16 flex-col">
+												<div class="flex">
+													<div>
+														<Logo class="text-foreground size-10" />
+													</div>
+													<div class="flex flex-col gap-0.5 text-lg leading-none">
+														<span class="font-[Oxanium] font-semibold tracking-widest"
+															>Coral<span class="text-brand-primary font-bold tracking-normal"
+																>OS</span
+															>
+														</span>
+														<span class="text-brand-primary font-sans text-sm">Console</span>
+													</div>
+												</div>
+
+												<h2 class="text-muted-foreground pl-2 text-5xl font-light tracking-wider">
+													Workbench
+												</h2>
+											</div>
 											<div class="flex gap-4">
 												<section class="flex w-full grow flex-col gap-2">
 													<span>Recent</span>

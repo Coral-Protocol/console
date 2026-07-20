@@ -378,7 +378,7 @@
 					<SidebarLink url="{base}/" icon={IconHome} title="Overview" />
 
 					<div use:tourTarget={'workbench'} class="relative w-full">
-						<SidebarLink url="{base}/workbench" icon={IconCircuity} title="Request workbench" />
+						<SidebarLink url="{base}/workbench" icon={IconCircuity} title="Workbench" />
 					</div>
 				</Sidebar.Menu>
 			</Sidebar.GroupContent>
