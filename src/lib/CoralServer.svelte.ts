@@ -101,13 +101,24 @@ export class CoralServer {
 	// TODO (alan): better server state repr
 	public alive = $state(false);
 	public namespace = $state((browser && localStorage.getItem('namespace')) || 'default');
+
+	public namespaceFilter = $state<string | undefined>(undefined);
 	public namespaces = $derived(Object.keys(this.allSessions));
 
-	public sessions = $derived(this.allSessions[this.namespace]?.sessions ?? {});
+	public sessions = $derived.by(() => {
+		if (this.namespaceFilter) {
+			return this.allSessions[this.namespaceFilter]?.sessions ?? {};
+		}
 
+		return Object.fromEntries(
+			Object.values(this.allSessions).flatMap((ns) => Object.entries(ns.sessions))
+		);
+	});
 	public lsmSock = $derived(
 		createWebsocket(
-			`/ws/v1/events/lsm?namespaceFilter=${encodeURIComponent(this.namespace)}`,
+			this.namespaceFilter
+				? `/ws/v1/events/lsm?namespaceFilter=${encodeURIComponent(this.namespaceFilter)}`
+				: '/ws/v1/events/lsm',
 			'lsm'
 		)
 	);

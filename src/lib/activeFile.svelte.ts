@@ -169,7 +169,7 @@ class ActiveFileStore {
 		const newTool: Tool = { ...tool, clientId: crypto.randomUUID() };
 		log('addTool', $state.snapshot(newTool));
 		this.#commit({ ...this.current, tools: [...this.current.tools, newTool] });
-		return newTool.clientId
+		return newTool.clientId;
 	}
 
 	updateTool(clientId: string, patch: Partial<Omit<Tool, 'clientId'>>) {
@@ -190,21 +190,45 @@ class ActiveFileStore {
 		});
 	}
 
-	// updateSessionSettings(patch: Partial<SessionSettings>) {
-	// 	if (!this.current) return;
-	// 	log('updateSessionSettings', $state.snapshot(patch));
-	// 	this.#commit({
-	// 		...this.current,
-	// 		sessionSettings: { ...this.current.sessionSettings, ...patch }
-	// 	});
-	// }
-
 	updateAnnotations(patch: Record<string, string>) {
 		if (!this.current) return;
 		log('updateAnnotations', $state.snapshot(patch));
 		this.#commit({
 			...this.current,
 			annotations: { ...this.current.annotations, ...patch }
+		});
+	}
+
+	updateBudgetSettings(patch: Partial<FileData['budgetSettings']>) {
+		if (!this.current) return;
+		log('updateBudgetSettings', $state.snapshot(patch));
+		this.#commit({
+			...this.current,
+			budgetSettings: {
+				...this.current.budgetSettings,
+				...patch
+			} as FileData['budgetSettings']
+		});
+	}
+
+	updateNamespaceSettings(patch: Partial<FileData['namespaceProvider']>) {
+		if (!this.current) return;
+		log('updateNamespaceSettings', $state.snapshot(patch));
+		this.#commit({
+			...this.current,
+			namespaceProvider: {
+				...this.current.namespaceProvider,
+				...patch
+			} as FileData['namespaceProvider']
+		});
+	}
+
+	updateExecutionSettings(patch: Partial<FileData['execution']>) {
+		if (!this.current) return;
+		log('updateExecutionSettings', $state.snapshot(patch));
+		this.#commit({
+			...this.current,
+			execution: { ...this.current.execution, ...patch } as FileData['execution']
 		});
 	}
 

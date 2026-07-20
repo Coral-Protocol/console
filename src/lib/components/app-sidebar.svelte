@@ -336,17 +336,6 @@
 				>
 			{/if}
 		</div>
-
-		<Sidebar.Group>
-			<Sidebar.GroupLabel class="text-muted-foreground">Namespace</Sidebar.GroupLabel>
-			<Sidebar.GroupContent>
-				<Sidebar.Menu>
-					<Sidebar.MenuItem class="flex">
-						<NamespaceSwitcher />
-					</Sidebar.MenuItem>
-				</Sidebar.Menu>
-			</Sidebar.GroupContent>
-		</Sidebar.Group>
 	</Sidebar.Header>
 	<Sidebar.Content class="gap-0  *:list-none">
 		<Sidebar.Group>
@@ -412,6 +401,14 @@
 
 		<Sidebar.Group class="">
 			<Sidebar.GroupLabel class="text-muted-foreground">Sessions</Sidebar.GroupLabel>
+			<Sidebar.GroupAction class="text-muted-foreground aspect-auto w-fit text-sm"
+				><select bind:value={ctx.server.namespaceFilter}>
+					<option value={undefined}>All namespaces</option>
+					{#each ctx.server.namespaces as ns}
+						<option value={ns}>{ns}</option>
+					{/each}
+				</select></Sidebar.GroupAction
+			>
 
 			<Sidebar.GroupContent class="">
 				<div use:tourTarget={'session-section'} class="h-full">

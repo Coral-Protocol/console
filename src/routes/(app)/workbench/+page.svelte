@@ -69,6 +69,7 @@
 	import { fileTabs, uniqueName } from '$lib/fileTabs.svelte';
 	import Outline from './panes/Outline.svelte';
 	import SessionSettings from './panes/SessionSettings.svelte';
+	import NamespaceSwitcher from '$lib/components/namespace-switcher.svelte';
 
 	const isShiftPressed = $derived(keys.has('Shift'));
 	const isMobile = new IsMobile();
@@ -699,8 +700,9 @@
 										defaultSize={4}
 										minSize={2}
 										maxSize={5}
-										class="flex items-center justify-end gap-2 px-2 align-middle"
+										class="flex min-w-0 items-center justify-end gap-2 px-2 align-middle"
 									>
+										<NamespaceSwitcher />
 										<Button
 											variant="secondary"
 											disabled={activeFile.current

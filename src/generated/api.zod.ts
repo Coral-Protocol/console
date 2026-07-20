@@ -1334,7 +1334,7 @@ export type SessionRuntimeSettingsOutput = zod.output<typeof SessionRuntimeSetti
 export const SessionRequest = zod.object({
 	agentGraphRequest: AgentGraphRequest.describe('A request for the agents in this session'),
 	namespaceProvider: zod
-		.union([
+		.discriminatedUnion('type', [
 			zod
 				.object({
 					type: zod.enum(['create_if_not_exists']),
@@ -1352,7 +1352,7 @@ export const SessionRequest = zod.object({
 		])
 		.describe('A description of what namespace this session should run in'),
 	execution: zod
-		.union([
+		.discriminatedUnion('mode', [
 			zod
 				.object({
 					mode: zod.enum(['defer'])
