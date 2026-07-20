@@ -58,7 +58,6 @@
 	import { base } from '$app/paths';
 	import { useDebounce, watch } from 'runed';
 	import config from '$lib/config';
-	import SessionSwitcher from './SessionSwitcher.svelte';
 	import { fade } from 'svelte/transition';
 	import { Badge } from '@coral-os/component-library/components/ui/badge/index.js';
 	import CreateThreadForm from './CreateThreadForm.svelte';
@@ -69,14 +68,14 @@
 	import IconSpinnerGapRegular from 'phosphor-icons-svelte/IconSpinnerGapRegular.svelte';
 	import Settings from './Settings.svelte';
 	import { Session } from '$lib/session.svelte';
+	import type { ZodUndefined } from 'zod/v3';
+	import { untrack } from 'svelte';
 
 	let ctx = appContext.get();
 	let tools = socketCtx.get();
-	let conn = $derived(ctx.session);
 
 	let connecting = $state(false);
 	let error: string | null = $state(null);
-	let activeSessionId = $state<string | null>(ctx.session?.sessionId ?? null);
 
 	const onNoAuth = useDebounce(() => {
 		if (toast.getActiveToasts().some((t) => t.id === 'server-disconnected')) {
@@ -245,6 +244,13 @@
 	let tourOpen = $state(false);
 	let threadCreateOpen = $state(false);
 	let { ref = $bindable(null) }: WithElementRef<{}, HTMLButtonElement> = $props();
+
+	let connectedSessionId = $state<string | undefined>('');
+
+	$effect(() => {
+		ctx.session?.sessionId;
+		untrack(() => (connectedSessionId = ctx.session?.sessionId));
+	});
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
@@ -342,7 +348,7 @@
 			</Sidebar.GroupContent>
 		</Sidebar.Group>
 	</Sidebar.Header>
-	<Sidebar.Content class="gap-0 overflow-hidden *:list-none">
+	<Sidebar.Content class="gap-0  *:list-none">
 		<Sidebar.Group>
 			<Sidebar.GroupLabel class="pr-0">
 				<span
@@ -404,203 +410,218 @@
 			<!-- </div> -->
 		</Sidebar.Group>
 
-		<Sidebar.Group class="overflow-hidden">
+		<Sidebar.Group class="">
 			<Sidebar.GroupLabel class="text-muted-foreground">Sessions</Sidebar.GroupLabel>
 
-			<Sidebar.GroupContent class="overflow-hidden">
-				<div use:tourTarget={'session-section'} class="h-full overflow-hidden">
-					<Sidebar.Menu class="relative h-full overflow-hidden">
-						<!-- pinned session state -->
-						{#if ctx.session?.possessed}
-							{@const agent = ctx.session.possessed}
-							<section
-								transition:fade={{ duration: 100 }}
-								class="text-muted-foreground mx-2 -mt-1 mb-2 flex items-center gap-2 text-xs"
-							>
-								Acting as <Badge href="{base}/agent/#{agent}">{agent}</Badge>
-								<Button
-									size="icon"
-									variant="ghost"
-									class="size-5"
-									onclick={() => (ctx.session!.possessed = null)}
-								>
-									<IconXRegular />
-								</Button>
-							</section>
-						{/if}
-
-						<SidebarLink url="{base}/session/overview" icon={IconPackage} title="Local sessions" />
-						<Sidebar.MenuSub>
-							<Command.Root class="overflow-hidden">
-								<!-- <Command.Input placeholder="Search" /> -->
-								<Command.List class="max-h-full overflow-y-auto">
-									{#if Object.values(ctx.server.sessions).length === 0 && !ctx.session}
-										<Command.Empty class="text-foreground/20">No sessions found</Command.Empty>
-									{:else}
-										<Command.Group class="px-0">
-											<Accordion.Root
-												type="single"
-												class="w-full gap-2 overflow-hidden border-0 *:border-0!"
+			<Sidebar.GroupContent class="">
+				<div use:tourTarget={'session-section'} class="h-full">
+					<Command.Root class="">
+						<Command.Input placeholder="Search" />
+						<Command.List class="max-h-full overflow-y-auto">
+							{#if Object.values(ctx.server.sessions).length === 0}
+								<Command.Empty class="text-foreground/20">No sessions found</Command.Empty>
+							{:else}
+								<Command.Group class="px-0">
+									<Accordion.Root
+										type="single"
+										bind:value={connectedSessionId}
+										class="w-full gap-2  border-0 *:border-0!"
+										onValueChange={(id) => {
+											ctx.session?.close();
+											ctx.session = id
+												? new Session({
+														sessionId: id,
+														namespace: ctx.server.namespace,
+														server: ctx.server
+													})
+												: null;
+										}}
+									>
+										{#each Object.values(ctx.server.sessions) as session (session.id)}
+											<Command.Item
+												class="bg-transparent! p-0 "
+												value={session.annotations?.sessionName ?? session.id}
 											>
-												{#each Object.values(ctx.server.sessions) as session (session.id)}
-													<Command.Item class="bg-transparent! p-0 ">
-														<Accordion.Item class="w-full">
-															<Sidebar.MenuItem>
-																<Accordion.Trigger
-																	onclick={() =>
-																		(ctx.session = new Session({
-																			sessionId: session.id,
-																			namespace: ctx.server.namespace,
-																			server: ctx.server
-																		}))}
+												<Accordion.Item class="w-full bg-transparent!" value={session.id}>
+													<Accordion.Trigger class="group/item gap-2 truncate text-sm ">
+														<IconSession class="size-5" />
+
+														<span class="grow">
+															{session.annotations?.sessionName ?? session.id}
+														</span>
+
+														{#if ctx.session?.sessionId === session.id}
+															<Badge
+																class=" bg-foreground/5 text-foreground/80 w-16 px-2 py-0.5 text-[10px] font-medium"
+															>
+																connected
+															</Badge>
+														{:else}
+															<Badge
+																class=" bg-foreground/5 text-foreground/100 w-16 px-2 py-0.5 text-[10px] font-medium opacity-0 transition-opacity delay-75 group-hover/item:opacity-80"
+															>
+																connect
+															</Badge>
+														{/if}
+													</Accordion.Trigger>
+
+													<Accordion.Content class="border-l p-2 **:no-underline!">
+														<SidebarLink
+															url="{base}/session/overview"
+															icon={IconPackage}
+															title="Overview"
+														/>
+
+														{#if ctx.session?.possessed}
+															{@const agent = ctx.session.possessed}
+															<section
+																transition:fade={{ duration: 100 }}
+																class="text-muted-foreground mx-2 -mt-1 mb-2 flex items-center gap-2 text-xs"
+															>
+																Acting as <Badge href="{base}/agent/#{agent}">{agent}</Badge>
+																<Button
+																	size="icon"
+																	variant="ghost"
+																	class="size-5"
+																	onclick={() => (ctx.session!.possessed = null)}
 																>
-																	<Sidebar.MenuButton class="truncate p-2">
-																		<IconSession class="size-4" />
-																		<span>
-																			{session.annotations?.sessionName ?? session.id}
-																		</span>
-																	</Sidebar.MenuButton>
-																</Accordion.Trigger>
+																	<IconXRegular />
+																</Button>
+															</section>
+														{/if}
+														<NavBundle
+															title="Threads"
+															icon={IconFileArchive}
+															items={ctx.session
+																? Object.values(ctx.session.threads).map((thread) => ({
+																		id: thread.id,
+																		title: thread.name,
+																		url: `${base}/thread/#${thread.id}`,
+																		badge: thread.unread
+																	}))
+																: []}
+															emptyLabel="No threads."
+														>
+															{#snippet itemContextMenu({ item })}
+																{@const thread = item.id
+																	? ctx.session?.threads[item.id]
+																	: undefined}
 
-																<Accordion.Content>
-																	<NavBundle
-																		title="Threads"
-																		icon={IconFileArchive}
-																		items={ctx.session
-																			? Object.values(ctx.session.threads).map((thread) => ({
-																					id: thread.id,
-																					title: thread.name,
-																					url: `${base}/thread/#${thread.id}`,
-																					badge: thread.unread
-																				}))
-																			: []}
-																		emptyLabel="No threads."
-																	>
-																		{#snippet itemContextMenu({ item })}
-																			{@const thread = item.id
-																				? ctx.session?.threads[item.id]
-																				: undefined}
+																<ContextMenu.Item
+																	disabled={!thread || thread.unread === 0}
+																	onSelect={() => {
+																		if (!ctx.session || !item.id) return;
+																		if (!(item.id in ctx.session.threads)) return;
+																		ctx.session.threads[item.id]!.unread = 0;
+																	}}
+																>
+																	<IconEnvelopeOpen /> Mark as read
+																</ContextMenu.Item>
+															{/snippet}
 
-																			<ContextMenu.Item
-																				disabled={!thread || thread.unread === 0}
-																				onSelect={() => {
-																					if (!ctx.session || !item.id) return;
-																					if (!(item.id in ctx.session.threads)) return;
-																					ctx.session.threads[item.id]!.unread = 0;
-																				}}
-																			>
-																				<IconEnvelopeOpen /> Mark as read
-																			</ContextMenu.Item>
-																		{/snippet}
-
-																		{#snippet actions()}
-																			<Popover.Root bind:open={threadCreateOpen}>
-																				<Tooltip.Root>
-																					<Tooltip.Trigger>
-																						{#snippet child({ props }: any)}
-																							<span {...props}>
-																								<Popover.Trigger
-																									disabled={!ctx.session || !ctx.session?.possessed}
-																									onclick={(e: any) => e.stopPropagation()}
-																									class={cn(
-																										buttonVariants({
-																											size: 'icon',
-																											variant: 'ghost'
-																										}),
-																										'size-6'
-																									)}
-																								>
-																									<IconPlus />
-																								</Popover.Trigger>
-																							</span>
-																						{/snippet}
-																					</Tooltip.Trigger>
-
-																					<Tooltip.Content>
-																						<span>
-																							You must be possessing an agent to create a thread!
-																						</span>
-																					</Tooltip.Content>
-																				</Tooltip.Root>
-
-																				<Popover.Content>
-																					{@const agent =
-																						ctx.session?.possessed &&
-																						ctx.session?.agents[ctx.session.possessed]}
-
-																					{#if ctx.session && agent}
-																						<CreateThreadForm
-																							{agent}
-																							session={ctx.session}
-																							onCreate={() => (threadCreateOpen = false)}
-																						/>
-																					{/if}
-																				</Popover.Content>
-																			</Popover.Root>
-																		{/snippet}
-																	</NavBundle>
-
-																	<NavBundle
-																		title="Agents"
-																		icon={IconRobot}
-																		items={ctx.session
-																			? Object.entries(ctx.session.agents).map(
-																					([title, agent]) => ({
-																						id: title,
-																						title,
-																						url: `${base}/agent/#${title}`,
-																						state: agent.status
-																					})
-																				)
-																			: []}
-																		emptyLabel="No agents."
-																	>
-																		{#snippet itemContextMenu({ item })}
-																			<ContextMenu.Item
-																				onSelect={() => {
-																					if (!ctx.session) return;
-																					ctx.session.possessed = item.id ?? null;
-																				}}
-																			>
-																				<IconGhost /> Possess
-																			</ContextMenu.Item>
-																		{/snippet}
-
-																		{#snippet itemActions({ item })}
-																			<DropdownMenu.Root>
-																				<DropdownMenu.Trigger>
-																					{#snippet child({ props }: any)}
-																						<Button {...props} variant="ghost" size="icon">
-																							<IconDotsThree />
-																						</Button>
-																					{/snippet}
-																				</DropdownMenu.Trigger>
-
-																				<DropdownMenu.Content class="w-56" align="start">
-																					<DropdownMenu.Item
-																						onSelect={() => {
-																							if (!ctx.session) return;
-																							ctx.session.possessed = item.id ?? null;
-																						}}
+															{#snippet actions()}
+																<Popover.Root bind:open={threadCreateOpen}>
+																	<Tooltip.Root>
+																		<Tooltip.Trigger>
+																			{#snippet child({ props }: any)}
+																				<span {...props}>
+																					<Popover.Trigger
+																						disabled={!ctx.session || !ctx.session?.possessed}
+																						onclick={(e: any) => e.stopPropagation()}
+																						class={cn(
+																							buttonVariants({
+																								size: 'icon',
+																								variant: 'ghost'
+																							}),
+																							'size-6'
+																						)}
 																					>
-																						<IconGhost /> Possess
-																					</DropdownMenu.Item>
-																				</DropdownMenu.Content>
-																			</DropdownMenu.Root>
+																						<IconPlus />
+																					</Popover.Trigger>
+																				</span>
+																			{/snippet}
+																		</Tooltip.Trigger>
+
+																		<Tooltip.Content>
+																			<span>
+																				You must be possessing an agent to create a thread!
+																			</span>
+																		</Tooltip.Content>
+																	</Tooltip.Root>
+
+																	<Popover.Content>
+																		{@const agent =
+																			ctx.session?.possessed &&
+																			ctx.session?.agents[ctx.session.possessed]}
+
+																		{#if ctx.session && agent}
+																			<CreateThreadForm
+																				{agent}
+																				session={ctx.session}
+																				onCreate={() => (threadCreateOpen = false)}
+																			/>
+																		{/if}
+																	</Popover.Content>
+																</Popover.Root>
+															{/snippet}
+														</NavBundle>
+
+														<NavBundle
+															title="Agents"
+															icon={IconRobot}
+															items={ctx.session
+																? Object.entries(ctx.session.agents).map(([title, agent]) => ({
+																		id: title,
+																		title,
+																		url: `${base}/agent/#${title}`,
+																		state: agent.status
+																	}))
+																: []}
+															emptyLabel="No agents."
+														>
+															{#snippet itemContextMenu({ item })}
+																<ContextMenu.Item
+																	onSelect={() => {
+																		if (!ctx.session) return;
+																		ctx.session.possessed = item.id ?? null;
+																	}}
+																>
+																	<IconGhost /> Possess
+																</ContextMenu.Item>
+															{/snippet}
+
+															{#snippet itemActions({ item })}
+																<DropdownMenu.Root>
+																	<DropdownMenu.Trigger>
+																		{#snippet child({ props }: any)}
+																			<Button {...props} variant="ghost" size="icon">
+																				<IconDotsThree />
+																			</Button>
 																		{/snippet}
-																	</NavBundle>
-																</Accordion.Content>
-															</Sidebar.MenuItem>
-														</Accordion.Item>
-													</Command.Item>
-												{/each}
-											</Accordion.Root>
-										</Command.Group>
-									{/if}
-								</Command.List>
-							</Command.Root>
-						</Sidebar.MenuSub>
-					</Sidebar.Menu>
+																	</DropdownMenu.Trigger>
+
+																	<DropdownMenu.Content class="w-56" align="start">
+																		<DropdownMenu.Item
+																			onSelect={() => {
+																				if (!ctx.session) return;
+																				ctx.session.possessed = item.id ?? null;
+																			}}
+																		>
+																			<IconGhost /> Possess
+																		</DropdownMenu.Item>
+																	</DropdownMenu.Content>
+																</DropdownMenu.Root>
+															{/snippet}
+														</NavBundle>
+													</Accordion.Content>
+												</Accordion.Item>
+											</Command.Item>
+										{/each}
+									</Accordion.Root>
+								</Command.Group>
+							{/if}
+						</Command.List>
+					</Command.Root>
 				</div>
 			</Sidebar.GroupContent>
 		</Sidebar.Group>

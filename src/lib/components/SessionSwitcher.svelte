@@ -69,6 +69,7 @@
 						<Command.Group>
 							{#each Object.values(ctx.server.sessions) as basicSession (basicSession.id)}
 								<Command.Item
+									value={basicSession.id}
 									class="text-wrap break-all"
 									onSelect={() => {
 										value = basicSession.id;
@@ -80,7 +81,7 @@
 										});
 									}}
 								>
-									{basicSession?.annotations?.name ?? basicSession.id}
+									{basicSession?.annotations?.sessionName ?? basicSession.id}
 								</Command.Item>
 							{/each}
 
@@ -95,7 +96,7 @@
 										}
 									}}
 								>
-									{ctx.session.sessionId} (current)
+									{ctx.session?.bodyAnnotations?.sessionName ?? ctx.session.sessionId} (current)
 								</Command.Item>
 							{/if}
 						</Command.Group>

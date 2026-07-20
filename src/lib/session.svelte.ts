@@ -34,6 +34,10 @@ export class Session {
 
 	public possessed: string | null = $state(null);
 
+	public bodyAnnotations: SessionStateBase['annotations'] | null = $state(null);
+
+	private destroyed = false;
+
 	public agents: { [id: string]: SessionAgentState } = $state({});
 	public threads: {
 		[id: string]: Omit<SessionThread, 'participants'> & {
@@ -41,6 +45,16 @@ export class Session {
 			unread: number;
 		};
 	} = $state({});
+
+	private ensureAgent(name: string): SessionAgentState {
+		if (!this.agents[name]) {
+			this.agents[name] = {
+				name,
+				status: { type: 'stopped' }
+			} as SessionAgentState;
+		}
+		return this.agents[name]!;
+	}
 
 	constructor({
 		namespace,
@@ -67,6 +81,8 @@ export class Session {
 				params: { path: { namespace, sessionId: sessionId } }
 			})
 			.then((res) => {
+				if (this.destroyed) return;
+
 				if (res.error || !res.data) {
 					this.connected = false;
 					toast.error(
@@ -102,6 +118,7 @@ export class Session {
 				markInitialStateReady();
 			})
 			.catch((reason) => {
+				if (this.destroyed) return;
 				this.connected = false;
 				toast.error(`Error fetching session state${reason ? ` - ${reason}.` : '.'}`, {
 					duration: Infinity
@@ -117,6 +134,7 @@ export class Session {
 			this.connected = true;
 		};
 		this.socket.onerror = () => {
+			if (this.destroyed) return;
 			toast.error(`Error connecting to session.`);
 			this.connected = false;
 			this.socket.close();
@@ -132,12 +150,13 @@ export class Session {
 			// we don't process any events until initial state fetch,
 			// since events can give us only partial info on agents/threads
 			await initialStateReady;
+			if (this.destroyed) return;
 
 			let data = null;
 			try {
 				data = JSON.parse(ev.data) as components['schemas']['SessionEvent'];
 			} catch (e) {
-				toast.warning(`ws: '${ev.data}'`);
+				if (!this.destroyed) toast.warning(`ws: '${ev.data}'`);
 				return;
 			}
 
@@ -145,73 +164,45 @@ export class Session {
 				case 'agent_budget_claim':
 					break;
 				case 'agent_connected':
-					if (!this.agents[data.name]) {
-						toast.warning("Got agent update about an agent we don't know!");
-						return;
-					}
-					this.agents[data.name]!.status = {
+					this.ensureAgent(data.name).status = {
 						type: 'running',
 						startTime: data.timestamp, // FIXME: make this actually correct
 						connectionStatus: { type: 'connected', communicationStatus: { type: 'thinking' } }
 					};
 					break;
 				case 'agent_wait_start':
-					if (!this.agents[data.name]) {
-						toast.warning("Got agent update about an agent we don't know!");
-						return;
-					}
-					this.agents[data.name]!.status = { type: 'waiting' };
+					this.ensureAgent(data.name).status = { type: 'waiting' };
 					break;
 				case 'agent_wait_stop':
-					if (!this.agents[data.name]) {
-						toast.warning("Got agent update about an agent we don't know!");
-						return;
-					}
-					this.agents[data.name]!.status = {
+					this.ensureAgent(data.name).status = {
 						type: 'running',
 						startTime: data.timestamp, // FIXME: make this actually correct
 						connectionStatus: { type: 'connected', communicationStatus: { type: 'thinking' } }
 					};
 					break;
 				case 'agent_sleep_start':
-					if (!this.agents[data.name]) {
-						toast.warning("Got agent update about an agent we don't know!");
-						return;
-					}
-					this.agents[data.name]!.status = {
+					this.ensureAgent(data.name).status = {
 						type: 'running',
 						startTime: data.timestamp, // FIXME: make this actually correct
 						connectionStatus: { type: 'connected', communicationStatus: { type: 'sleeping' } }
 					};
 					break;
 				case 'agent_sleep_stop':
-					if (!this.agents[data.name]) {
-						toast.warning("Got agent update about an agent we don't know!");
-						return;
-					}
-					this.agents[data.name]!.status = {
+					this.ensureAgent(data.name).status = {
 						type: 'running',
 						startTime: data.timestamp, // FIXME: make this actually correct
 						connectionStatus: { type: 'connected', communicationStatus: { type: 'thinking' } }
 					};
 					break;
 				case 'runtime_started':
-					if (!this.agents[data.name]) {
-						toast.warning("Got agent update about an agent we don't know!");
-						return;
-					}
-					this.agents[data.name]!.status = {
+					this.ensureAgent(data.name).status = {
 						type: 'running',
 						startTime: data.timestamp, // FIXME: make this actually correct
 						connectionStatus: { type: 'not_connected' }
 					};
 					break;
 				case 'runtime_stopped':
-					if (!this.agents[data.name]) {
-						toast.warning("Got agent update about an agent we don't know!");
-						return;
-					}
-					this.agents[data.name]!.status = {
+					this.ensureAgent(data.name).status = {
 						type: 'stopped'
 					};
 					break;
@@ -266,6 +257,7 @@ export class Session {
 	}
 
 	public close() {
+		this.destroyed = true;
 		this.socket.close();
 	}
 	public async kill() {
@@ -278,7 +270,7 @@ export class Session {
 			toast.info('Successfully killed session.');
 		}
 
-		this.connected = false; // this makes the socket's close toast not appear
+		this.connected = false;
 		this.close();
 	}
 }
