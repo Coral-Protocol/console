@@ -71,6 +71,7 @@
 	import Outline from './panes/Outline.svelte';
 	import SessionSettings from './panes/SessionSettings.svelte';
 	import NamespaceSwitcher from '$lib/components/namespace-switcher.svelte';
+	import { graphSelection } from '$lib/graphSelection.svelte';
 
 	const isShiftPressed = $derived(keys.has('Shift'));
 	const isMobile = new IsMobile();
@@ -257,6 +258,43 @@
 		a.click();
 		URL.revokeObjectURL(url);
 	}
+	async function duplicateFile() {
+		if (!activeFile.current) return;
+		const sourceData = activeFile.current;
+		const sourceMeta = activeFile.meta;
+
+		const newTab = await fileTabs.newTab();
+		if (sourceMeta) {
+			activeFile.updateMeta({
+				name: uniqueName(
+					`${sourceMeta.name} copy`,
+					Object.values(filesMeta.current).map((f) => f.name)
+				),
+				description: sourceMeta.description
+			});
+		}
+		activeFile.replace(sourceData);
+		toast.success('Duplicated file');
+	}
+
+	async function deleteCurrentFile() {
+		const id = activeFile.current?.id;
+		if (!id) return;
+
+		await deleteFileData(id);
+		await deleteFileDataDelta(id);
+		await fileTabs.closeFile(id, true);
+		delete filesMeta.current[id];
+		toast.success('File deleted');
+	}
+
+	async function renameCurrentFile() {
+		if (!activeFile.meta) return;
+		const next = window.prompt('Rename file', activeFile.meta.name ?? '');
+		if (next && next.trim()) {
+			activeFile.updateMeta({ name: next.trim() });
+		}
+	}
 </script>
 
 <svelte:window
@@ -284,7 +322,9 @@
 				<IconCircuity class="size-6" />
 				<Menubar.Trigger>File</Menubar.Trigger>
 				<Menubar.Content>
-					<Menubar.Item onclick={() => fileTabs.newTab()}>New File</Menubar.Item>
+					<Menubar.Item onclick={() => fileTabs.newTab()}>
+						New File <Menubar.Shortcut>⌘N</Menubar.Shortcut>
+					</Menubar.Item>
 					<Menubar.Sub disabled={fileTabs.recentFiles.length === 0}>
 						<Menubar.SubTrigger>Open Recent...</Menubar.SubTrigger>
 						<Menubar.SubContent
@@ -304,6 +344,21 @@
 							{/each}
 						</Menubar.SubContent>
 					</Menubar.Sub>
+					<Menubar.Item disabled>Import...</Menubar.Item>
+					<Menubar.Separator />
+					<Menubar.Item disabled={!activeFile.current} onclick={duplicateFile}>
+						Duplicate File
+					</Menubar.Item>
+					<Menubar.Item disabled={!activeFile.meta} onclick={renameCurrentFile}>
+						Rename...
+					</Menubar.Item>
+					<Menubar.Item
+						disabled={!activeFile.current}
+						class="text-destructive"
+						onclick={deleteCurrentFile}
+					>
+						Delete File
+					</Menubar.Item>
 					<Menubar.Separator />
 					<Menubar.Item
 						disabled={fileTabs.tabs.current.length <= 0}
@@ -314,39 +369,122 @@
 								fileTabs.closeFile(tab.id);
 							if (!fileTabs.tabs.current.find((t) => t.id === fileTabs.activeTab.current))
 								fileTabs.activeTab.current = '';
-						}}>Close all saved files</Menubar.Item
+						}}
 					>
+						Close all saved files
+					</Menubar.Item>
+					<Menubar.Item
+						disabled={!fileTabs.activeTab.current}
+						onclick={() => fileTabs.closeFile(fileTabs.activeTab.current)}
+					>
+						Close <Menubar.Shortcut>⌘W</Menubar.Shortcut>
+					</Menubar.Item>
 					<Menubar.Separator />
-					<Menubar.Item onclick={saveFile}>Save</Menubar.Item>
+					<Menubar.Item
+						disabled={activeFile.current ? !filesMeta.current[activeFile.current.id]?.edited : true}
+						onclick={saveFile}
+					>
+						Save <Menubar.Shortcut>⌘S</Menubar.Shortcut>
+					</Menubar.Item>
 					<Menubar.Item disabled>Save as</Menubar.Item>
-
 					<Menubar.Separator />
-
-					<Menubar.Item onclick={() => window.print()}>Print</Menubar.Item>
+					<Menubar.Item onclick={() => window.print()}>
+						Print <Menubar.Shortcut>⌘P</Menubar.Shortcut>
+					</Menubar.Item>
 				</Menubar.Content>
 			</Menubar.Menu>
+
 			<Menubar.Menu>
 				<Menubar.Trigger>Edit</Menubar.Trigger>
 				<Menubar.Content>
-					<!-- <Menubar.Item
-						disabled={!activeFile}
-						onclick={() => {
-							if (activeFile.meta?.id) {
-								activeFile && deleteFile(activeFile.meta.id);
-							}
-						}}>Delete File</Menubar.Item
-					> -->
+					<Menubar.Item disabled>Undo</Menubar.Item>
+					<Menubar.Item disabled>Redo</Menubar.Item>
+					<Menubar.Separator />
+					<Menubar.Item
+						disabled={!graphSelection.hasSelection}
+						onclick={() => graphSelection.copySelected()}
+					>
+						Copy
+					</Menubar.Item>
+					<Menubar.Item
+						disabled={!graphSelection.hasClipboard}
+						onclick={() => graphSelection.pasteClipboard()}
+					>
+						Paste
+					</Menubar.Item>
+					<Menubar.Item
+						disabled={!graphSelection.hasSelection}
+						onclick={() => graphSelection.duplicateSelected()}
+					>
+						Duplicate Selection
+					</Menubar.Item>
+					<Menubar.Separator />
+					<Menubar.Item
+						disabled={!graphSelection.hasSelection}
+						class="text-destructive"
+						onclick={() => graphSelection.deleteSelected()}
+					>
+						Delete Selection
+					</Menubar.Item>
 				</Menubar.Content>
 			</Menubar.Menu>
+
 			<Menubar.Menu>
 				<Menubar.Trigger>Selection</Menubar.Trigger>
 				<Menubar.Content>
-					<Menubar.Item disabled>Nothing selected</Menubar.Item>
+					<Menubar.Item onclick={() => graphSelection.selectAll()}>Select All</Menubar.Item>
+					<Menubar.Item
+						disabled={!graphSelection.hasSelection}
+						onclick={() => graphSelection.deselectAll()}
+					>
+						Deselect All
+					</Menubar.Item>
+					<Menubar.Item onclick={() => graphSelection.invertSelection()}>
+						Invert Selection
+					</Menubar.Item>
+					<Menubar.Separator />
+					<Menubar.Item disabled>
+						{graphSelection.selectedIds.length === 0
+							? 'Nothing selected'
+							: `${graphSelection.selectedIds.length} agent${graphSelection.selectedIds.length === 1 ? '' : 's'} selected`}
+					</Menubar.Item>
 				</Menubar.Content>
 			</Menubar.Menu>
+
 			<Menubar.Menu>
 				<Menubar.Trigger>View</Menubar.Trigger>
 				<Menubar.Content>
+					<Menubar.Item onclick={() => (workbenchTabView.current = 'Diagram')}>
+						Diagram
+					</Menubar.Item>
+					<Menubar.Item onclick={() => (workbenchTabView.current = 'Outline')}>
+						Outline
+					</Menubar.Item>
+					<Menubar.Item onclick={() => (workbenchTabView.current = 'Code')}>Code</Menubar.Item>
+					<Menubar.Separator />
+					<Menubar.Item onclick={() => (workbenchTabSide.current = 'Agents')}>
+						Agents Panel
+					</Menubar.Item>
+					<Menubar.Item onclick={() => (workbenchTabSide.current = 'Inspector')}>
+						Inspector Panel
+					</Menubar.Item>
+					<Menubar.Item onclick={() => (workbenchTabSide.current = 'Groups')}>
+						Groups Panel
+					</Menubar.Item>
+					<Menubar.Item onclick={() => (workbenchTabSide.current = 'Tools')}>
+						Tools Panel
+					</Menubar.Item>
+					<Menubar.Item onclick={() => (workbenchTabSide.current = 'Session')}>
+						Session Panel
+					</Menubar.Item>
+					<Menubar.Separator />
+					<Menubar.CheckboxItem
+						checked={debugMode.current}
+						onCheckedChange={(v: boolean) => (debugMode.current = v)}
+					>
+						Debug mode
+					</Menubar.CheckboxItem>
+					<Menubar.Separator />
 					<Menubar.Item
 						onclick={() => {
 							for (const tab of fileTabs.tabs.current.filter(
@@ -355,9 +493,10 @@
 								fileTabs.closeFile(tab.id);
 							if (!fileTabs.tabs.current.find((t) => t.id === fileTabs.activeTab.current))
 								fileTabs.activeTab.current = '';
-						}}>Close All Tabs</Menubar.Item
+						}}
 					>
-					<!-- need to make these tabs go visually first instead of one by one, leave that in the backend id say -->
+						Close All Tabs
+					</Menubar.Item>
 				</Menubar.Content>
 			</Menubar.Menu>
 		</Menubar.Root>

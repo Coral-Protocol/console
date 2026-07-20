@@ -23,6 +23,7 @@
 
 	import { mode } from 'mode-watcher';
 	import GraphCircleNode from './GraphCircleNode.svelte';
+	import { graphSelection } from '$lib/graphSelection.svelte';
 
 	import * as d3Force from 'd3-force';
 	import { cn, getInitials } from '$lib/utils';
@@ -99,6 +100,23 @@
 	onMount(() => {
 		window.addEventListener('pointerdown', capturePointerDown, true);
 		return () => window.removeEventListener('pointerdown', capturePointerDown, true);
+	});
+
+	onMount(() => {
+		graphSelection.register({
+			selectAll: selectAllNodes,
+			deselectAll: deselectAllNodes,
+			invertSelection: invertNodeSelection,
+			deleteSelected: deleteSelectedNodes,
+			duplicateSelected: duplicateSelectedNodes,
+			copySelected: copySelectedNodes,
+			pasteClipboard: pasteFromClipboard
+		});
+		return () => graphSelection.unregister();
+	});
+
+	$effect(() => {
+		graphSelection.selectedIds = nodes.filter((n) => n.selected).map((n) => n.id);
 	});
 
 	// todo: i hate how this (the above and below) is done
@@ -621,6 +639,95 @@
 			}
 		}
 	};
+
+	function selectedAgentIds(): string[] {
+		return nodes.filter((n) => n.selected).map((n) => n.id);
+	}
+
+	function selectAllNodes() {
+		nodes = nodes.map((n) => ({ ...n, selected: true }));
+	}
+
+	function deselectAllNodes() {
+		nodes = nodes.map((n) => ({ ...n, selected: false }));
+	}
+
+	function invertNodeSelection() {
+		nodes = nodes.map((n) => ({ ...n, selected: !n.selected }));
+	}
+
+	function deleteSelectedNodes() {
+		const ids = selectedAgentIds();
+		for (const id of ids) {
+			activeFile.removeAgent(id);
+			if (id === sessCtx.selectedAgentClientId) {
+				sessCtx.selectedAgentClientId = undefined;
+			}
+		}
+	}
+
+	// Clones the given agents into new ones, offsetting spawn position so
+	// they don't stack exactly on top of the originals. Mirrors the
+	// beforeIds-diff trick already used in addAgent() above, since
+	// activeFile.addAgent doesn't hand back the new clientId directly.
+	function cloneAgentsAt(agentIds: string[], offset: { x: number; y: number } = { x: 40, y: 40 }) {
+		const currentAgents = activeFile.current?.agents ?? [];
+		for (const id of agentIds) {
+			const source = currentAgents.find((a) => a.clientId === id);
+			const sourceNode = nodes.find((n) => n.id === id);
+			if (!source) continue;
+
+			const beforeIds = new Set((activeFile.current?.agents ?? []).map((a) => a.clientId));
+
+			const { clientId, ...rest } = source;
+			activeFile.addAgent(rest);
+
+			const newAgent = (activeFile.current?.agents ?? []).find((a) => !beforeIds.has(a.clientId));
+			if (newAgent && sourceNode) {
+				pendingPositions.set(newAgent.clientId, {
+					x: sourceNode.position.x + offset.x,
+					y: sourceNode.position.y + offset.y
+				});
+			}
+		}
+	}
+
+	function duplicateSelectedNodes() {
+		const ids = selectedAgentIds();
+		if (ids.length === 0) return;
+		cloneAgentsAt(ids);
+	}
+
+	// Clipboard is in-memory only, not the OS clipboard — pasting only works
+	// within this session/tab. Wiring real system clipboard would need the
+	// Clipboard API + a serialization format, which felt out of scope here.
+	function copySelectedNodes() {
+		const ids = selectedAgentIds();
+		const currentAgents = activeFile.current?.agents ?? [];
+		graphSelection.clipboard = ids
+			.map((id) => currentAgents.find((a) => a.clientId === id))
+			.filter((a): a is Agent => !!a)
+			.map((a) => {
+				const { clientId, ...rest } = a;
+				return $state.snapshot(rest);
+			});
+	}
+
+	function pasteFromClipboard() {
+		if (graphSelection.clipboard.length === 0) return;
+		const beforeIds = new Set((activeFile.current?.agents ?? []).map((a) => a.clientId));
+
+		for (const snapshot of graphSelection.clipboard) {
+			activeFile.addAgent(snapshot as Omit<Agent, 'clientId'>);
+		}
+
+		// Spawn pasted agents near the current viewport center with a small
+		// offset per item so they fan out instead of stacking.
+		const newAgents = (activeFile.current?.agents ?? []).filter((a) => !beforeIds.has(a.clientId));
+		newAgents.forEach((agent, i) => {
+			pendingPositions.set(agent.clientId, { x: i * 40, y: i * 40 });
+		});
+	}
 
 	const keys = new PressedKeys();
 	const IsShiftPressed = $derived(keys.has('Shift'));

@@ -411,6 +411,7 @@
 						></Select.Trigger
 					>
 					<Select.Content>
+						<Select.Label>Existing namespaces</Select.Label>
 						<Select.Item value="">All namespaces</Select.Item>
 
 						{#each ctx.server.namespaces as ns}
