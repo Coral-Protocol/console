@@ -19,7 +19,7 @@
 	import IconCircuity from 'phosphor-icons-svelte/IconCircuitryRegular.svelte';
 	import * as Resizable from '@coral-os/component-library/ui/resizable/index.js';
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
-	import { PressedKeys } from 'runed';
+	import { PersistedState, PressedKeys } from 'runed';
 
 	import IconCodeRegular from 'phosphor-icons-svelte/IconCodeRegular.svelte';
 	import IconTableRegular from 'phosphor-icons-svelte/IconTableRegular.svelte';
@@ -66,7 +66,7 @@
 	import { json } from '@sveltejs/kit';
 	import { SessionRequest } from '$generated/api.zod';
 	import { randomAdjective, randomAnimal, randomPlant } from '$lib/words';
-	import { fileTabs, uniqueName } from '$lib/fileTabs.svelte';
+	import { fileTabs, uniqueName, workbenchTabSide, workbenchTabView } from '$lib/fileTabs.svelte';
 	import Outline from './panes/Outline.svelte';
 	import SessionSettings from './panes/SessionSettings.svelte';
 	import NamespaceSwitcher from '$lib/components/namespace-switcher.svelte';
@@ -432,7 +432,10 @@
 							>
 								{#if mounted}
 									{#if fileTabs.tabs.current.length >= 1}
-										<Tabs.Root value="Diagram" class="relative h-full grow gap-0 overflow-hidden">
+										<Tabs.Root
+											bind:value={workbenchTabView.current}
+											class="relative h-full grow gap-0 overflow-hidden"
+										>
 											<header class="flex h-[85px] w-full items-center gap-4 border-b p-4">
 												<section class="flex min-w-0 flex-1 flex-col">
 													{#if activeFile.meta}
@@ -637,11 +640,8 @@
 							<Resizable.Pane defaultSize={35} minSize={10}>
 								<Resizable.PaneGroup direction="vertical">
 									<Resizable.Pane defaultSize={35} minSize={10}>
-										<Tabs.Root
-											value={sessCtx.selectedAgentClientId ? 'Inspector' : 'Agents'}
-											class="h-full grow gap-0"
-										>
-											<Tabs.List
+										<Tabs.Root bind:value={workbenchTabSide.current} class="h-full grow gap-0">
+										<Tabs.List
 												variant="line"
 												class="*:after:bg-brand-primary w-full justify-start border-b"
 											>

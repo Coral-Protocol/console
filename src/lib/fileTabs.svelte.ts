@@ -9,6 +9,13 @@ import {
 } from '$lib/fileStorage.svelte.js';
 import { activeFile } from '$lib/activeFile.svelte';
 
+export const workbenchTabView = new PersistedState<string>('workbench:tabView', 'Diagram', {
+	storage: 'session'
+});
+export const workbenchTabSide = new PersistedState<string>('workbench:tabSide', 'Agents', {
+	storage: 'session'
+});
+
 export type Tab = { id: string };
 
 export function uniqueName(base: string, existingNames: string[]): string {

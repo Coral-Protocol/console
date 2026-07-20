@@ -117,6 +117,7 @@
 		}
 
 		sessCtx.selectedAgentClientId = undefined;
+		workbenchTabSide.current = 'Agents';
 	}
 
 	const { setCenter, screenToFlowPosition, setViewport } = useSvelteFlow();
@@ -163,6 +164,7 @@
 	import { add } from 'date-fns';
 	import { PersistedState, PressedKeys } from 'runed';
 	import { debugMode } from '$lib/debugMode.svelte';
+	import { workbenchTabSide } from '$lib/fileTabs.svelte';
 
 	const agents = $derived(activeFile.current?.agents ?? []);
 	const groups = $derived(activeFile.current?.groups ?? []);
@@ -670,6 +672,7 @@
 		onnodedrag={handleNodeDrag}
 		onnodeclick={(nodes) => {
 			sessCtx.selectedAgentClientId = nodes.node.id;
+			workbenchTabSide.current = 'Inspector';
 		}}
 		onpaneclick={clearSelectedAgentIfNotInInput}
 		onselectiondragstop={handleSelectionDragStop}
