@@ -113,6 +113,8 @@ class FileTabs {
 			if (!hasData) {
 				const { [id]: _, ...rest } = filesMeta.current;
 				filesMeta.current = rest;
+			} else {
+				updateFileMeta(id, { edited: undefined });
 			}
 			await deleteFileDataDelta(id);
 
