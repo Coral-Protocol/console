@@ -134,10 +134,10 @@
   resolved "https://registry.yarnpkg.com/@commander-js/extra-typings/-/extra-typings-15.0.0.tgz#5ec61990250ddfe7d3a1c043878b68ba15b110d5"
   integrity sha512-yeJlba62xqmkgELUsn7356MEnzLLu/fw2x4lofFqGnXh6YysRdEs2BaLeLtg1+KU0AXvMeqQvTTp+3hBEBK+EA==
 
-"@coral-os/component-library@^2.5.0":
-  version "2.5.0"
-  resolved "https://registry.yarnpkg.com/@coral-os/component-library/-/component-library-2.5.0.tgz#4ebe654b2c184d352a7ddfba33e8738c2369d900"
-  integrity sha512-ipyO6adWfKpNnP1mrwAn74OhNcoS0GWJLz7c8HNYyEkoN4oONW8hgin0saRJyeXnYwIBDCSswhK83s6qGzEuMw==
+"@coral-os/component-library@^2.5.1":
+  version "2.5.1"
+  resolved "https://registry.yarnpkg.com/@coral-os/component-library/-/component-library-2.5.1.tgz#586ad69649d0afc752ab200cba21935456a25ba3"
+  integrity sha512-ioyIZDhNrYK9SEoeeCWi3vxGlAjyzf1vtYImquweVTZ0P1LREKbTh12qf/0CdjlHyL4vcSOiDSznYfgcEoDovA==
 
 "@emnapi/core@^1.4.3":
   version "1.4.5"
