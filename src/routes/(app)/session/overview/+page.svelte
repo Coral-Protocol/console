@@ -51,9 +51,10 @@
 				<p class="text-muted-foreground text-sm">Here's what's happening in your session.</p>
 			</section>
 
-			<section class="mt-4 flex grow flex-col">
-				<h2 class="text-sm font-semibold">Current Session</h2>
-				<SessionSwitcher class="my-0" />
+			<section class="flex h-full grow flex-col justify-between">
+				<h2 class="mt-2 text-sm font-semibold">Session ID</h2>
+				<span class="text-muted-foreground text-sm">{ctx.session?.sessionId}</span>
+				<!-- <SessionSwitcher class="my-0" /> -->
 			</section>
 
 			<section class="flex-col self-end">
@@ -216,7 +217,7 @@
 				</Card.Header>
 				<Card.Content class="size-full px-2">
 					<SvelteFlowProvider>
-						<Graph {agents} groups={[agents.map((a) => a.name)]} class="size-full" controls />
+						<Graph class="size-full" controls />
 					</SvelteFlowProvider>
 				</Card.Content>
 			</Card.Root>

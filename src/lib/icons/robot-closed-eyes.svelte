@@ -21,6 +21,6 @@
 	>
 		<rect width="18" height="12" x="2" y="13" rx="4" />
 		<circle cx="12" cy="6" r="2" />
-		<path d="M12 8v4m-3 8v-2m6 0v2" />
+		<path d="M12 8v4m-2 7h-2m6 0h2" />
 	</g>
 </svg>

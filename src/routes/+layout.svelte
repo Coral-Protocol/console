@@ -3,7 +3,6 @@
 	import { ModeWatcher } from 'mode-watcher';
 	import '../app.css';
 	import { TooltipProvider } from '@coral-os/component-library/components/ui/tooltip/index.js';
-	import { positionFixed } from '@unovis/ts/components/tooltip/style';
 
 	let { children } = $props();
 </script>
@@ -17,7 +16,8 @@
 	position="bottom-left"
 	toastOptions={{
 		classes: {
-			toast: '!rounded-none !w-[270px]'
+			toast: '!rounded-none !w-[270px]',
+			description: 'text-foreground/80! text-xs'
 		}
 	}}
 />

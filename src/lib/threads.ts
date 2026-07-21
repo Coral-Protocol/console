@@ -14,11 +14,12 @@ export type AgentOption = {
 } & ({ type: 'string'; default: string | null } | { type: 'number'; default: number | null });
 
 export type Agent = any; //components['schemas']['SessionAgent']; // FIXME: oub??
-export type PublicRegistryAgent = components['schemas']['PublicRegistryAgent'];
+export type RegistryAgent = components['schemas']['RegistryAgent'];
 export type Registry =
 	operations['getRegistryAgents']['responses']['200']['content']['application/json'];
 
-export const idAsKey = (id: PublicRegistryAgent['id']): string => `${id.name}${id.version}`;
+export const idAsKey = (id: RegistryAgent['info']['identifier']): string =>
+	`${id.name}${id.version}`;
 
 export type GraphAgentRequest = components['schemas']['GraphAgentRequest'];
 

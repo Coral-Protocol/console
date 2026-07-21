@@ -4,18 +4,33 @@
 	import type { OptionProps } from '../OptionField.svelte';
 
 	type Props = OptionProps<
-		'number' | 'i8' | 'i16' | 'i32' | 'i64' | 'u8' | 'u16' | 'u32' | 'u64' | 'f32' | 'f64'
+		'i8' | 'i16' | 'i32' | 'i64' | 'u8' | 'u16' | 'u32' | 'u64' | 'f32' | 'f64'
 	>;
 
-	let { meta, value, props, errors }: Props = $props();
+	let { meta, value, errored }: Props = $props();
 </script>
 
 <Input
-	{...props}
-	type={'number'}
-	bind:value={$value}
+	type="text"
+	inputmode="decimal"
+	required={meta.required}
+	value={$value}
+	pattern=""
 	class="m-0 w-full"
 	defaultValue={meta.default}
-	aria-invalid={errors.length > 0}
+	aria-invalid={errored}
 	placeholder={meta.default?.toString()}
+	onchange={(e: { currentTarget: HTMLInputElement }) => {
+		const input = e.currentTarget;
+
+		const inputValue = input.value;
+		const number = Number(inputValue);
+
+		if (inputValue === '') {
+			$value = null;
+			return;
+		}
+
+		value.set(inputValue !== '' && !Number.isNaN(number) ? number : inputValue);
+	}}
 />

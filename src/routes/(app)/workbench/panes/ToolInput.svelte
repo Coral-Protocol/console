@@ -1,61 +1,38 @@
 <script lang="ts">
-	import * as schemas from '$lib/sessionSchema';
-	import type { z } from 'zod';
-	import type { HTMLInputAttributes } from 'svelte/elements';
-	import * as store from 'svelte/store';
-	import { type SuperForm } from 'sveltekit-superforms';
-
-	import * as Form from '@coral-os/component-library/ui/form/index.js';
 	import { Input } from '@coral-os/component-library/ui/input/index.js';
+	import { Label } from '@coral-os/component-library/ui/label/index.js';
+	import { activeFile } from '$lib/activeFile.svelte';
 
-	type T = z.output<schemas.FormSchema>;
+	type Props = { id: string };
+	let { id }: Props = $props();
 
-	type Props = HTMLInputAttributes & {
-		superform: SuperForm<T>;
-		id: string;
-	};
-
-	let { superform: form, id, ...rest }: Props = $props();
-	const { form: formData, errors } = form;
-	let data = $derived(
-		store.toStore(
-			() => $formData.tools[id],
-			(tool) => {
-				if (!tool) return;
-				$formData.tools[id] = tool;
-			}
-		)
-	);
+	let tool = $derived(activeFile.current?.tools.find((t) => t.clientId === id));
+	let errors = $derived(activeFile.current?.errors?.tool?.[id] ?? {});
 </script>
 
-{#if $data}
-	<Form.Field {form} name="tools.{id}.name">
-		<Form.Control {...rest}>
-			{#snippet children({ props })}
-				<Form.Label>Name</Form.Label>
-				<Input {...props} bind:value={$data.name} />
-			{/snippet}
-		</Form.Control>
-		<Form.Description
-			>The name of the tool. This is NOT shown to the agents themselves.</Form.Description
-		>
-		<Form.FieldErrors />
-	</Form.Field>
-	<Form.Field {form} name="tools.{id}.transport.url">
-		<Form.Control {...rest}>
-			{#snippet children({ props })}
-				<Form.Label>URL</Form.Label>
-				<Input
-					{...props}
-					bind:value={$data.transport.url}
-					placeholder="http://my-app.com/api/custom-tools/my-tool"
-				/>
-			{/snippet}
-		</Form.Control>
-		<Form.Description
-			>The URL the server sends a POST request to, to get a response for the MCP tool call.</Form.Description
-		>
-		<Form.FieldErrors />
-	</Form.Field>
+{#if tool && id}
+	<div class="flex flex-col gap-1">
+		<Label for="tool-name-{id}">Name</Label>
+		<Input id="tool-name-{id}" bind:value={tool.name} />
+		<p class="text-muted-foreground text-xs">
+			The name of the tool. This is NOT shown to the agents themselves.
+		</p>
+		{#if errors['name']}
+			<span class="text-destructive text-xs">{errors['name'].message}</span>
+		{/if}
+	</div>
+	<div class="flex flex-col gap-1">
+		<Label for="tool-url-{id}">URL</Label>
+		<Input
+			id="tool-url-{id}"
+			bind:value={tool.transport.url}
+			placeholder="http://my-app.com/api/custom-tools/my-tool"
+		/>
+		<p class="text-muted-foreground text-xs">
+			The URL the server sends a POST request to, to get a response for the MCP tool call.
+		</p>
+		{#if errors['transport.url']}
+			<span class="text-destructive text-xs">{errors['transport.url'].message}</span>
+		{/if}
+	</div>
 {/if}
-<!-- {#if $errors}<span class="invalid">{$errors}</span>{/if} -->
