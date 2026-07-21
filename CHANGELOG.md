@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.17](https://github.com/Coral-Protocol/console/compare/v0.3.16...v0.3.17) (2026-07-21)
+
+
+### Features
+
+* new settings button ([#191](https://github.com/Coral-Protocol/console/issues/191)) ([2fd3884](https://github.com/Coral-Protocol/console/commit/2fd3884a0a4ebf5517feb3bfce1d93f760c3a6b0))
+* workbench v2 ([9b93294](https://github.com/Coral-Protocol/console/commit/9b93294455f54db46a08201d4c55e8774e958fe1))
+
 ## [0.3.16](https://github.com/Coral-Protocol/console/compare/v0.3.15...v0.3.16) (2026-06-24)
 
 
