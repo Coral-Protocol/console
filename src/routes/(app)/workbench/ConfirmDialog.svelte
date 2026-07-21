@@ -56,7 +56,7 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content>
+	<Dialog.Content class="z-51">
 		{#if mode === 'unsaved'}
 			<Dialog.Header>
 				<Dialog.Title>Do you want to save your changes?</Dialog.Title>

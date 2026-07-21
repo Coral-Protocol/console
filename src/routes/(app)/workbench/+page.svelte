@@ -74,6 +74,8 @@
 	import { graphSelection } from '$lib/graphSelection.svelte';
 	import Logo from '$lib/icons/logo.svelte';
 	import { base } from '$app/paths';
+	import FileExplorer from './FileExplorer.svelte';
+	let showFileExplorer = $state(false);
 
 	const isShiftPressed = $derived(keys.has('Shift'));
 	const isMobile = new IsMobile();
@@ -301,7 +303,6 @@
 		}
 	}}
 />
-
 <ConfirmDialog
 	bind:open={fileTabs.dialogOpen}
 	mode={fileTabs.dialogMode}
@@ -312,6 +313,7 @@
 	}}
 	deleteFile={(id: string | null) => fileTabs.deleteFile(id)}
 />
+<FileExplorer bind:open={showFileExplorer} />
 
 <section class=" flex h-full min-h-0 grow flex-col overflow-hidden p-2">
 	<header class="bg-card">
@@ -323,8 +325,12 @@
 					<Menubar.Item onclick={() => fileTabs.newTab()}>
 						New File <Menubar.Shortcut>⌘N</Menubar.Shortcut>
 					</Menubar.Item>
-					<Menubar.Sub disabled={fileTabs.recentFiles.length === 0}>
-						<Menubar.SubTrigger>Open Recent...</Menubar.SubTrigger>
+					<Menubar.Item onclick={() => (showFileExplorer = true)}>Open file...</Menubar.Item>
+					<Menubar.Sub>
+						<Menubar.SubTrigger disabled={fileTabs.recentFiles.length === 0}
+							>Open Recent</Menubar.SubTrigger
+						>
+
 						<Menubar.SubContent
 							align="start"
 							class="max-h-96 max-w-64 overflow-x-hidden overflow-y-auto"
@@ -387,8 +393,9 @@
 					<Menubar.Item disabled>Save as</Menubar.Item>
 					<Menubar.Separator />
 
-					<Menubar.Item onclick={() => downloadTab(fileTabs.activeTab.current)}
-						>Download</Menubar.Item
+					<Menubar.Item
+						disabled={!fileTabs.activeTab.current}
+						onclick={() => downloadTab(fileTabs.activeTab.current)}>Download</Menubar.Item
 					>
 					<Menubar.Separator />
 
