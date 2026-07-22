@@ -61,8 +61,8 @@
 							{#each group.agentClientIds as agentClientId}
 								{@const agent = agents.find((agent) => agent.clientId === agentClientId)}
 								<li>
-									<Badge variant="outline" class="h-fit justify-start pr-0.5"
-										>{agent?.name}
+									<Badge variant="outline" class="flex h-fit max-w-42 justify-start  pr-0.5"
+										><span class="min-w-0 grow truncate">{agent?.name}</span>
 										<Button
 											variant="ghost"
 											size="xs"
