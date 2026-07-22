@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.3.18](https://github.com/Coral-Protocol/console/compare/v0.3.17...v0.3.18) (2026-07-22)
+
+
+### Features
+
+* redesigned the way selection works, a lot more stable now ([6839806](https://github.com/Coral-Protocol/console/commit/6839806f8628730e0739d04c5f8c04c625104e10))
+* removed unused files, and removed homepage and replaced it with the workbench ([1b194d5](https://github.com/Coral-Protocol/console/commit/1b194d52b650c23fabb643657e9bbb94ca3a3f2e))
+* updated comp lib ver ([9fe89d5](https://github.com/Coral-Protocol/console/commit/9fe89d54937454272691780a2b7de63a9dcf512c))
+
+
+### Bug Fixes
+
+* group badge overflow ([ce3c8b6](https://github.com/Coral-Protocol/console/commit/ce3c8b6bd2d0078197d1f4722134bd6bd1a6cf65))
+* hydration for all ([e2a49b1](https://github.com/Coral-Protocol/console/commit/e2a49b1d1750cced30a85af2da5824809b58cf23))
+* selection quirks ([8f1f515](https://github.com/Coral-Protocol/console/commit/8f1f515bae9c4b4b98b4311c5953ee08e4b77306))
+* sessions namespace issues ([0edf468](https://github.com/Coral-Protocol/console/commit/0edf468d4419c2f6cd612521e6aa9ce86a382bc6))
+* titles ([56869c3](https://github.com/Coral-Protocol/console/commit/56869c315e4f1a2bbca2efaf3ec2eb13b643717c))
+
 ## [0.3.17](https://github.com/Coral-Protocol/console/compare/v0.3.16...v0.3.17) (2026-07-21)
 
 
