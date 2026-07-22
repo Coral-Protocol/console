@@ -16,7 +16,7 @@
 
 	let parent: any = $state();
 
-	let { data, id, positionAbsoluteX, positionAbsoluteY, dragging, selected }: NodeProps = $props();
+	let { data, id, positionAbsoluteX, positionAbsoluteY, dragging, selected,  }: NodeProps = $props();
 </script>
 
 <div class="ring-wrapper group relative h-30 w-30 rounded-full transition-all">
@@ -27,8 +27,8 @@
 text-[oklch(0.72_0.18_44.59)]
 	transition-all
 	dark:bg-[var(--xy-background-color-default)]
-	{selected && !data.selected && !dragging ? 'border-foreground!' : ''}
-	{data.selected ? 'border-brand-primary!' : ''}"
+	
+	{selected ? 'border-brand-primary!' : ''}"
 	>
 		<div
 			bind:this={parent}
@@ -74,12 +74,12 @@ text-[oklch(0.72_0.18_44.59)]
 		{#if debugMode.current === true}
 			{positionAbsoluteX}
 			{positionAbsoluteY}
-			{#if data.selected}
-				<NodeToolbar class="mb-8 bg-[var(--xy-background-color-default)] p-2 ">
+			{#if selected}
+				<NodeToolbar class="mb-8 max-w-96 bg-[var(--xy-background-color-default)] p-2 ">
 					{#each Object.entries(data) as [key, dataItem]}
 						<div class="flex flex-row justify-between gap-5 border-b">
 							<strong>{key}:</strong>
-							{dataItem}
+							<span class="max-w-max truncate">{dataItem}</span>
 						</div>
 					{/each}
 					<div class="flex flex-row justify-between gap-5 border-b">
@@ -112,21 +112,21 @@ text-[oklch(0.72_0.18_44.59)]
 			</Tooltip.Root>
 		{/if}
 
-		{#if data.selected || data.locked}
+		{#if selected || data.locked }
 			{#if !dragging || !isShiftPressed}
 				<Tooltip.Root>
 					<Tooltip.Trigger
 						class="group absolute top-0 left-0 z-10"
 						data-locked={data.locked}
-						data-selected={data.selected}
+						data-selected={selected}
 						onclick={() => {
-							if (data.selected && typeof data.onToggleLock === 'function') {
+							if (selected && typeof data.onToggleLock === 'function') {
 								data.onToggleLock(id, { x: positionAbsoluteX, y: positionAbsoluteY }, data.locked);
 							}
 						}}
 					>
 						<div
-							class="{data.selected
+							class="{selected
 								? 'bg-secondary'
 								: 'text-muted-foreground/70 bg-white dark:bg-[var(--xy-background-color-default)]'} flyIn flex h-8 w-8 items-center justify-center rounded-full text-center"
 						>
@@ -137,7 +137,7 @@ text-[oklch(0.72_0.18_44.59)]
 							{/if}
 						</div>
 					</Tooltip.Trigger>
-					<Tooltip.Content class={data.selected ? 'opacity-100' : 'opacity-0'}
+					<Tooltip.Content class={selected ? 'opacity-100' : 'opacity-0'}
 						>{data.locked ? 'Unlock position' : 'Lock position'}</Tooltip.Content
 					>
 				</Tooltip.Root>

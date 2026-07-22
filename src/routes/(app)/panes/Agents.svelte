@@ -55,7 +55,7 @@
 	let filteredCount = $derived(filtered.reduce((acc, cur) => acc + cur.agents.length, 0));
 	loading = false;
 
-	let selectedAgentClientId = $state<{
+	let selectedAgentIds = $state<{
 		agent: { name: string; versions: string[] };
 		details: Awaited<ReturnType<typeof ctx.server.lookupAgent>>;
 	} | null>(null);
@@ -163,7 +163,7 @@
 						<button
 							class="flex h-full max-h-32 min-h-28 w-full grow"
 							onclick={() => {
-								selectedAgentClientId = { agent, details };
+								selectedAgentIds = { agent, details };
 								dialogOpen = true;
 							}}
 							ondragstart={(event) =>
@@ -250,8 +250,8 @@
 
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Content class="bg-card h-full max-h-4/5 max-w-4/5! overflow-hidden" showClose={false}>
-		{#if selectedAgentClientId}
-			<AgentMarketView agent={selectedAgentClientId.agent} />
+		{#if selectedAgentIds}
+			<AgentMarketView agent={selectedAgentIds.agent} />
 		{/if}
 	</Dialog.Content>
 </Dialog.Root>

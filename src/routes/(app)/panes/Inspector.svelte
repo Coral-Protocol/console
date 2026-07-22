@@ -8,6 +8,9 @@
 	import { Input } from '@coral-os/component-library/ui/input/index.js';
 	import { Spinner } from '@coral-os/component-library/ui/spinner/index.js';
 	import { TooltipLabel, Combobox } from '@coral-os/component-library';
+	import { Separator } from '@coral-os/component-library/ui/separator/index.js';
+	import { useStore, useSvelteFlow } from '@xyflow/svelte';
+
 	import * as Tabs from '@coral-os/component-library/ui/tabs/index.js';
 
 	import OptionField from '../OptionField.svelte';
@@ -26,10 +29,13 @@
 	import { Button } from '@coral-os/component-library/components/ui/button/index.js';
 	import IconRobot from '$lib/icons/robot.svelte';
 	import AgentBudget from './AgentBudget.svelte';
-
+	import { randomAdjective, randomPlant } from '$lib/words';
 
 	let ctx = appContext.get();
 	let sessCtx = getSessionContext();
+
+	const store = useStore();
+	let selectedNodes = $derived(store.selectedNodes);
 
 	const getOptions = async (agentId?: RegistryAgentIdentifier | null) => {
 		if (!agentId) return null;
@@ -45,8 +51,8 @@
 	};
 
 	const sessionAgentObject = $derived(
-		sessCtx.selectedAgentClientId !== null
-			? activeFile.current?.agents.find((agent) => agent.clientId === sessCtx.selectedAgentClientId)
+		selectedNodes !== null
+			? activeFile.current?.agents.find((agent) => agent.clientId === selectedNodes[0]?.id)
 			: undefined
 	);
 
@@ -61,9 +67,11 @@
 
 	$effect(() => {
 		const key = agentKey;
+		const dragging = sessCtx.graphSelectionDragging;
+		const selectedCount = selectedNodes.length ?? 0;
 		let cancelled = false;
 
-		if (!key) {
+		if (dragging || selectedCount !== 1 || !key) {
 			agentLookup = null;
 			return;
 		}
@@ -106,7 +114,7 @@
 	});
 
 	function updateAgentField(destination: keyof Omit<Agent, 'clientId'>, value: unknown) {
-		const id = sessCtx.selectedAgentClientId;
+		const id = selectedNodes[0]?.id;
 		if (!id) return;
 		activeFile.updateAgent(id, { [destination]: value });
 	}
@@ -119,7 +127,70 @@
 
 {#if optionsLoading}
 	<Spinner class="m-auto my-8" />
-{:else if sessionAgentObject && sessCtx.selectedAgentClientId}
+{:else if selectedNodes && (sessCtx.graphSelectionDragging || selectedNodes.length > 1)}
+	<Card.Root class="bg-muted/50 m-2">
+		<Card.Content class="flex flex-col gap-2 text-center">
+			<p class="font-medium">{selectedNodes.length} agents selected</p>
+			<span class="text-muted-foreground text-xs">
+				Select a single agent to view and edit its configuration.
+			</span>
+
+			<ol class="flex gap-2">
+				<li>
+					<Button
+						variant="outline"
+						onclick={() => {
+							activeFile.addGroup({
+								name: `${randomAdjective()} ${randomPlant()}`,
+								agentClientIds: selectedNodes.map((n) => n.id)
+							});
+						}}
+					>
+						Group selected agents
+					</Button>
+				</li>
+				<li>
+					<Button
+						variant="outline"
+						onclick={() => {
+							store.addSelectedNodes([]);
+						}}
+					>
+						Deselect all
+					</Button>
+				</li>
+				<li>
+					<Button
+						variant="destructive"
+						onclick={() => {
+							for (const node of selectedNodes) activeFile.removeAgent(node.id);
+						}}>Delete selected agents</Button
+					>
+				</li>
+			</ol>
+		</Card.Content>
+	</Card.Root>
+	{#if activeFile.current?.agents.length}
+		<ol class="grid w-full max-w-full grid-cols-[repeat(auto-fit,minmax(5rem,6rem))] gap-2 p-2">
+			{#each activeFile.current.agents.filter( (agent) => selectedNodes.some((node) => node.id === agent.clientId) ) as agent}
+				<li class="aspect-square">
+					<Button
+						variant="outline"
+						onclick={() => {
+							store.addSelectedNodes([]), store.handleNodeSelection(agent.clientId);
+						}}
+						class="flex h-full w-full flex-col items-center justify-center gap-1 p-2 text-center"
+					>
+						<IconRobot class="size-8" />
+						<p class="w-full text-xs leading-tight break-words whitespace-normal">
+							{agent.name}
+						</p>
+					</Button>
+				</li>
+			{/each}
+		</ol>
+	{/if}
+{:else if sessionAgentObject && selectedNodes}
 	{@const id = sessionAgentObject.id}
 	{@const provider = sessionAgentObject.provider}
 	{@const tools = sessionAgentObject.customToolAccess ?? []}
@@ -239,6 +310,7 @@
 			class="text-muted-foreground m-auto flex h-full w-full grow flex-col items-center justify-center gap-6 text-center"
 		>
 			<AgentPanelIcon class="w-4/5 py-8" />
+			<span class="text-muted-foreground animate-pulse">release to load agent configuration</span>
 		</section>
 	{:else}
 		<Tabs.Root value="Options" class="gap-0">
@@ -292,7 +364,7 @@
 				</ol>
 			</Tabs.Content>
 			<Tabs.Content value="Budget" class="p-2">
-				<AgentBudget/>
+				<AgentBudget />
 			</Tabs.Content>
 		</Tabs.Root>
 	{/if}
@@ -312,7 +384,7 @@
 				<li>
 					<Button
 						variant="outline"
-						onclick={() => (sessCtx.selectedAgentClientId = agent.clientId)}
+						onclick={() => store.handleNodeSelection(agent.clientId)}
 						class="h-12 w-full grow justify-start"
 					>
 						<IconRobot class="size-8" />

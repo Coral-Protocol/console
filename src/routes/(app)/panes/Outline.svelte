@@ -4,6 +4,8 @@
 	import { Badge } from '@coral-os/component-library/ui/badge/index.js';
 	import { getSessionContext } from '$lib/sessionCreatorContext';
 	let sessCtx = getSessionContext();
+	import { useStore } from '@xyflow/svelte';
+	const store = useStore();
 </script>
 
 <Table.Root>
@@ -21,9 +23,9 @@
 			{#each activeFile.current.agents as agent}
 				<Table.Row
 					onclick={() => {
-						sessCtx.selectedAgentClientId = agent.clientId;
+						store.handleNodeSelection(agent.clientId);
 					}}
-					class={sessCtx.selectedAgentClientId === agent.clientId ? 'bg-muted/50' : ''}
+					class={sessCtx.selectedAgentIds.includes(agent.clientId) ? 'bg-muted/50' : ''}
 				>
 					<Table.Cell class="max-w-[160px] truncate font-medium">
 						{agent.name}

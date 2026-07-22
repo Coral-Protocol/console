@@ -4,7 +4,7 @@
 
 	import { format, formatDistanceToNow } from 'date-fns';
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
-	import { SvelteFlowProvider } from '@xyflow/svelte';
+	import { SvelteFlowProvider, useOnSelectionChange } from '@xyflow/svelte';
 	import { toast } from 'svelte-sonner';
 	import { toggleMode } from 'mode-watcher';
 
@@ -83,9 +83,10 @@
 	let ctx = appContext.get();
 
 	let sessCtx = $state({
-		selectedAgentClientId: undefined,
-		availableAgents: null
-	}) as SessionCreatorContext;
+		selectedAgentIds: [],
+		availableAgents: null,
+		graphSelectionDragging: false
+	}) as unknown as SessionCreatorContext;
 
 	setSessionContext(sessCtx);
 
@@ -811,7 +812,7 @@
 														<span>tab id: {fileTabs.activeTab.current}</span>
 
 														<Separator />
-														<span>selected agent client id: {sessCtx.selectedAgentClientId}</span>
+														<span>selected agent client id: {sessCtx.selectedAgentIds}</span>
 														<span>file agents: {activeFile.current?.agents.length}</span>
 													</section>
 												{/if}

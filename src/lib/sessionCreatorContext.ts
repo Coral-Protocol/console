@@ -8,7 +8,8 @@ export type SessionCreatorContext = {
 	importSession: (options: { success?: string; from: string }) => boolean;
 	addAgent: (name: string, source: AgentSource, version: string) => Promise<void>;
 
-	selectedAgentClientId: string | undefined;
+	selectedAgentIds: string[];
+	graphSelectionDragging: boolean;
 	// detailedAgent: Awaited<ReturnType<CoralServer['lookupAgent']>> | null;
 	availableAgents:
 		| {

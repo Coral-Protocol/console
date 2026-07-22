@@ -13,7 +13,9 @@
 		type Viewport,
 		type OnDelete,
 		MiniMap,
-		Controls
+		Controls,
+		useOnSelectionChange,
+		useStore
 	} from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
 	import * as d3Force from 'd3-force';
@@ -167,7 +169,7 @@
 		) {
 			return;
 		}
-		sessCtx.selectedAgentClientId = undefined;
+		sessCtx.selectedAgentIds = [];
 		workbenchTabSide.current = 'Agents';
 	}
 
@@ -244,7 +246,7 @@
 					viewOnly,
 					index,
 					locked: nodeData?.locked ?? false,
-					selected: agent.clientId === sessCtx.selectedAgentClientId,
+					selected: agent.clientId === sessCtx.selectedAgentIds[0],
 					hue: hueFromString(agent.clientId),
 					onToggleLock: handleToggleLock,
 					errors
@@ -260,7 +262,13 @@
 
 	let nodes = $state.raw<AgentNode[]>([]);
 	$effect(() => {
-		nodes = data.nodes;
+		const prevById = new Map(untrack(() => nodes).map((n) => [n.id, n]));
+		nodes = data.nodes.map((n) => {
+			const prev = prevById.get(n.id);
+			return prev
+				? { ...n, selected: prev.selected, position: prev.dragging ? prev.position : n.position }
+				: n;
+		});
 	});
 	let edges = $derived<AgentEdge[]>(data.edges);
 
@@ -567,8 +575,8 @@
 	const deleteData: OnDelete<AgentNode, AgentEdge> = ({ nodes: deletedNodes }) => {
 		for (const node of deletedNodes) {
 			activeFile.removeAgent(node.id);
-			if (node.id === sessCtx.selectedAgentClientId) {
-				sessCtx.selectedAgentClientId = undefined;
+			if (node.id === sessCtx.selectedAgentIds[0]) {
+				sessCtx.selectedAgentIds = [];
 			}
 		}
 	};
@@ -590,8 +598,8 @@
 	function deleteSelectedNodes() {
 		for (const id of selectedAgentIds()) {
 			activeFile.removeAgent(id);
-			if (id === sessCtx.selectedAgentClientId) {
-				sessCtx.selectedAgentClientId = undefined;
+			if (id === sessCtx.selectedAgentIds[0]) {
+				sessCtx.selectedAgentIds = [];
 			}
 		}
 	}
@@ -686,27 +694,30 @@
 		fitView
 		ondelete={deleteData}
 		ondrop={onDrop}
+		onselectionstart={() => {
+			sessCtx.graphSelectionDragging = true;
+		}}
+		onselectionend={() => {
+			sessCtx.graphSelectionDragging = false;
+		}}
 		ondragleave={onDragLeave}
 		onpanecontextmenu={handleContextMenu}
 		onnodecontextmenu={handleNodeContextMenu}
 		onnodedrag={handleNodeDrag}
-		onnodeclick={(nodes) => {
-			sessCtx.selectedAgentClientId = nodes.node.id;
-			workbenchTabSide.current = 'Inspector';
-		}}
-		onpaneclick={clearSelectedAgentIfNotInInput}
 		onselectiondragstop={handleSelectionDragStop}
 		onselectioncontextmenu={handleSelectionContextMenu}
 		selectNodesOnDrag={false}
 		snapGrid={[20, 20]}
 		maxZoom={2}
 		minZoom={0.5}
-		onselectionstart={() => (sessCtx.selectedAgentClientId = undefined)}
 		selectionOnDrag={true}
 		edgesFocusable={false}
 		panOnDrag={[1]}
 		elevateNodesOnSelect={false}
 		onnodedragstop={handleNodeDragStop}
+		onselectionchange={({ nodes }) => {
+			sessCtx.selectedAgentIds = nodes.map((node) => node.id);
+		}}
 		defaultEdgeOptions={{ selectable: false, focusable: false }}
 		autoPanOnNodeDrag={false}
 		connectionMode={'loose' as ConnectionMode}

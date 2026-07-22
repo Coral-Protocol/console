@@ -10,12 +10,14 @@
 	import { getSessionContext } from '$lib/sessionCreatorContext';
 	import { activeFile } from '$lib/activeFile.svelte';
 	import type { Agent } from '$lib/fileStorage.svelte';
+	import { useStore } from '@xyflow/svelte';
 
 	let sessCtx = getSessionContext();
-
+	const store = useStore();
+	let selectedNodes = $derived(store.selectedNodes);
 	const sessionAgentObject = $derived(
-		sessCtx.selectedAgentClientId !== null
-			? activeFile.current?.agents.find((agent) => agent.clientId === sessCtx.selectedAgentClientId)
+		selectedNodes !== null
+			? activeFile.current?.agents.find((agent) => agent.clientId === selectedNodes[0]?.id)
 			: undefined
 	);
 
@@ -23,7 +25,7 @@
 	const exhaustionBehavior = $derived(budgetSettings?.exhaustionBehavior);
 
 	function patchBudgetSettings(patch: Partial<NonNullable<Agent['budgetSettings']>>) {
-		const clientId = sessCtx.selectedAgentClientId;
+		const clientId = sessCtx.selectedAgentIds[0];
 		if (!clientId || !sessionAgentObject) return;
 		activeFile.updateAgent(clientId, {
 			budgetSettings: {
@@ -35,7 +37,7 @@
 
 	function setBudget(micro: number) {
 		if (micro === 0) {
-			const clientId = sessCtx.selectedAgentClientId;
+			const clientId = sessCtx.selectedAgentIds[0];
 			if (!clientId || !sessionAgentObject) return;
 			const next = { ...sessionAgentObject.budgetSettings };
 			delete next.budget;
