@@ -514,10 +514,10 @@
 					variant="ghost"
 					onclick={() => (openQuickswitch = true)}
 				>
-					<div class="text-muted-foreground flex items-center gap-2">
+					<span class="text-muted-foreground flex items-center gap-2">
 						<IconSearch />
 						<span class="text-sm">Search</span>
-					</div>
+					</span>
 					<Kbd.Group>
 						<Kbd.Root>CTRL</Kbd.Root>
 						<Kbd.Root>K</Kbd.Root>
@@ -566,84 +566,90 @@
 			>
 				{#each fileTabs.tabs.current as tab, i}
 					<ContextMenu.Root>
-						<ContextMenu.Trigger
-							draggable="true"
-							class="group relative flex h-full w-fit max-w-64 min-w-24 truncate overflow-hidden *:border-l-0!"
-							ondragstart={() => {
-								draggedIndex = i;
-							}}
-							ondragover={(e: { preventDefault: () => void }) => {
-								e.preventDefault();
-							}}
-							ondrop={() => {
-								if (draggedIndex !== null) {
-									moveTab(draggedIndex, i);
-								}
-								draggedIndex = null;
-							}}
-							ondragend={() => {
-								draggedIndex = null;
-							}}
-						>
-							<Tooltip.Provider delayDuration={700}>
-								<Tooltip.Root>
-									<Tooltip.Trigger>
-										{#snippet child({ props }: any)}
-											<Tabs.Trigger
-												{...props}
-												value={tab.id}
-												onpointerdown={(e: PointerEvent) => {
-													if (e.button !== 0) e.preventDefault();
-												}}
-												onauxclick={(e: MouseEvent) => {
-													if (e.button === 1) fileTabs.closeFile(tab.id);
-												}}
-												class="not-data-active:bg-background/80! not-data-active:hover:bg-card! peer data-active:border-t-brand-primary! w-full grow justify-start overflow-hidden pr-8"
-												><span class="truncate {filesMeta.current[tab.id]?.edited ? 'italic' : ''}"
-													>{filesMeta.current[tab.id]?.name ?? ''}
-												</span></Tabs.Trigger
-											>
-										{/snippet}
-									</Tooltip.Trigger>
-									<Tooltip.Content>
-										<p>
-											{filesMeta.current[tab.id]?.name ?? ''}
-											{#if filesMeta.current[tab.id]?.edited}
-												<span class="text-muted-foreground text-xs">(unsaved)</span>
-											{/if}
-										</p>
-									</Tooltip.Content>
-								</Tooltip.Root>
+						<ContextMenu.Trigger>
+							{#snippet child({ props }: any)}
+								<div
+									{...props}
+									draggable="true"
+									class="group relative flex h-full w-fit max-w-64 min-w-24 truncate overflow-hidden *:border-l-0!"
+									ondragstart={() => {
+										draggedIndex = i;
+									}}
+									ondragover={(e: { preventDefault: () => void }) => {
+										e.preventDefault();
+									}}
+									ondrop={() => {
+										if (draggedIndex !== null) {
+											moveTab(draggedIndex, i);
+										}
+										draggedIndex = null;
+									}}
+									ondragend={() => {
+										draggedIndex = null;
+									}}
+								>
+									<Tooltip.Provider delayDuration={700}>
+										<Tooltip.Root>
+											<Tooltip.Trigger>
+												{#snippet child({ props }: any)}
+													<Tabs.Trigger
+														{...props}
+														value={tab.id}
+														onpointerdown={(e: PointerEvent) => {
+															if (e.button !== 0) e.preventDefault();
+														}}
+														onauxclick={(e: MouseEvent) => {
+															if (e.button === 1) fileTabs.closeFile(tab.id);
+														}}
+														class="not-data-active:bg-background/80! not-data-active:hover:bg-card! peer data-active:border-t-brand-primary! w-full grow justify-start overflow-hidden pr-8"
+														><span
+															class="truncate {filesMeta.current[tab.id]?.edited ? 'italic' : ''}"
+															>{filesMeta.current[tab.id]?.name ?? ''}
+														</span></Tabs.Trigger
+													>
+												{/snippet}
+											</Tooltip.Trigger>
+											<Tooltip.Content>
+												<p>
+													{filesMeta.current[tab.id]?.name ?? ''}
+													{#if filesMeta.current[tab.id]?.edited}
+														<span class="text-muted-foreground text-xs">(unsaved)</span>
+													{/if}
+												</p>
+											</Tooltip.Content>
+										</Tooltip.Root>
 
-								<Tooltip.Root>
-									<Tooltip.Trigger>
-										{#snippet child({ props }: any)}
-											<Button
-												{...props}
-												variant="ghost"
-												class="group-hover:text-foreground group/button peer-data-active:text-foreground hover:bg-card-foreground/20! absolute top-0 right-1.5 bottom-0 my-auto aspect-auto size-6 -translate-0 text-transparent "
-												onclick={() => fileTabs.closeFile(tab.id)}
-												><IconXRegular
-													class="peer absolute top-0 bottom-0 m-auto size-4 {filesMeta.current[
-														tab.id
-													]?.edited
-														? 'opacity-0 group-hover/button:opacity-100'
-														: ''}"
-												/>
-												<IconCircle
-													class="absolute top-0 bottom-0 m-auto size-2.5 opacity-0 {filesMeta
-														.current[tab.id]?.edited
-														? 'text-foreground/80 opacity-100 group-hover/button:opacity-0'
-														: ''}"
-												/></Button
-											>
-										{/snippet}
-									</Tooltip.Trigger>
-									<Tooltip.Content sideOffset={4}>
-										<p>close</p>
-									</Tooltip.Content>
-								</Tooltip.Root>
-							</Tooltip.Provider>
+										<Tooltip.Root>
+											<Tooltip.Trigger>
+												{#snippet child({ props }: any)}
+													<Button
+														{...props}
+														variant="ghost"
+														class="group-hover:text-foreground group/button peer-data-active:text-foreground hover:bg-card-foreground/20! absolute top-0 right-1.5 bottom-0 my-auto aspect-auto size-6 -translate-0 text-transparent "
+														onclick={() => fileTabs.closeFile(tab.id)}
+														><IconXRegular
+															class="peer absolute top-0 bottom-0 m-auto size-4 {filesMeta.current[
+																tab.id
+															]?.edited
+																? 'opacity-0 group-hover/button:opacity-100'
+																: ''}"
+														/>
+														<IconCircle
+															class="absolute top-0 bottom-0 m-auto size-2.5 opacity-0 {filesMeta
+																.current[tab.id]?.edited
+																? 'text-foreground/80 opacity-100 group-hover/button:opacity-0'
+																: ''}"
+														/></Button
+													>
+												{/snippet}
+											</Tooltip.Trigger>
+											<Tooltip.Content sideOffset={4}>
+												<p>close</p>
+											</Tooltip.Content>
+										</Tooltip.Root>
+									</Tooltip.Provider>
+								</div>
+							{/snippet}
 						</ContextMenu.Trigger>
 						<ContextMenu.Content>
 							<ContextMenu.Item onclick={() => fileTabs.closeFile(tab.id)}>Close</ContextMenu.Item>
@@ -1017,9 +1023,7 @@
 										>
 										{#if activeFile.current?.errors}
 											<Tooltip.Root>
-												<Tooltip.Trigger>
-													<Button>!</Button>
-												</Tooltip.Trigger>
+												<Tooltip.Trigger>!</Tooltip.Trigger>
 												<Tooltip.Content>Session request body contains errors</Tooltip.Content>
 											</Tooltip.Root>
 										{/if}

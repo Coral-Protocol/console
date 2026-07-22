@@ -207,7 +207,7 @@
 			}
 			if (k === 'n') {
 				if (window.location.pathname !== `${base}/workbench`) {
-					goto(`${base}/workbench`);
+					goto(`${base}/`);
 					toast.info('Navigated to session creation page');
 				}
 				return;
@@ -323,25 +323,23 @@
 
 		<Sidebar.Group class="">
 			<Sidebar.GroupLabel class="text-muted-foreground">Sessions</Sidebar.GroupLabel>
-			<Sidebar.GroupAction class="text-muted-foreground aspect-auto w-fit text-sm">
-				<Select.Root type="single" bind:value={ctx.server.namespace}>
-					<Select.Trigger
-						class="h-6! w-fit max-w-[140px] justify-start overflow-hidden border-0 bg-transparent! p-1 text-left shadow-none"
-						><span class="truncate"
-							>{ctx.server.namespace ? ctx.server.namespace : 'All namespaces'}</span
-						></Select.Trigger
-					>
-					<Select.Content>
-						<Select.Label>Existing namespaces</Select.Label>
-						<Select.Item value="">All namespaces</Select.Item>
-						<Select.Item value="default">default</Select.Item>
+			<Select.Root type="single" bind:value={ctx.server.namespace}>
+				<Select.Trigger
+					class=" absolute top-3.5 right-3 flex aspect-auto h-6! w-fit max-w-[140px] items-center justify-start overflow-hidden rounded-md border-0 p-1 text-left text-sm shadow-none outline-hidden transition-transform not-hover:bg-transparent! focus-visible:ring-2 md:after:hidden "
+					><span class="truncate"
+						>{ctx.server.namespace ? ctx.server.namespace : 'All namespaces'}</span
+					></Select.Trigger
+				>
+				<Select.Content>
+					<Select.Label>Existing namespaces</Select.Label>
+					<Select.Item value="">All namespaces</Select.Item>
+					<Select.Item value="default">default</Select.Item>
 
-						{#each namespaces as ns}
-							<Select.Item value={ns}>{ns}</Select.Item>
-						{/each}
-					</Select.Content>
-				</Select.Root>
-			</Sidebar.GroupAction>
+					{#each namespaces as ns}
+						<Select.Item value={ns}>{ns}</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
 
 			<Sidebar.GroupContent class="">
 				<div use:tourTarget={'session-section'} class="h-full">

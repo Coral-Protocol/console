@@ -39,7 +39,7 @@
 			</DropdownMenu.Item>
 		{/if}
 		<DropdownMenu.Item
-			onclick={() => window.open(`${base}/workbench?agents=${source}:${name}@${version}`, '_blank')}
+			onclick={() => window.open(`${base}/?agents=${source}:${name}@${version}`, '_blank')}
 		>
 			Add to new session
 		</DropdownMenu.Item>
