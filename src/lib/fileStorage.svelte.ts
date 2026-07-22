@@ -502,7 +502,7 @@ export function defaultFileData(id: string): FileData {
 			runtimeSettings: {
 				extendedEndReport: true,
 				persistenceMode: { mode: 'hold_after_exit', duration: 1800000 },
-				ttl: 50000
+				ttl: 3600000
 			}
 		},
 		budgetSettings: {

@@ -77,10 +77,7 @@
 
 {#if activeFile.current && budgetSettings}
 	<section class="flex flex-col gap-2">
-		<p>
-			The Session Budget is a shared pool of funds used across all agents in the session. Agents
-			with their own budget settings will not take from this balance unless configured to do so.
-		</p>
+
 
 		<div class="flex items-center gap-2">
 			<TooltipLabel

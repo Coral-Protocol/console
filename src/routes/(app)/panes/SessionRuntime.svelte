@@ -30,8 +30,6 @@
 
 {#if activeFile.current && runtimeSettings}
 	<section class="flex flex-col gap-2">
-		<p>If specified, the session will never live longer than this duration.</p>
-
 		<div class="flex items-center gap-2">
 			<TooltipLabel
 				title="Time to live (TTL)"

@@ -410,11 +410,11 @@
 													<Accordion.Trigger class="group/item gap-2 truncate p-1 text-sm">
 														<IconSession class="size-5" />
 
-														<span class="grow truncate">
+														<span class="truncate">
 															{session.annotations?.sessionName ?? session.id}
-															<span class="text-muted-foreground text-xs">
-																{sessionNameCount(session.annotations?.sessionName, session.id)}
-															</span>
+														</span>
+														<span class="text-muted-foreground grow text-xs">
+															{sessionNameCount(session.annotations?.sessionName, session.id)}
 														</span>
 														<Tooltip.Root>
 															<Tooltip.Trigger>
