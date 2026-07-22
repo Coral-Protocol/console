@@ -158,7 +158,7 @@
 					<div class="bg-card/50 h-[42px] w-full border"></div>
 				{:then details}
 					<li
-						class="group hover:dark:bg-ring/20 p- relative flex w-full items-start gap-3 overflow-hidden border-b"
+						class="group hover:dark:bg-ring/20 p- relative flex w-full items-start gap-3 overflow-hidden not-last:border-b"
 					>
 						<button
 							class="flex h-full max-h-32 min-h-28 w-full grow"

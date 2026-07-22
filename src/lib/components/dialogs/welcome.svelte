@@ -56,7 +56,7 @@
 
 <Dialog.Root bind:open>
 	<Dialog.Content
-		class="mx-auto flex h-fit w-4xl max-w-full! flex-col overflow-hidden  sm:max-w-fit! "
+		class="mx-auto flex h-fit w-4xl max-w-full! flex-col overflow-hidden sm:max-w-fit! "
 	>
 		<Dialog.Header>
 			<Dialog.Title class="text-xl font-semibold">Welcome to Coral Console</Dialog.Title>

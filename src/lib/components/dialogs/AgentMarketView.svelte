@@ -92,7 +92,7 @@
 				<span class="flex gap-4">
 					<Avatar.Root class="size-16">
 						<Avatar.Image class="bg-cover object-cover" />
-						<Avatar.Fallback class="bg-brand-primary text-primary-foreground  text-lg">
+						<Avatar.Fallback class="bg-brand-primary text-primary-foreground text-lg">
 							...</Avatar.Fallback
 						>
 					</Avatar.Root>
@@ -184,7 +184,7 @@
 							src={details.extension?.iconUrl}
 							alt={details.registryAgent.info.identifier.name.charAt(0).toUpperCase()}
 						/>
-						<Avatar.Fallback class="bg-brand-primary text-primary-foreground  text-lg">
+						<Avatar.Fallback class="bg-brand-primary text-primary-foreground text-lg">
 							{details.registryAgent.info.identifier.name.charAt(0).toUpperCase()}</Avatar.Fallback
 						>
 					</Avatar.Root>

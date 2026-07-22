@@ -5,11 +5,12 @@ export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
 }
 
-export const dollarFmt = new Intl.NumberFormat(undefined, {
+const dollarFmt = new Intl.NumberFormat(undefined, {
 	style: 'currency',
 	currency: 'usd',
 	currencyDisplay: 'narrowSymbol'
 });
+
 export const fmtMicrocents = (microcents: number): string => {
 	return dollarFmt.format(microcents / 100_000_000);
 };
@@ -20,10 +21,6 @@ export type WithoutChild<T> = T extends { child?: any } ? Omit<T, 'child'> : T;
 export type WithoutChildren<T> = T extends { children?: any } ? Omit<T, 'children'> : T;
 export type WithoutChildrenOrChild<T> = WithoutChildren<WithoutChild<T>>;
 export type WithElementRef<T, U extends HTMLElement = HTMLElement> = T & { ref?: U | null };
-
-export const unreachable = (t: never): never => {
-	throw new Error(`unreachable - ${t}`);
-};
 
 export function getInitials(str: string | string[]) {
 	const dash = str.indexOf('-');

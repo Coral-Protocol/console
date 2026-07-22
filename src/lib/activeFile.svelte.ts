@@ -36,6 +36,13 @@ function logGroup<T>(label: string, fn: () => T): T {
 	return result;
 }
 
+function getRandomIntInclusive(min: number, max: number) {
+	const minCeiled = Math.ceil(min);
+	const maxFloored = Math.floor(max);
+	const result = Math.floor(Math.random() * (maxFloored - minCeiled + 1) + minCeiled);
+	return result;
+}
+
 class ActiveFileStore {
 	current = $state<FileData | null>(null);
 	meta = $state<FileMeta | null>(null);
@@ -133,7 +140,14 @@ class ActiveFileStore {
 
 	addGroup(group: Omit<Group, 'clientId'>) {
 		if (!this.current) return;
-		const newGroup: Group = { ...group, clientId: crypto.randomUUID() };
+		const groupIndex = this.current.groups.length;
+		const hue = (groupIndex * 137.508) % 360;
+		const color = `oklch(0.7 0.15 ${hue})`;
+		const newGroup: Group = {
+			...group,
+			clientId: crypto.randomUUID(),
+			color: color
+		};
 		log('addGroup', $state.snapshot(newGroup));
 		this.#commit({ ...this.current, groups: [...this.current.groups, newGroup] });
 	}

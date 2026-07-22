@@ -45,7 +45,7 @@
 </script>
 
 <Popover.Root bind:open={sessionSearcherOpen}>
-	<Popover.Trigger aria-invalid={ctx.session !== null && !ctx.session.connected}>
+	<Popover.Trigger>
 		{#snippet child({ props }: any)}
 			<Button
 				variant="outline"
@@ -120,10 +120,7 @@
 			onsubmit={(e) => {
 				e.preventDefault();
 				(async () => {
-					ctx.server.namespace = newNamespace;
-					toast.info(`Switching to '${newNamespace}'.`);
 					await ctx.server.addNamespace(newNamespace);
-					ctx.server.namespace = newNamespace;
 					newNamespace = '';
 					createOpen = false;
 				})();
@@ -139,7 +136,6 @@
 			<p class="text-sm text-gray-500">
 				This namespace will be created when you make a new session
 			</p>
-			<p class="text-sm text-gray-500">(re-click into Workbench to refresh the namespace)</p>
 			<Dialog.Footer class="items-center">
 				{#if duplicate === true}
 					<p class="mr-auto text-sm text-orange-400" transition:fade>

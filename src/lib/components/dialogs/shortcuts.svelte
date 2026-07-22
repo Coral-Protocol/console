@@ -24,7 +24,7 @@
 					{#each shortcuts as shortcut}
 						<li class="wrap-anywhere">
 							<Card.Root class="p-0">
-								<Card.Content class="flex flex-col  gap-2 p-2">
+								<Card.Content class="flex flex-col gap-2 p-2">
 									<Card.Title class="text-sm font-medium">{shortcut.description}</Card.Title>
 									<Kbd.Group>
 										{#each shortcut.keys as key}

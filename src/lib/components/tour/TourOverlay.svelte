@@ -97,7 +97,7 @@
 <Popover.Root>
 	<Popover.Root bind:open={getOpen, setOpen}>
 		<Popover.Content
-			class="{className}  bg-card w-[360px] max-w-[90vw] rounded-lg border-0 lg:w-[420px]  dark:bg-[#1E1E23]"
+			class="{className} bg-card w-[360px] max-w-[90vw] rounded-lg border-0 lg:w-[420px] dark:bg-[#1E1E23]"
 			collisionPadding={20}
 			customAnchor={currentTarget}
 			side={currentItem?.side ?? side}

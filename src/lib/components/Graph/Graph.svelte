@@ -8,44 +8,94 @@
 		type Node,
 		type Edge,
 		ConnectionMode,
-		useOnSelectionChange,
 		type NodeEventWithPointer,
-		type PaneEvents,
-		useStore,
-		MiniMap,
-		Controls,
-		type OnSelectionDrag,
 		type NodesEventWithPointer,
 		type Viewport,
-		type OnDelete
+		type OnDelete,
+		MiniMap,
+		Controls
 	} from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
-
-	import { mode } from 'mode-watcher';
-	import GraphCircleNode from './GraphCircleNode.svelte';
-	import { graphSelection } from '$lib/graphSelection.svelte';
-
 	import * as d3Force from 'd3-force';
-	import { cn, getInitials } from '$lib/utils';
+	import { PressedKeys } from 'runed';
+	import { mode } from 'mode-watcher';
 
 	import {
 		Button,
 		buttonVariants
 	} from '@coral-os/component-library/components/ui/button/index.js';
 	import * as Tooltip from '@coral-os/component-library/components/ui/tooltip/index.js';
-
+	import * as Command from '@coral-os/component-library/ui/command/index.js';
+	import * as Popover from '@coral-os/component-library/ui/popover/index.js';
+	import * as Avatar from '@coral-os/component-library/ui/avatar/index.js';
 	import IconSelection from 'phosphor-icons-svelte/IconSelectionFill.svelte';
 	import IconPlay from 'phosphor-icons-svelte/IconPlayFill.svelte';
 	import IconPause from 'phosphor-icons-svelte/IconPauseFill.svelte';
-	import * as Command from '@coral-os/component-library/ui/command/index.js';
-	import * as Popover from '@coral-os/component-library/ui/popover/index.js';
-	import { getSessionContext, type SessionCreatorContext } from '$lib/sessionCreatorContext';
+
+	import GraphCircleNode from './GraphCircleNode.svelte';
+	import GraphGroupEdge from './GraphGroupEdge.svelte';
+	import { graphSelection } from '$lib/graphSelection.svelte';
+	import { getSessionContext } from '$lib/sessionCreatorContext';
 	import { useDnD } from '$lib/components/DndProvider.svelte';
 	import { activeFile } from '../../activeFile.svelte';
-	import * as Avatar from '@coral-os/component-library/ui/avatar/index.js';
+	import { type Agent, type Group } from '$lib/fileStorage.svelte';
+	import { randomAdjective, randomPlant } from '$lib/words';
+	import { appContext } from '$lib/context';
+	import { debugMode } from '$lib/debugMode.svelte';
+	import { workbenchTabSide } from '$lib/fileTabs.svelte';
+	import { cn, getInitials } from '$lib/utils';
+
+	const nodeTypes = { circleNode: GraphCircleNode };
+	const edgeTypes = { groupEdge: GraphGroupEdge };
+
+	let {
+		class: className,
+		id,
+		controls = false,
+		viewOnly = false,
+		enableContext = false
+	}: {
+		class?: string;
+		id?: string;
+		controls?: boolean;
+		viewOnly?: boolean;
+		enableContext?: boolean;
+	} = $props();
+
+	type AgentNode = Node<{
+		label: string;
+		type: string;
+		index: number;
+		locked: boolean;
+		selected: boolean;
+		errors?: any;
+	}>;
+	type AgentEdge = Edge;
+	type GraphData = { nodes: AgentNode[]; edges: AgentEdge[] };
+	type SimNode = d3Force.SimulationNodeDatum & {
+		id: string;
+		x: number;
+		y: number;
+		fx?: number;
+		fy?: number;
+	};
+	type DraggingNode = { id: string; position: { x: number; y: number } };
+
+	let sessCtx = getSessionContext();
+	let ctx = appContext.get();
+	const agentData = useDnD();
+	const keys = new PressedKeys();
+	const IsShiftPressed = $derived(keys.has('Shift'));
+
+	const { setCenter, screenToFlowPosition, setViewport, fitView } = useSvelteFlow();
+
+	const agents = $derived(activeFile.current?.agents ?? []);
+	const groups = $derived(activeFile.current?.groups ?? []);
+	const errors = $derived(activeFile.current?.errors);
 
 	let fps = $state(0);
 	let fpsFrame: number | null = null;
+	let lastFocusedBeforePointerDown = $state<Element | null>(null);
 
 	onMount(() => {
 		let frameCount = 0;
@@ -55,21 +105,38 @@
 			frameCount++;
 			const now = performance.now();
 			const elapsed = now - lastFpsUpdate;
-
 			if (elapsed >= 500) {
 				fps = Math.round((frameCount * 1000) / elapsed);
 				frameCount = 0;
 				lastFpsUpdate = now;
 			}
-
 			fpsFrame = requestAnimationFrame(measureFps);
 		}
 
+		const capturePointerDown = () => (lastFocusedBeforePointerDown = document.activeElement);
+
 		fpsFrame = requestAnimationFrame(measureFps);
+		window.addEventListener('pointerdown', capturePointerDown, true);
+
+		graphSelection.register({
+			selectAll: selectAllNodes,
+			deselectAll: deselectAllNodes,
+			invertSelection: invertNodeSelection,
+			deleteSelected: deleteSelectedNodes,
+			duplicateSelected: duplicateSelectedNodes,
+			copySelected: copySelectedNodes,
+			pasteClipboard: pasteFromClipboard
+		});
 
 		return () => {
 			if (fpsFrame !== null) cancelAnimationFrame(fpsFrame);
+			window.removeEventListener('pointerdown', capturePointerDown, true);
+			graphSelection.unregister();
 		};
+	});
+
+	$effect(() => {
+		graphSelection.selectedIds = nodes.filter((n) => n.selected).map((n) => n.id);
 	});
 
 	function hueFromString(str: string): number {
@@ -86,44 +153,11 @@
 		position: { x: number; y: number },
 		currentlyLocked: boolean
 	) {
-		activeFile.updateAgent(nodeId, {
-			nodeData: { position, locked: !currentlyLocked }
-		});
+		activeFile.updateAgent(nodeId, { nodeData: { position, locked: !currentlyLocked } });
 	}
-
-	let lastFocusedBeforePointerDown = $state<Element | null>(null);
-
-	function capturePointerDown() {
-		lastFocusedBeforePointerDown = document.activeElement;
-	}
-
-	onMount(() => {
-		window.addEventListener('pointerdown', capturePointerDown, true);
-		return () => window.removeEventListener('pointerdown', capturePointerDown, true);
-	});
-
-	onMount(() => {
-		graphSelection.register({
-			selectAll: selectAllNodes,
-			deselectAll: deselectAllNodes,
-			invertSelection: invertNodeSelection,
-			deleteSelected: deleteSelectedNodes,
-			duplicateSelected: duplicateSelectedNodes,
-			copySelected: copySelectedNodes,
-			pasteClipboard: pasteFromClipboard
-		});
-		return () => graphSelection.unregister();
-	});
-
-	$effect(() => {
-		graphSelection.selectedIds = nodes.filter((n) => n.selected).map((n) => n.id);
-	});
-
-	// todo: i hate how this (the above and below) is done
 
 	function clearSelectedAgentIfNotInInput() {
 		const el = lastFocusedBeforePointerDown;
-
 		if (
 			el instanceof HTMLElement &&
 			(el.tagName === 'INPUT' ||
@@ -133,99 +167,52 @@
 		) {
 			return;
 		}
-
 		sessCtx.selectedAgentClientId = undefined;
 		workbenchTabSide.current = 'Agents';
 	}
 
-	const { setCenter, screenToFlowPosition, setViewport } = useSvelteFlow();
-
 	const pendingPositions = new Map<string, { x: number; y: number }>();
 	let contextFlowPosition: { x: number; y: number } | null = null;
 
-	let sessCtx = getSessionContext();
-	let ctx = appContext.get();
-	const nodeTypes = {
-		circleNode: GraphCircleNode
-	};
-	type SimNode = d3Force.SimulationNodeDatum & {
-		id: string;
-		x: number;
-		y: number;
-		fx?: number;
-		fy?: number;
-	};
+	const edgesFromGroups = (groupList: Group[]): AgentEdge[] => {
+		const raw: { key: string; source: string; target: string; color: string }[] = [];
 
-	type DraggingNode = { id: string; position: { x: number; y: number } };
-
-	let {
-		class: className,
-		onSelect,
-		id,
-		controls = false,
-		viewOnly = false,
-		fitDefault = true,
-		enableContext = false
-	}: {
-		class?: string;
-		onSelect?: (idx: number) => void;
-		id?: string;
-		controls?: boolean;
-		viewOnly?: boolean;
-		fitDefault?: boolean;
-		enableContext?: boolean;
-	} = $props();
-
-	import { type Agent, type Group } from '$lib/fileStorage.svelte';
-	import { randomAdjective, randomAnimal, randomPlant } from '$lib/words';
-	import { appContext } from '$lib/context';
-	import { add } from 'date-fns';
-	import { PersistedState, PressedKeys } from 'runed';
-	import { debugMode } from '$lib/debugMode.svelte';
-	import { workbenchTabSide } from '$lib/fileTabs.svelte';
-
-	const agents = $derived(activeFile.current?.agents ?? []);
-	const groups = $derived(activeFile.current?.groups ?? []);
-	const errors = $derived(activeFile.current?.errors);
-
-	type AgentNode = Node<{
-		label: string;
-		type: string;
-		index: number;
-		locked: boolean;
-		selected: boolean;
-		errors?: any;
-	}>;
-	type GroupEdge = Edge;
-
-	type GraphData = {
-		nodes: AgentNode[];
-		edges: GroupEdge[];
-	};
-
-	const notNull = <T,>(x: T | null): x is T => x !== null;
-
-	const edgesFromGroups = (groupList: Group[]): GroupEdge[] => {
-		const seen = new Set<string>();
-		return groupList.flatMap((group, groupIndex) => {
+		groupList.forEach((group) => {
 			const members = group.agentClientIds;
-			return members
-				.flatMap((a, i) =>
-					members.slice(i + 1).map((b) => {
-						const key = [a, b].sort().join('|');
-						if (seen.has(key)) return null;
-						seen.add(key);
-						return {
-							id: key,
-							source: a,
-							target: b,
-							type: 'straight',
-							style: `stroke: oklch(0.7 0.1 ${53 * groupIndex})`
-						} satisfies GroupEdge;
-					})
-				)
-				.filter(notNull);
+			const seenInGroup = new Set<string>();
+			members.forEach((a, i) => {
+				members.slice(i + 1).forEach((b) => {
+					const key = [a, b].sort().join('|');
+					if (seenInGroup.has(key)) return;
+					seenInGroup.add(key);
+					raw.push({ key, source: a, target: b, color: group.color ?? '#999' });
+				});
+			});
 		});
+
+		const byPair = new Map<string, typeof raw>();
+		for (const e of raw) {
+			if (!byPair.has(e.key)) byPair.set(e.key, []);
+			byPair.get(e.key)!.push(e);
+		}
+
+		const edges: AgentEdge[] = [];
+		byPair.forEach((pairEdges) => {
+			const n = pairEdges.length;
+			pairEdges.forEach((e, i) => {
+				edges.push({
+					id: `${e.key}-${i}`,
+					source: e.source,
+					target: e.target,
+					type: 'groupEdge',
+					data: { color: e.color, offsetIndex: i - (n - 1) / 2 },
+					selectable: false,
+					focusable: false
+				} as AgentEdge);
+			});
+		});
+
+		return edges;
 	};
 
 	let data: GraphData = $derived.by(() => {
@@ -233,6 +220,7 @@
 			let position: { x: number; y: number };
 			const pending = pendingPositions.get(agent.clientId);
 			const nodeData = agent.nodeData ? $state.snapshot(agent.nodeData) : undefined;
+
 			if (nodeData) {
 				position = nodeData.position;
 			} else if (pending) {
@@ -259,7 +247,7 @@
 					selected: agent.clientId === sessCtx.selectedAgentClientId,
 					hue: hueFromString(agent.clientId),
 					onToggleLock: handleToggleLock,
-					errors: errors
+					errors
 				},
 				type: 'circleNode',
 				draggable: !viewOnly,
@@ -267,26 +255,22 @@
 			};
 		});
 
-		const edges = edgesFromGroups(groups);
-		return { nodes, edges };
+		return { nodes, edges: edgesFromGroups(groups) };
 	});
-	let nodes = $state.raw<AgentNode[]>([]);
 
+	let nodes = $state.raw<AgentNode[]>([]);
 	$effect(() => {
 		nodes = data.nodes;
 	});
-
-	let edges = $derived<GroupEdge[]>(data.edges);
+	let edges = $derived<AgentEdge[]>(data.edges);
 
 	let simulation: d3Force.Simulation<d3Force.SimulationNodeDatum, undefined>;
 	let running = $state.raw(false);
 	let initialized = $state.raw(false);
 	let draggingNode = $state.raw<DraggingNode | null>(null);
-
-	const { fitView } = useSvelteFlow();
-
-	const ALPHA_SETTLE_THRESHOLD = 0.001;
 	let cooldownFrame: number | null = null;
+
+	const POSITION_EPSILON = 0.25;
 
 	onMount(() => {
 		simulation = d3Force
@@ -304,13 +288,13 @@
 			.stop();
 
 		return () => {
-			if (simulation) simulation.stop();
+			simulation?.stop();
 			if (cooldownFrame !== null) cancelAnimationFrame(cooldownFrame);
 		};
 	});
 
 	onDestroy(() => {
-		if (simulation) simulation.stop();
+		simulation?.stop();
 		if (cooldownFrame !== null) cancelAnimationFrame(cooldownFrame);
 	});
 
@@ -321,27 +305,19 @@
 			...node,
 			x: node.position.x,
 			y: node.position.y,
-			measured: {
-				width: node.width ?? 32,
-				height: node.height ?? 32
-			}
+			measured: { width: node.width ?? 32, height: node.height ?? 32 }
 		})) as SimNode[];
 
-		const simEdges = edges.map((edge) => ({
-			...edge,
-			source: edge.source,
-			target: edge.target
-		}));
-
 		simulation.nodes(simNodes);
-		simulation.force(
-			'link',
-			d3Force
-				.forceLink(simEdges)
-				.id((d) => (d as { id: string }).id)
-				.strength(0.5)
-				.distance(100)
-		);
+		// simulation.force(
+		// 	'link',
+		// 	d3Force
+		// 		.forceLink(edges.map((e) => ({ ...e })))
+		// 		.id((d) => (d as { id: string }).id)
+		// 		.strength(0.5)
+		// 		.distance(100)
+		// );
+		// TODO: fix this cause currently it only updates on graph re-int
 	}
 
 	let lockedIds = $derived(
@@ -350,10 +326,6 @@
 		)
 	);
 
-	let lockedIdsSnapshot = $derived(lockedIds);
-
-	const POSITION_EPSILON = 0.25;
-
 	function tick() {
 		if (!running) return;
 
@@ -361,12 +333,10 @@
 
 		simNodes.forEach((node) => {
 			const dragging = draggingNode?.id === node.id;
-			const locked = lockedIdsSnapshot.has(node.id);
-
 			if (dragging && draggingNode) {
 				node.fx = draggingNode.position.x;
 				node.fy = draggingNode.position.y;
-			} else if (locked) {
+			} else if (lockedIds.has(node.id)) {
 				node.fx = node.x;
 				node.fy = node.y;
 			} else {
@@ -387,10 +357,11 @@
 
 			const x = simNode.fx ?? simNode.x ?? 0;
 			const y = simNode.fy ?? simNode.y ?? 0;
-			const dx = Math.abs(original.position.x - x);
-			const dy = Math.abs(original.position.y - y);
 
-			if (dx > POSITION_EPSILON || dy > POSITION_EPSILON) {
+			if (
+				Math.abs(original.position.x - x) > POSITION_EPSILON ||
+				Math.abs(original.position.y - y) > POSITION_EPSILON
+			) {
 				changed = true;
 				next.push({ ...original, position: { x, y } });
 			} else {
@@ -398,23 +369,16 @@
 			}
 		}
 
-		if (changed) {
-			nodes = next;
-		}
-
-		window.requestAnimationFrame(() => {
-			if (running) tick();
-		});
+		if (changed) nodes = next;
+		window.requestAnimationFrame(() => running && tick());
 	}
+
 	$effect(() => {
-		if (viewOnly) return;
-		if (initialized) return;
-		if (nodes.length === 0) return;
+		if (viewOnly || initialized || nodes.length === 0) return;
 
 		initialized = true;
 		initializeSimulation();
 		running = true;
-
 		simulation.alpha(1).restart();
 		requestAnimationFrame(tick);
 	});
@@ -432,11 +396,7 @@
 		if (added.length === 0 && removedCount === 0) return;
 
 		for (const n of added) {
-			survivors.push({
-				...n,
-				x: n.position.x,
-				y: n.position.y
-			} as SimNode);
+			survivors.push({ ...n, x: n.position.x, y: n.position.y } as SimNode);
 		}
 
 		simulation.nodes(survivors);
@@ -449,14 +409,12 @@
 				.distance(100)
 		);
 
-		const isMostlyNewGraph = nodes.length > 0 && added.length / nodes.length > 0.5;
-
-		if (isMostlyNewGraph) {
+		if (nodes.length > 0 && added.length / nodes.length > 0.5) {
 			simulation.alpha(1).restart();
 		} else {
 			simulation.alphaTarget(0.15).restart();
 			if (cooldownFrame !== null) cancelAnimationFrame(cooldownFrame);
-			cooldownFrame = window.requestAnimationFrame(function cooldown() {
+			cooldownFrame = window.requestAnimationFrame(() => {
 				simulation.alphaTarget(0.15);
 				cooldownFrame = null;
 			});
@@ -472,15 +430,12 @@
 		if (!running) {
 			initializeSimulation();
 			running = true;
-
 			simulation.alpha(Math.max(simulation.alpha(), 0.5)).restart();
 			window.requestAnimationFrame(tick);
 		} else {
 			running = false;
 		}
 	}
-
-	function handleNodeDragStart({ targetNode }: { targetNode: Node | null }) {}
 
 	function handleNodeDrag({ targetNode }: { targetNode: Node | null }) {
 		if (targetNode) draggingNode = { id: targetNode.id, position: targetNode.position };
@@ -494,32 +449,18 @@
 		event: MouseEvent | TouchEvent;
 	}) {
 		if (targetNode) {
-			if (event.shiftKey) {
+			if ((event as MouseEvent).shiftKey) {
 				activeFile.updateAgent(targetNode.id, {
 					nodeData: { position: targetNode.position, locked: !targetNode.data.locked }
 				});
 			} else if (targetNode.data.locked) {
-				activeFile.updateAgent(targetNode.id, {
-					nodeData: { position: targetNode.position }
-				});
+				activeFile.updateAgent(targetNode.id, { nodeData: { position: targetNode.position } });
 			}
 		}
 		draggingNode = null;
 	}
 
 	function handleSelectionDragStop(event: MouseEvent, nodes: AgentNode[]) {
-		if (nodes.length === 0) return;
-		for (const node of nodes) {
-			if (node.data.locked) {
-				activeFile.updateAgent(node.id, {
-					nodeData: { position: node.position, locked: node.data.locked }
-				});
-			}
-		}
-	}
-
-	function handleSelectionDrag(event: MouseEvent, nodes: AgentNode[]) {
-		if (nodes.length === 0) return;
 		for (const node of nodes) {
 			if (node.data.locked) {
 				activeFile.updateAgent(node.id, {
@@ -558,8 +499,6 @@
 		contextedNodes = nodes as AgentNode[];
 	};
 
-	const agentData = useDnD();
-
 	let dragPreviewPos = $state<{ x: number; y: number } | null>(null);
 
 	const onDragOver = (event: DragEvent) => {
@@ -568,20 +507,18 @@
 		dragPreviewPos = { x: event.clientX, y: event.clientY };
 	};
 
-	const onDragLeave = () => {
-		dragPreviewPos = null;
-	};
+	const onDragLeave = () => (dragPreviewPos = null);
 
 	const onDrop = (event: DragEvent) => {
 		event.preventDefault();
 		const agent = agentData.current;
 		if (!agent) return;
-
-		const dropPos = screenToFlowPosition({ x: event.clientX, y: event.clientY });
-		addAgent(agent, dropPos);
+		addAgent(agent, screenToFlowPosition({ x: event.clientX, y: event.clientY }));
 		dragPreviewPos = null;
 	};
 
+	// Adds an agent and, if a spawn position is given, tracks it in
+	// pendingPositions since activeFile.addAgent doesn't return the new clientId.
 	const addAgent = async (agent: any, spawnPos: { x: number; y: number } | null = null) => {
 		const registrySourceId = agent.registrySourceId ?? { type: agent.source };
 
@@ -622,16 +559,12 @@
 			if (newAgent) pendingPositions.set(newAgent.clientId, spawnPos);
 		}
 	};
-	// todo: ^^ sort out the other provider types because they are not all 'local', but seafra has stated its not currently important
 
 	const saveViewportPos = (event: MouseEvent | TouchEvent | null, viewport: Viewport) => {
-		activeFile.updateMeta({ viewport: viewport });
+		activeFile.updateMeta({ viewport });
 	};
 
-	const deleteData: OnDelete<AgentNode, GroupEdge> = ({
-		nodes: deletedNodes,
-		edges: deletedEdges
-	}) => {
+	const deleteData: OnDelete<AgentNode, AgentEdge> = ({ nodes: deletedNodes }) => {
 		for (const node of deletedNodes) {
 			activeFile.removeAgent(node.id);
 			if (node.id === sessCtx.selectedAgentClientId) {
@@ -640,9 +573,7 @@
 		}
 	};
 
-	function selectedAgentIds(): string[] {
-		return nodes.filter((n) => n.selected).map((n) => n.id);
-	}
+	const selectedAgentIds = () => nodes.filter((n) => n.selected).map((n) => n.id);
 
 	function selectAllNodes() {
 		nodes = nodes.map((n) => ({ ...n, selected: true }));
@@ -657,8 +588,7 @@
 	}
 
 	function deleteSelectedNodes() {
-		const ids = selectedAgentIds();
-		for (const id of ids) {
+		for (const id of selectedAgentIds()) {
 			activeFile.removeAgent(id);
 			if (id === sessCtx.selectedAgentClientId) {
 				sessCtx.selectedAgentClientId = undefined;
@@ -666,10 +596,6 @@
 		}
 	}
 
-	// Clones the given agents into new ones, offsetting spawn position so
-	// they don't stack exactly on top of the originals. Mirrors the
-	// beforeIds-diff trick already used in addAgent() above, since
-	// activeFile.addAgent doesn't hand back the new clientId directly.
 	function cloneAgentsAt(agentIds: string[], offset: { x: number; y: number } = { x: 40, y: 40 }) {
 		const currentAgents = activeFile.current?.agents ?? [];
 		for (const id of agentIds) {
@@ -678,7 +604,6 @@
 			if (!source) continue;
 
 			const beforeIds = new Set((activeFile.current?.agents ?? []).map((a) => a.clientId));
-
 			const { clientId, ...rest } = source;
 			activeFile.addAgent(rest);
 
@@ -694,17 +619,13 @@
 
 	function duplicateSelectedNodes() {
 		const ids = selectedAgentIds();
-		if (ids.length === 0) return;
-		cloneAgentsAt(ids);
+		if (ids.length > 0) cloneAgentsAt(ids);
 	}
 
-	// Clipboard is in-memory only, not the OS clipboard — pasting only works
-	// within this session/tab. Wiring real system clipboard would need the
-	// Clipboard API + a serialization format, which felt out of scope here.
+	// In-memory clipboard only; pasting works within this session/tab only.
 	function copySelectedNodes() {
-		const ids = selectedAgentIds();
 		const currentAgents = activeFile.current?.agents ?? [];
-		graphSelection.clipboard = ids
+		graphSelection.clipboard = selectedAgentIds()
 			.map((id) => currentAgents.find((a) => a.clientId === id))
 			.filter((a): a is Agent => !!a)
 			.map((a) => {
@@ -721,16 +642,10 @@
 			activeFile.addAgent(snapshot as Omit<Agent, 'clientId'>);
 		}
 
-		// Spawn pasted agents near the current viewport center with a small
-		// offset per item so they fan out instead of stacking.
-		const newAgents = (activeFile.current?.agents ?? []).filter((a) => !beforeIds.has(a.clientId));
-		newAgents.forEach((agent, i) => {
-			pendingPositions.set(agent.clientId, { x: i * 40, y: i * 40 });
-		});
+		(activeFile.current?.agents ?? [])
+			.filter((a) => !beforeIds.has(a.clientId))
+			.forEach((agent, i) => pendingPositions.set(agent.clientId, { x: i * 40, y: i * 40 }));
 	}
-
-	const keys = new PressedKeys();
-	const IsShiftPressed = $derived(keys.has('Shift'));
 
 	let lastFileId = $state<string | null>(null);
 
@@ -751,12 +666,10 @@
 
 {#if dragPreviewPos && agentData.current}
 	<Avatar.Root
-		class="pointer-events-none fixed z-50 flex size-8  shadow-lg"
+		class="pointer-events-none fixed z-50 flex size-8 shadow-lg"
 		style="left: {dragPreviewPos.x}px; top: {dragPreviewPos.y}px; transform: translate(-50%, -50%);"
 	>
-		<Avatar.Fallback class="">
-			{getInitials(agentData.current.name)}
-		</Avatar.Fallback>
+		<Avatar.Fallback>{getInitials(agentData.current.name)}</Avatar.Fallback>
 	</Avatar.Root>
 {/if}
 
@@ -767,7 +680,8 @@
 		bind:edges
 		nodeOrigin={[0.5, 0.5]}
 		{nodeTypes}
-		class={cn('svelte-flow__pane.selection ', className)}
+		{edgeTypes}
+		class={cn('svelte-flow__pane.selection', className)}
 		ondragover={onDragOver}
 		fitView
 		ondelete={deleteData}
@@ -775,7 +689,6 @@
 		ondragleave={onDragLeave}
 		onpanecontextmenu={handleContextMenu}
 		onnodecontextmenu={handleNodeContextMenu}
-		onnodedragstart={handleNodeDragStart}
 		onnodedrag={handleNodeDrag}
 		onnodeclick={(nodes) => {
 			sessCtx.selectedAgentClientId = nodes.node.id;
@@ -788,9 +701,7 @@
 		snapGrid={[20, 20]}
 		maxZoom={2}
 		minZoom={0.5}
-		onselectionstart={() => {
-			sessCtx.selectedAgentClientId = undefined;
-		}}
+		onselectionstart={() => (sessCtx.selectedAgentClientId = undefined)}
 		selectionOnDrag={true}
 		edgesFocusable={false}
 		panOnDrag={[1]}
@@ -800,9 +711,7 @@
 		autoPanOnNodeDrag={false}
 		connectionMode={'loose' as ConnectionMode}
 		colorMode={mode.current}
-		proOptions={{
-			hideAttribution: true
-		}}
+		proOptions={{ hideAttribution: true }}
 	>
 		<MiniMap
 			class="border opacity-70 transition-opacity hover:opacity-100"
@@ -820,26 +729,26 @@
 			</Panel>
 		{/if}
 		{#if controls}
-			<Panel position="top-right" class="flex gap-4 ">
+			<Panel position="top-right" class="flex gap-4">
 				<Tooltip.Root>
 					<Tooltip.Trigger
 						onclick={() => fitView()}
 						class={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}
-						><IconSelection /></Tooltip.Trigger
 					>
-					<Tooltip.Content>
-						<p>Fit all in view</p>
-					</Tooltip.Content>
+						<IconSelection />
+					</Tooltip.Trigger>
+					<Tooltip.Content><p>Fit all in view</p></Tooltip.Content>
 				</Tooltip.Root>
 				<Tooltip.Root>
 					<Tooltip.Trigger
 						onclick={toggleLayout}
 						class={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}
-						>{#if running}<IconPause />{:else}<IconPlay />{/if}</Tooltip.Trigger
 					>
-					<Tooltip.Content>
-						<p>{running ? 'Stop simulating' : 'Start simulating'}</p>
-					</Tooltip.Content>
+						{#if running}<IconPause />{:else}<IconPlay />{/if}
+					</Tooltip.Trigger>
+					<Tooltip.Content
+						><p>{running ? 'Stop simulating' : 'Start simulating'}</p></Tooltip.Content
+					>
 				</Tooltip.Root>
 			</Panel>
 		{/if}
@@ -861,34 +770,43 @@
 							<Command.Input placeholder="Quick actions" />
 							<Command.List>
 								<Command.Empty>No results found.</Command.Empty>
-								{#if contextedNodes}
-									{#if contextedNodes.length === 1}
-										{@const node = contextedNodes[0] ?? ({} as AgentNode)}
-										<Command.Group heading={String(node.data.label ?? '')}>
-											<Command.Item
-												keywords={['delete', 'remove']}
-												onclick={() => {
-													activeFile.removeAgent(node.id);
-													openPaneContext = false;
-												}}>Delete agent</Command.Item
-											>
-										</Command.Group>
-									{:else if contextedNodes.length > 1}
-										{@const node = contextedNodes[0] ?? ({} as AgentNode)}
-										<Command.Group heading="{contextedNodes.length} Selected agents">
-											<Command.Item
-												keywords={['delete', 'remove']}
-												onclick={() => {
-													for (const node of contextedNodes) {
-														activeFile.removeAgent(node.id);
-													}
-													openPaneContext = false;
-												}}
-											>
-												Delete selected agents
-											</Command.Item>
-										</Command.Group>
-									{/if}
+								{#if contextedNodes.length === 1}
+									{@const node = contextedNodes[0] ?? ({} as AgentNode)}
+									<Command.Group heading={String(node.data.label ?? '')}>
+										<Command.Item
+											keywords={['delete', 'remove']}
+											onclick={() => {
+												activeFile.removeAgent(node.id);
+												openPaneContext = false;
+											}}
+										>
+											Delete agent
+										</Command.Item>
+									</Command.Group>
+								{:else if contextedNodes.length > 1}
+									<Command.Group heading="{contextedNodes.length} Selected agents">
+										<Command.Item
+											keywords={['group', 'join']}
+											onclick={() => {
+												activeFile.addGroup({
+													name: `${randomAdjective()} ${randomPlant()}`,
+													agentClientIds: contextedNodes.map((n) => n.id)
+												});
+												openPaneContext = false;
+											}}
+										>
+											Add to new group
+										</Command.Item>
+										<Command.Item
+											keywords={['delete', 'remove']}
+											onclick={() => {
+												for (const node of contextedNodes) activeFile.removeAgent(node.id);
+												openPaneContext = false;
+											}}
+										>
+											Delete selected agents
+										</Command.Item>
+									</Command.Group>
 								{/if}
 								<Command.Group heading="Add agents">
 									{#each availableAgents as agent, i}
@@ -897,23 +815,22 @@
 											keywords={['add', 'create']}
 											value={agent.name + i}
 											onclick={() => {
-												const details = {
-													name: agent.name,
-													version: agent.versions[0]!,
-													registrySourceId: { type: 'marketplace' }
-												};
-
-												addAgent(details, contextFlowPosition);
-
-												if (!IsShiftPressed) {
-													openPaneContext = false;
-												}
+												addAgent(
+													{
+														name: agent.name,
+														version: agent.versions[0]!,
+														registrySourceId: { type: 'marketplace' }
+													},
+													contextFlowPosition
+												);
+												if (!IsShiftPressed) openPaneContext = false;
 											}}
-											><span>{agent.name}</span>
+										>
+											<span>{agent.name}</span>
 											<span class="text-muted-foreground! text-xs"
 												>{agent.type === 'local' ? 'local' : ''}</span
-											></Command.Item
-										>
+											>
+										</Command.Item>
 									{/each}
 								</Command.Group>
 								<Command.Group heading="Actions"></Command.Group>
@@ -932,7 +849,6 @@
 	:global(.svelte-flow__pane.selection) {
 		cursor: default;
 	}
-
 	:global(.svelte-flow__pane.dragging) {
 		cursor: grabbing;
 	}

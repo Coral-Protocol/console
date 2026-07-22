@@ -1,8 +1,4 @@
 import { Context } from 'runed';
-
-import type { CoralServer } from './CoralServer.svelte';
-import { z } from 'zod';
-import type { SuperForm, SuperFormData, SuperFormErrors } from 'sveltekit-superforms/client';
 import type { SessionRequest } from '$generated/api.zod';
 
 export type AgentSource = 'marketplace' | 'linked' | 'local';
@@ -23,7 +19,7 @@ export type SessionCreatorContext = {
 	selectedAgentError: string | Error | null;
 };
 
-export const createSessionContext = new Context<SessionCreatorContext>('sessionCreator');
+const createSessionContext = new Context<SessionCreatorContext>('sessionCreator');
 
 let _current: SessionCreatorContext | null = null;
 

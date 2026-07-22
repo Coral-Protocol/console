@@ -1,6 +1,5 @@
 <script lang="ts">
 	import * as Sidebar from '@coral-os/component-library/ui/sidebar/index.js';
-	import * as Kbd from '@coral-os/component-library/ui/kbd/index.js';
 	import * as Tooltip from '@coral-os/component-library/ui/tooltip/index.js';
 	import * as ContextMenu from '@coral-os/component-library/ui/context-menu/index.js';
 	import * as DropdownMenu from '@coral-os/component-library/ui/dropdown-menu/index.js';
@@ -18,31 +17,25 @@
 	import * as Select from '@coral-os/component-library/ui/select/index.js';
 
 	import IconFileArchive from 'phosphor-icons-svelte/IconFileArchiveRegular.svelte';
-	import MoonIcon from 'phosphor-icons-svelte/IconMoonRegular.svelte';
-	import SunIcon from 'phosphor-icons-svelte/IconSunRegular.svelte';
+
 	import IconArrowsClockwise from 'phosphor-icons-svelte/IconArrowsClockwiseRegular.svelte';
 	import IconArrowDownRegular from 'phosphor-icons-svelte/IconArrowDownRegular.svelte';
 	import IconArrowLeft from 'phosphor-icons-svelte/IconArrowLeftRegular.svelte';
 	import IconCaretDownRegular from 'phosphor-icons-svelte/IconCaretDownRegular.svelte';
 	import IconRobot from '$lib/icons/robot.svelte';
-	import IconSearch from 'phosphor-icons-svelte/IconMagnifyingGlassRegular.svelte';
-	import IconQuestion from 'phosphor-icons-svelte/IconQuestionRegular.svelte';
+
 	import IconPackage from 'phosphor-icons-svelte/IconPackageRegular.svelte';
 	import IconNotepad from 'phosphor-icons-svelte/IconNotepadRegular.svelte';
 	import IconCircuity from 'phosphor-icons-svelte/IconCircuitryRegular.svelte';
-	import IconFolder from 'phosphor-icons-svelte/IconFolderRegular.svelte';
 	import IconBug from 'phosphor-icons-svelte/IconBugRegular.svelte';
 	import IconPlus from 'phosphor-icons-svelte/IconPlusRegular.svelte';
 	import IconHome from 'phosphor-icons-svelte/IconHouseRegular.svelte';
 	import IconXRegular from 'phosphor-icons-svelte/IconXRegular.svelte';
 	import IconGhost from 'phosphor-icons-svelte/IconGhostRegular.svelte';
 	import IconEnvelopeOpen from 'phosphor-icons-svelte/IconEnvelopeOpenRegular.svelte';
-	import IconGearRegular from 'phosphor-icons-svelte/IconGearRegular.svelte';
 	import IconSession from 'phosphor-icons-svelte/IconArticleRegular.svelte';
 
 	import IconDotsThree from 'phosphor-icons-svelte/IconDotsThreeRegular.svelte';
-	import IconCheckRegular from 'phosphor-icons-svelte/IconCheckRegular.svelte';
-
 	import * as Popover from '@coral-os/component-library/ui/popover/index.js';
 
 	import { cn } from '$lib/utils';
@@ -130,38 +123,26 @@
 		() => ctx.server.alive,
 		(alive) => {
 			if (alive) {
-				toast.dismiss('server-connected');
-				toast.success('Connected to server.', { id: 'server-connected' });
-				toast.dismiss('server-disconnected');
-				refreshConnection(false);
+				// toast.dismiss('server-connected');
+				// toast.success('Connected to server.', { id: 'server-connected' });
+				// toast.dismiss('server-disconnected');
+				refreshConnection();
 			}
 		}
 	);
 
 	let loginOpen = $state(false);
 
-	const refreshConnection = async (notify?: boolean) => {
+	let refreshing = false;
+
+	const refreshConnection = async () => {
+		if (refreshing) return;
+
+		refreshing = true;
 		try {
-			connecting = true;
-			error = null;
-
 			await ctx.server.fetchAll();
-			// this attempts to fetch all agents and sessions which is good enough for to check for connection to server !
-
-			ctx.server.alive = true;
-			connecting = false;
-			if (notify) {
-				toast.success('Connection refreshed');
-			}
-		} catch (e) {
-			connecting = false;
-			error = `${e}`;
-			if (notify) {
-				toast.error('Failed to refresh connection. ' + error, {
-					id: 'refresh-connection-error'
-				});
-			}
-			throw e;
+		} finally {
+			refreshing = false;
 		}
 	};
 
@@ -252,6 +233,7 @@
 		ctx.session?.sessionId;
 		untrack(() => (connectedSessionId = ctx.session?.sessionId));
 	});
+	let namespaces = $derived(ctx.server.namespaces.filter((ns) => ns !== 'default'));
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
@@ -263,56 +245,6 @@
 <DebugTools bind:open={debugToolsOpen} />
 <Welcome bind:open={welcomeOpen} bind:tourToggle={tourOpen} />
 
-<div
-	class="fixed top-3.5 right-3.5 z-1 flex items-center justify-end gap-1"
-	use:tourTarget={'quick-switch'}
->
-	<Button
-		class="flex h-6 w-fit max-w-64 cursor-text items-center justify-between gap-6 "
-		variant="ghost"
-		onclick={() => (openQuickswitch = true)}
-	>
-		<div class="text-muted-foreground flex items-center gap-2">
-			<IconSearch />
-			<span class="text-sm">Search</span>
-		</div>
-		<Kbd.Group>
-			<Kbd.Root>CTRL</Kbd.Root>
-			<Kbd.Root>K</Kbd.Root>
-		</Kbd.Group>
-	</Button>
-
-	<Separator orientation="vertical" class="!h-6" />
-
-	<Button class="size-6" variant="ghost" onclick={() => (welcomeOpen = true)}>
-		<IconQuestion class="size-4" />
-	</Button>
-
-	<Separator orientation="vertical" class="!h-6" />
-
-	<Button onclick={toggleMode} variant="ghost" class="size-6">
-		<SunIcon
-			class="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90"
-		/>
-		<MoonIcon
-			class="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0"
-		/>
-		<span class="sr-only">Toggle theme</span>
-	</Button>
-
-	<Separator orientation="vertical" class="!h-6" />
-
-	<Popover.Root>
-		<Popover.Trigger
-			class="{buttonVariants({ variant: 'ghost', size: 'icon' })} aspect-square size-6"
-		>
-			<IconGearRegular />
-		</Popover.Trigger>
-		<Popover.Content align="end" sideOffset={5} alignOffset={-4}>
-			<Settings />
-		</Popover.Content>
-	</Popover.Root>
-</div>
 <!-- TODO:  collapsible="icon" for root needs better support -->
 <Sidebar.Root class="">
 	<Sidebar.Header class="mb-2 p-0">
@@ -340,45 +272,34 @@
 	</Sidebar.Header>
 	<Sidebar.Content class="gap-0  *:list-none">
 		<Sidebar.Group>
-			<Sidebar.GroupLabel class="pr-0">
+			<Sidebar.GroupLabel class="items-center pr-0">
 				<span
 					class="text-muted-foreground w-full grow font-sans font-medium tracking-wide select-none"
 					>Server</span
 				>
 				<Tooltip.Root delayDuration={0}>
 					<Tooltip.Trigger disabled={error === null}>
-						<span
-							class={cn(
-								'text-muted-foreground font-normal',
-								(error || !ctx.server.alive) && 'text-destructive'
-							)}
-						>
-							{#if error || !ctx.server.alive}
-								disconnected
-							{:else}
-								connected
-							{/if}
+						<span class={cn('text-muted-foreground font-normal', error && 'text-destructive')}>
+							{ctx.server.connectionState.type}
 						</span>
 					</Tooltip.Trigger>
+					<Button
+						size="icon"
+						variant="ghost"
+						class="mx-1 size-7"
+						disabled={connecting}
+						onclick={() => refreshConnection}
+					>
+						<IconArrowsClockwise class={cn('size-4', connecting && 'animate-spin')} />
+					</Button>
 					<Tooltip.Content><p>{error}</p></Tooltip.Content>
 				</Tooltip.Root>
-				<Button
-					size="icon"
-					variant="ghost"
-					class="mx-1 size-7"
-					disabled={connecting}
-					onclick={() => refreshConnection(true)}
-				>
-					<IconArrowsClockwise class={cn('size-4', connecting && 'animate-spin')} />
-				</Button>
 			</Sidebar.GroupLabel>
 
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
-					<SidebarLink url="{base}/" icon={IconHome} title="Overview" />
-
 					<div use:tourTarget={'workbench'} class="relative w-full">
-						<SidebarLink url="{base}/workbench" icon={IconCircuity} title="Workbench" />
+						<SidebarLink url="{base}/" icon={IconCircuity} title="Workbench" />
 					</div>
 				</Sidebar.Menu>
 			</Sidebar.GroupContent>
@@ -403,18 +324,19 @@
 		<Sidebar.Group class="">
 			<Sidebar.GroupLabel class="text-muted-foreground">Sessions</Sidebar.GroupLabel>
 			<Sidebar.GroupAction class="text-muted-foreground aspect-auto w-fit text-sm">
-				<Select.Root type="single" bind:value={ctx.server.namespaceFilter}>
+				<Select.Root type="single" bind:value={ctx.server.namespace}>
 					<Select.Trigger
-						class="h-6! w-fit max-w-[140px] justify-start overflow-hidden border-0 bg-transparent! p-1 text-left"
+						class="h-6! w-fit max-w-[140px] justify-start overflow-hidden border-0 bg-transparent! p-1 text-left shadow-none"
 						><span class="truncate"
-							>{ctx.server.namespaceFilter ? ctx.server.namespaceFilter : 'All namespaces'}</span
+							>{ctx.server.namespace ? ctx.server.namespace : 'All namespaces'}</span
 						></Select.Trigger
 					>
 					<Select.Content>
 						<Select.Label>Existing namespaces</Select.Label>
 						<Select.Item value="">All namespaces</Select.Item>
+						<Select.Item value="default">default</Select.Item>
 
-						{#each ctx.server.namespaces as ns}
+						{#each namespaces as ns}
 							<Select.Item value={ns}>{ns}</Select.Item>
 						{/each}
 					</Select.Content>
@@ -423,13 +345,13 @@
 
 			<Sidebar.GroupContent class="">
 				<div use:tourTarget={'session-section'} class="h-full">
-					<Command.Root class="">
+					<Command.Root class="bg-transparent">
 						<Command.Input placeholder="Search" />
 						<Command.List class="max-h-full overflow-y-auto">
 							{#if Object.values(ctx.server.sessions).length === 0}
 								<Command.Empty class="text-foreground/20"
 									>No sessions found <span class="font-semibold">
-										{ctx.server.namespaceFilter ? `in ${ctx.server.namespaceFilter}` : ''}
+										{ctx.server.namespace ? `in ${ctx.server.namespace}` : ''}
 									</span></Command.Empty
 								>
 							{:else}
@@ -440,13 +362,15 @@
 										class="w-full gap-2  border-0 *:border-0!"
 										onValueChange={(id: string) => {
 											ctx.session?.close();
-											ctx.session = id
-												? new Session({
-														sessionId: id,
-														namespace: ctx.server.namespace,
-														server: ctx.server
-													})
-												: null;
+											const ns = id ? ctx.server.sessions[id]?.namespace : undefined;
+											ctx.session =
+												id && ns
+													? new Session({
+															sessionId: id,
+															namespace: ns,
+															server: ctx.server
+														})
+													: null;
 										}}
 									>
 										{#each Object.values(ctx.server.sessions) as session (session.id)}
@@ -475,6 +399,20 @@
 																connect
 															</Badge>
 														{/if}
+														<Tooltip.Root>
+															<Tooltip.Trigger>
+																<Badge
+																	class=" bg-foreground/5 text-foreground/80 block w-16 truncate px-2 py-0.5 text-center text-[10px] font-medium overflow-ellipsis"
+																>
+																	{session.namespace}
+																</Badge>
+															</Tooltip.Trigger>
+															<Tooltip.Content>
+																Namespace: <span class="text-muted-foreground"
+																	>{session.namespace}</span
+																>
+															</Tooltip.Content>
+														</Tooltip.Root>
 													</Accordion.Trigger>
 
 													<Accordion.Content class="border-l p-2 **:no-underline!">

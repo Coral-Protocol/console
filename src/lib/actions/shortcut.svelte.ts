@@ -81,19 +81,19 @@ export const shortcut = (node: HTMLElement, options: Options[] | Options) => {
  * ```svelte
  * <!-- Ctrl + K Shortcut -->
  * <svelte:window
- * 	  {...attachShortcut({
- * 		  ctrl: true,
- * 		  key: 'k',
- * 		  callback: commandMenu.toggle
- * 	  })}
+ * 	 {...attachShortcut({
+ * 		 ctrl: true,
+ * 		 key: 'k',
+ * 		 callback: commandMenu.toggle
+ * 	 })}
  * />
  * ```
  */
-export function attachShortcut(opts: Options[] | Options) {
-	return {
-		[createAttachmentKey()]: (node: HTMLElement) => shortcut(node, opts)
-	};
-}
+// export function attachShortcut(opts: Options[] | Options) {
+// 	return {
+// 		[createAttachmentKey()]: (node: HTMLElement) => shortcut(node, opts)
+// 	};
+// }
 
 export type Key =
 	| 'backspace'

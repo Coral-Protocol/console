@@ -35,7 +35,7 @@ text-[oklch(0.72_0.18_44.59)]
 			class="flex w-full flex-col items-center justify-center gap-1 px-2 text-center"
 		>
 			{#if !data.alert}
-				<IconRobot class="h-12 w-12  transition-opacity group-hover:opacity-100" />
+				<IconRobot class="h-12 w-12 transition-opacity group-hover:opacity-100" />
 			{:else}
 				<IconRobotClosedEyes class="h-12 w-12 animate-pulse" />
 			{/if}

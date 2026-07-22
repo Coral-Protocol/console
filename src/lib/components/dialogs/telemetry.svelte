@@ -75,7 +75,7 @@
 <!-- 			> -->
 <!-- 				<Tabs.Root value="messages" class="flex h-full flex-col gap-4"> -->
 <!-- 					<Dialog.Header class="flex flex-col gap-4"> -->
-<!-- 						<Dialog.Title class="h-fit  font-[400]">Full Telemetry Data</Dialog.Title> -->
+<!-- 						<Dialog.Title class="h-fit font-[400]">Full Telemetry Data</Dialog.Title> -->
 <!-- 						<span class="text-muted-foreground text-sm">{data.modelDescription} - {threadId}</span> -->
 <!-- 						<Tabs.List > -->
 <!-- 							<Tabs.Trigger value="messages"><Chat /> Message Events</Tabs.Trigger> -->

@@ -67,8 +67,8 @@
 </script>
 
 <!-- 
-  @component
-  Virtualized list component. See {@link VListProps} and {@link VListHandle}.
+ @component
+ Virtualized list component. See {@link VListProps} and {@link VListHandle}.
 -->
 <ScrollArea
 	id={id ?? undefined}

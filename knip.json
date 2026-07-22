@@ -1,0 +1,16 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": [
+    "src/routes/**/*.svelte",
+    "src/routes/**/*.ts",
+    "src/hooks.server.ts",
+    "src/app.html"
+  ],
+  "project": [
+    "src/**/*.{js,ts,svelte}"
+  ],
+  "ignore": [
+    "src/generated/api.zod.ts"
+  ]
+  
+}

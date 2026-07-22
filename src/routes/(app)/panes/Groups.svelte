@@ -8,6 +8,8 @@
 	import IconTrash from 'phosphor-icons-svelte/IconTrashRegular.svelte';
 	import { activeFile } from '$lib/activeFile.svelte';
 	import type { Group, Agent } from '$lib/fileStorage.svelte';
+	import { slide, fade } from 'svelte/transition';
+	import { flip } from 'svelte/animate';
 
 	let groups = $derived<Group[]>(activeFile?.current?.groups ?? []);
 	let agents = $derived<Agent[]>(activeFile.current?.agents ?? []);
@@ -41,14 +43,17 @@
 {:else}
 	<ul class=" flex flex-col">
 		<ol class="flex flex-col gap-1 p-2">
-			{#each groups as group, i}
+			{#each groups as group, i (group.clientId)}
 				<li
+					animate:flip={{ duration: 200 }}
+					in:slide={{ duration: 200 }}
+					out:slide={{ duration: 150 }}
 					class="flex w-full items-stretch gap-2 border p-2 {group.agentClientIds.length == 0
 						? 'border-dashed'
 						: ''} p-2"
 				>
 					<div
-						style="background-color: oklch(0.7 0.1 {53 * i})"
+						style="background-color: {group.color}"
 						class="w-2 self-stretch transition-all"
 					></div>
 					<section class="flex w-full">

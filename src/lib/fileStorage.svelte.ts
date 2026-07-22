@@ -56,6 +56,7 @@ export type FileValidationErrors = {
 
 export type Group = {
 	clientId: string;
+	color?: string;
 	name: string;
 	agentClientIds: string[];
 };

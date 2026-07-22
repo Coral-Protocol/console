@@ -12,7 +12,7 @@
 	<Card.Root class="bg-sidebar h-full w-full py-0">
 		<Card.Content class="relative flex h-full items-center gap-2 px-3">
 			<Sidebar.Trigger class="-ml-1" />
-			<Separator orientation="vertical" class="{children ? '' : 'mr-2'}  h-4" />
+			<Separator orientation="vertical" class="{children ? '' : 'mr-2'} h-4" />
 			{#if children}
 				{@render children()}
 			{:else}

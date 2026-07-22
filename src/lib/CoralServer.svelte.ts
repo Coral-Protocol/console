@@ -8,6 +8,28 @@ import { config } from '$lib/config';
 import { createWebsocket } from './websocket.svelte';
 import { toast } from 'svelte-sonner';
 
+type ApiStatus =
+	| { kind: 'ok' }
+	| { kind: 'unauthenticated' }
+	| { kind: 'error'; message: string; code?: number }
+	| { kind: 'unreachable' };
+
+type WsState =
+	| { status: 'idle' }
+	| { status: 'connecting' }
+	| { status: 'open' }
+	| { status: 'replacing' }
+	| { status: 'closed' }
+	| { status: 'error'; message: string };
+
+export type ConnectionState =
+	| { type: 'connected' }
+	| { type: 'switching' }
+	| { type: 'connecting' }
+	| { type: 'unauthenticated' }
+	| { type: 'error'; message: string }
+	| { type: 'disconnected' };
+
 export type Registry =
 	paths['/api/v1/registry']['get']['responses']['200']['content']['application/json'][number];
 
@@ -50,33 +72,29 @@ export class CoralServer {
 
 	public api: { GET: APIClient['GET']; POST: APIClient['POST']; DELETE: APIClient['DELETE'] } = {
 		GET: async (url, ...init) => {
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			let res;
 			try {
 				res = await this.rawApi.GET(url, ...(init as any));
 			} catch (e) {
-				this.alive = false;
-				throw new Error(`Could not reach server`);
+				this.apiStatus = { kind: 'unreachable' };
+				throw new Error('Could not reach server');
 			}
 			switch (res.response.status) {
-				case 401: {
-					this.alive = false;
+				case 401:
+					this.apiStatus = { kind: 'unauthenticated' };
 					this.onNoAuth();
 					throw new Error('Invalid auth token!');
-				}
-
-				case 500: {
-					this.alive = false;
-					if (!res.error) {
-						throw new Error('Unknown internal server error');
-					}
+				case 500:
+					if (!res.error) throw new Error('Unknown internal server error');
+					const message =
+						typeof res.error === 'object' && res.error !== null && 'message' in res.error
+							? String((res.error as any).message ?? 'Internal error')
+							: 'Internal error';
+					this.apiStatus = { kind: 'error', message, code: 500 };
 					return res;
-				}
-
-				case 200: {
-					this.alive = true;
+				case 200:
+					this.apiStatus = { kind: 'ok' };
 					break;
-				}
 			}
 			return res;
 		},
@@ -99,29 +117,66 @@ export class CoralServer {
 	} = $state({});
 
 	// TODO (alan): better server state repr
-	public alive = $state(false);
-	public namespace = $state((browser && localStorage.getItem('namespace')) || 'default');
+	private currentSocket?: WebSocket;
+	public apiStatus = $state<ApiStatus>({ kind: 'ok' });
+	public wsState = $state<WsState>({ status: 'idle' });
+	public isSwitchingNamespace = $state(false);
 
-	public namespaceFilter = $state<string | undefined>(undefined);
+	public connectionState = $derived.by((): ConnectionState => {
+		if (this.isSwitchingNamespace) {
+			return { type: 'switching' };
+		}
+
+		if (this.apiStatus.kind === 'unreachable') {
+			return {
+				type: 'error',
+				message: 'Connection error'
+			};
+		}
+
+		switch (this.wsState.status) {
+			case 'open':
+				return { type: 'connected' };
+
+			case 'idle':
+			case 'connecting':
+				return { type: 'connecting' };
+
+			case 'error':
+				return {
+					type: 'error',
+					message: this.wsState.message
+				};
+
+			case 'closed':
+				return this.isSwitchingNamespace ? { type: 'switching' } : { type: 'disconnected' };
+
+			default:
+				return { type: 'disconnected' };
+		}
+	});
+
+	public alive = $derived(this.connectionState.type === 'connected');
+	public namespace = $state((browser && localStorage.getItem('namespace')) || 'default');
 	public namespaces = $derived(Object.keys(this.allSessions));
 
 	public sessions = $derived.by(() => {
-		if (this.namespaceFilter) {
-			return this.allSessions[this.namespaceFilter]?.sessions ?? {};
+		if (this.namespace) {
+			return this.allSessions[this.namespace]?.sessions ?? {};
 		}
 
 		return Object.fromEntries(
 			Object.values(this.allSessions).flatMap((ns) => Object.entries(ns.sessions))
 		);
 	});
-	public lsmSock = $derived(
-		createWebsocket(
-			this.namespaceFilter
-				? `/ws/v1/events/lsm?namespaceFilter=${encodeURIComponent(this.namespaceFilter)}`
-				: '/ws/v1/events/lsm',
-			'lsm'
-		)
-	);
+
+	public lsmSock = $derived.by(() => {
+		const url = this.namespace
+			? (`/ws/v1/events/lsm?namespaceFilter=${encodeURIComponent(this.namespace)}` as const)
+			: ('/ws/v1/events/lsm' as const);
+
+		return createWebsocket(url, 'lsm');
+	});
 
 	constructor() {
 		$effect(() => {
@@ -183,24 +238,46 @@ export class CoralServer {
 					break;
 			}
 		};
-		const onopen = () => {
-			this.alive = true;
-		};
-		const onerror = (e: Event) => {
-			this.alive = false;
-			console.log('LSM sock error', e);
-		};
-		const onclose = (e: CloseEvent) => {
-			this.alive = false;
-			console.log('LSM sock closed', e);
-		};
+
 		$effect(() => {
-			if (!this.lsmSock) return;
-			console.debug('rehooking new ws');
-			this.lsmSock.onopen = onopen;
-			this.lsmSock.onmessage = onmessage;
-			this.lsmSock.onerror = onerror;
-			this.lsmSock.onclose = onclose;
+			const sock = this.lsmSock;
+			if (!sock) return;
+
+			this.currentSocket = sock;
+			this.wsState = { status: 'connecting' };
+
+			const isCurrent = () => this.currentSocket === sock;
+
+			sock.onopen = () => {
+				if (!isCurrent()) return;
+				this.wsState = { status: 'open' };
+			};
+
+			sock.onerror = () => {
+				if (!isCurrent()) return;
+				this.wsState = {
+					status: 'error',
+					message: 'Websocket error'
+				};
+			};
+
+			sock.onclose = () => {
+				if (!isCurrent()) return;
+				this.wsState = { status: 'closed' };
+			};
+
+			sock.onmessage = onmessage;
+
+			return () => {
+				if (isCurrent()) {
+					this.currentSocket = undefined;
+				}
+
+				sock.onopen = null;
+				sock.onerror = null;
+				sock.onclose = null;
+				sock.onmessage = null;
+			};
 		});
 	}
 
@@ -244,23 +321,26 @@ export class CoralServer {
 
 	public async fetchSessions(namespace?: string) {
 		if (namespace) {
-			const res = await this.api.GET(`/api/v1/local/namespace/{namespace}`, {
-				params: { path: { namespace } }
-			});
-			if (res.response.status === 404) {
-				// wrapped GET normally handles this, but 404 usually does not mean good things,
-				// so we have to manually mark ourselves alive
-				this.alive = true;
-				await this.addNamespace(namespace);
-				return;
-			}
-			if (res.error) throw new Error(`Error fetching sessions - ${res.error.message}`);
+			this.isSwitchingNamespace = true;
+			try {
+				const res = await this.api.GET(`/api/v1/local/namespace/{namespace}`, {
+					params: { path: { namespace } }
+				});
+				if (res.response.status === 404) {
+					this.apiStatus = { kind: 'ok' };
+					await this.addNamespace(namespace);
+					return;
+				}
+				if (res.error) throw new Error(`Error fetching sessions - ${res.error.message}`);
 
-			if (!this.allSessions[namespace]) {
-				console.error("looked up namespace sessions for namespace we didn't know about before!");
-				return;
+				if (!this.allSessions[namespace]) {
+					console.error("looked up namespace sessions for namespace we didn't know about before!");
+					return;
+				}
+				this.allSessions[namespace].sessions = Object.fromEntries(res.data.map((s) => [s.id, s]));
+			} finally {
+				this.isSwitchingNamespace = false;
 			}
-			this.allSessions[namespace].sessions = Object.fromEntries(res.data.map((s) => [s.id, s]));
 		} else {
 			const res = await this.api.GET('/api/v1/local/namespace/extended');
 			if (res.error) throw new Error(`Error fetching sessions`);
