@@ -61,8 +61,8 @@ text-[oklch(0.72_0.18_44.59)]
 			{/if}
 
 			<span
-				class="text-foreground/90 line-clamp-1.5 text-sm leading-tight font-medium tracking-wide wrap-anywhere"
-				use:textfit={{ parent, mode: 'single', max: 10 }}
+				class="text-foreground/90 line-clamp-2 text-sm leading-tight font-medium tracking-wide wrap-anywhere"
+				use:textfit={{ parent, mode: 'single', max: 9 }}
 			>
 				{data.label}
 			</span>

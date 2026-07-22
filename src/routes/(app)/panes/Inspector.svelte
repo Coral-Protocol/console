@@ -183,10 +183,10 @@
 							store.unselectNodesAndEdges();
 							updateNode(agent.clientId, { selected: true });
 						}}
-						class="flex h-full w-full flex-col items-center justify-center gap-1 p-2 text-center"
+						class="flex h-full w-full flex-col items-center justify-center gap-1 truncate p-2 text-center"
 					>
 						<IconRobot class="size-8" />
-						<p class="w-full text-xs leading-tight break-words whitespace-normal">
+						<p class="line-clamp-3 w-full text-xs leading-tight break-words whitespace-normal">
 							{agent.name}
 						</p>
 					</Button>
@@ -392,8 +392,8 @@
 						class="h-12 w-full grow justify-start"
 					>
 						<IconRobot class="size-8" />
-						<div class="flex flex-col text-left">
-							<p class="font-medium">{agent.name}</p>
+						<div class="block truncate text-left">
+							<p class="truncate font-medium">{agent.name}</p>
 							<p class="text-foreground/70 text-xs">{agent.id.name}</p>
 						</div>
 					</Button>
