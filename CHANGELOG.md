@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.19](https://github.com/Coral-Protocol/console/compare/v0.3.18...v0.3.19) (2026-07-22)
+
+
+### Bug Fixes
+
+* removed rando text + some overflow on session names ([b88ad76](https://github.com/Coral-Protocol/console/commit/b88ad76e7658b6f412ccbfeb72160ae07b4e353c))
+
 ## [0.3.18](https://github.com/Coral-Protocol/console/compare/v0.3.17...v0.3.18) (2026-07-22)
 
 
