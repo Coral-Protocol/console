@@ -129,16 +129,7 @@
 			validation === 'successful' &&
 			activeFile.current?.agents.length > 0
 		) {
-			if (!(activeFile.current?.annotations as any)?.sessionName) {
-				activeFile.updateAnnotations({
-					sessionName: uniqueName(
-						draftName,
-						Object.values(ctx.server.sessions)
-							.map((f) => (f.annotations as any)?.sessionName)
-							.filter((name): name is string => typeof name === 'string')
-					)
-				});
-			}
+			activeFile.updateAnnotations({ sessionName: draftName });
 
 			sendingRequest = true;
 			if (activeFile.current !== null) {
@@ -159,7 +150,7 @@
 
 							ctx.session = new Session({
 								sessionId: res.data.sessionId,
-								namespace: ctx.server.namespace,
+								namespace: res.data.namespace,
 								server: ctx.server
 							});
 						})(),
@@ -732,6 +723,7 @@
 																	}}
 																	onblur={() => {
 																		activeFile.updateMeta({ name: draftName });
+																		activeFile.updateAnnotations({ sessionName: draftName });
 																	}}
 																	class="peer absolute inset-0 z-10 w-full min-w-0 text-xl outline-0!"
 																/>

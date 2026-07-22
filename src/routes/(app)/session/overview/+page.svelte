@@ -236,4 +236,8 @@
 			</Card.Root>
 		</section>
 	</main>
+{:else}
+	<p class="text-muted-foreground h-full w-full grow content-center text-center text-sm">
+		Not connected to any session, nothing to display!
+	</p>
 {/if}

@@ -234,6 +234,36 @@
 		untrack(() => (connectedSessionId = ctx.session?.sessionId));
 	});
 	let namespaces = $derived(ctx.server.namespaces.filter((ns) => ns !== 'default'));
+	function getUniqueSessionName(desiredName: string, existingNames: string[]): string {
+		const existing = new Set(existingNames);
+
+		if (!existing.has(desiredName)) {
+			return desiredName;
+		}
+
+		let i = 2;
+		while (existing.has(`${desiredName} (${i})`)) {
+			i++;
+		}
+
+		return `${desiredName} (${i})`;
+	}
+
+	const sessions = $derived(Object.values(ctx.server.sessions).reverse());
+
+	function sessionNameCount(sessionName: string | undefined, sessionId?: string) {
+		if (!sessionName || !sessionId) return '';
+
+		let count = 0;
+		for (const session of sessions) {
+			if (session.annotations?.sessionName !== sessionName) continue;
+
+			count += 1;
+			if (session.id === sessionId) return `(${count})`;
+		}
+
+		return '';
+	}
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
@@ -371,39 +401,36 @@
 													: null;
 										}}
 									>
-										{#each Object.values(ctx.server.sessions) as session (session.id)}
+										{#each sessions as session (session.id)}
 											<Command.Item
 												class="bg-transparent! p-0 "
 												value={session.annotations?.sessionName ?? session.id}
 											>
 												<Accordion.Item class="w-full bg-transparent!" value={session.id}>
-													<Accordion.Trigger class="group/item gap-2 truncate text-sm ">
+													<Accordion.Trigger class="group/item gap-2 truncate p-1 text-sm">
 														<IconSession class="size-5" />
 
-														<span class="grow">
+														<span class="grow truncate">
 															{session.annotations?.sessionName ?? session.id}
+															<span class="text-muted-foreground text-xs">
+																{sessionNameCount(session.annotations?.sessionName, session.id)}
+															</span>
 														</span>
-
-														{#if ctx.session?.sessionId === session.id}
-															<Badge
-																class=" bg-foreground/5 text-foreground/80 w-16 px-2 py-0.5 text-[10px] font-medium"
-															>
-																connected
-															</Badge>
-														{:else}
-															<Badge
-																class=" bg-foreground/5 text-foreground/100 w-16 px-2 py-0.5 text-[10px] font-medium opacity-0 transition-opacity delay-75 group-hover/item:opacity-80"
-															>
-																connect
-															</Badge>
-														{/if}
 														<Tooltip.Root>
 															<Tooltip.Trigger>
-																<Badge
-																	class=" bg-foreground/5 text-foreground/80 block w-16 truncate px-2 py-0.5 text-center text-[10px] font-medium overflow-ellipsis"
-																>
-																	{session.namespace}
-																</Badge>
+																{#if ctx.session?.sessionId === session.id}
+																	<Badge
+																		class=" bg-foreground/5 text-foreground/80 w-16 px-2 py-0.5 text-[10px] font-medium"
+																	>
+																		connected
+																	</Badge>
+																{:else}
+																	<Badge
+																		class=" bg-foreground/5 text-foreground/100 w-16 px-2 py-0.5 text-[10px] font-medium opacity-0 transition-opacity delay-75 group-hover/item:opacity-80"
+																	>
+																		connect
+																	</Badge>
+																{/if}
 															</Tooltip.Trigger>
 															<Tooltip.Content>
 																Namespace: <span class="text-muted-foreground"
