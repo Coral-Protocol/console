@@ -54,7 +54,7 @@
 	import MarketPane from './panes/Agents.svelte';
 	import CodePane from './panes/Code.svelte';
 	import GroupsPane from './panes/Groups.svelte';
-	import AgentPane from './panes/Inspector.svelte';
+	import Inspector from './panes/Inspector.svelte';
 	import Outline from './panes/Outline.svelte';
 	import SessionSettings from './panes/SessionSettings.svelte';
 	import ToolsPane from './panes/Tools.svelte';
@@ -930,59 +930,68 @@
 							<Resizable.Pane defaultSize={35} minSize={10}>
 								<Resizable.PaneGroup direction="vertical">
 									<Resizable.Pane defaultSize={35} minSize={10}>
-										<Tabs.Root bind:value={workbenchTabSide.current} class="h-full grow gap-0">
-											<Tabs.List
-												variant="line"
-												class="*:after:bg-brand-primary w-full justify-start border-b"
-											>
-												<Tabs.Trigger value="Agents">Agents</Tabs.Trigger>
-												<Tabs.Trigger value="Inspector">Inspector</Tabs.Trigger>
-												<Tabs.Trigger value="Groups">Groups</Tabs.Trigger>
-												<Tabs.Trigger value="Tools">Tools</Tabs.Trigger>
-												<Tabs.Trigger value="Session">Session</Tabs.Trigger>
-											</Tabs.List>
-											<Tabs.Content
-												value="Agents"
-												class="flex min-h-0 grow flex-col overflow-y-auto "
-											>
-												<MarketPane source="marketplace" />
-											</Tabs.Content>
-											<Tabs.Content
-												value="Local"
-												class="flex min-h-0 grow flex-col overflow-y-auto "
-											>
-												<MarketPane source="local" />
-											</Tabs.Content>
-											<Tabs.Content
-												value="Inspector"
-												class="flex min-h-0 grow flex-col overflow-y-auto"
-											>
-												<AgentPane />
-											</Tabs.Content>
-											<Tabs.Content
-												value="Tools"
-												class="flex min-h-0 grow flex-col overflow-y-auto"
-											>
-												<ToolsPane />
-											</Tabs.Content>
-											<Tabs.Content
-												value="Groups"
-												class="flex min-h-0 grow flex-col overflow-y-auto"
-											>
-												<GroupsPane />
-											</Tabs.Content>
-											<Tabs.Content
-												value="Session"
-												class="flex min-h-0 grow flex-col overflow-y-auto"
-											>
-												<SessionSettings />
-											</Tabs.Content>
-											<Tabs.Content value="Errors">
-												{#each Object.entries(activeFile.current?.errors ?? {}) as error}
-													{JSON.stringify(error)}
-												{/each}
-											</Tabs.Content>
-										</Tabs.Root>
+										{#if mounted}
+											<Tabs.Root bind:value={workbenchTabSide.current} class="h-full grow gap-0">
+												<Tabs.List
+													variant="line"
+													class="*:after:bg-brand-primary w-full justify-start border-b"
+												>
+													<Tabs.Trigger value="Agents">Agents</Tabs.Trigger>
+													<Tabs.Trigger value="Inspector">Inspector</Tabs.Trigger>
+													<Tabs.Trigger value="Groups">Groups</Tabs.Trigger>
+													<Tabs.Trigger value="Tools">Tools</Tabs.Trigger>
+													<Tabs.Trigger value="Session">Session</Tabs.Trigger>
+												</Tabs.List>
+												<Tabs.Content
+													value="Agents"
+													class="flex min-h-0 grow flex-col overflow-y-auto "
+												>
+													<MarketPane source="marketplace" />
+												</Tabs.Content>
+												<Tabs.Content
+													value="Local"
+													class="flex min-h-0 grow flex-col overflow-y-auto "
+												>
+													<MarketPane source="local" />
+												</Tabs.Content>
+												<Tabs.Content
+													value="Inspector"
+													class="flex min-h-0 grow flex-col overflow-y-auto"
+												>
+													<svelte:boundary onerror={(e) => console.error('Inspector crashed:', e)}>
+														<Inspector />
+														{#snippet failed(error)}
+															<p class="text-muted-foreground p-4">
+																Inspector failed to load — try switching panels.
+															</p>
+														{/snippet}
+													</svelte:boundary>
+												</Tabs.Content>
+												<Tabs.Content
+													value="Tools"
+													class="flex min-h-0 grow flex-col overflow-y-auto"
+												>
+													<ToolsPane />
+												</Tabs.Content>
+												<Tabs.Content
+													value="Groups"
+													class="flex min-h-0 grow flex-col overflow-y-auto"
+												>
+													<GroupsPane />
+												</Tabs.Content>
+												<Tabs.Content
+													value="Session"
+													class="flex min-h-0 grow flex-col overflow-y-auto"
+												>
+													<SessionSettings />
+												</Tabs.Content>
+												<Tabs.Content value="Errors">
+													{#each Object.entries(activeFile.current?.errors ?? {}) as error}
+														{JSON.stringify(error)}
+													{/each}
+												</Tabs.Content>
+											</Tabs.Root>
+										{/if}
 									</Resizable.Pane>
 									<Resizable.Handle />
 									<Resizable.Pane

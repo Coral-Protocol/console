@@ -30,12 +30,13 @@
 	import IconRobot from '$lib/icons/robot.svelte';
 	import AgentBudget from './AgentBudget.svelte';
 	import { randomAdjective, randomPlant } from '$lib/words';
+	const { updateNode } = useSvelteFlow();
 
 	let ctx = appContext.get();
 	let sessCtx = getSessionContext();
 
 	const store = useStore();
-	let selectedNodes = $derived(store.selectedNodes);
+	let selectedNodes = $derived.by(() => useStore().selectedNodes);
 
 	const getOptions = async (agentId?: RegistryAgentIdentifier | null) => {
 		if (!agentId) return null;
@@ -177,7 +178,10 @@
 					<Button
 						variant="outline"
 						onclick={() => {
-							store.addSelectedNodes([]), store.handleNodeSelection(agent.clientId);
+							store.selectionRect = null;
+							store.selectionRectMode = null;
+							store.unselectNodesAndEdges();
+							updateNode(agent.clientId, { selected: true });
 						}}
 						class="flex h-full w-full flex-col items-center justify-center gap-1 p-2 text-center"
 					>
@@ -384,7 +388,7 @@
 				<li>
 					<Button
 						variant="outline"
-						onclick={() => store.handleNodeSelection(agent.clientId)}
+						onclick={() => updateNode(agent.clientId, { selected: true })}
 						class="h-12 w-full grow justify-start"
 					>
 						<IconRobot class="size-8" />

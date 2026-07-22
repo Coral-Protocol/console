@@ -65,7 +65,7 @@
 		"@types/lodash": "^4.17.24",
 		"@uiw/codemirror-theme-atomone": "^4.25.9",
 		"@uiw/codemirror-theme-quietlight": "^4.25.9",
-		"@xyflow/svelte": "^1.5.2",
+		"@xyflow/svelte": "^1.6.2",
 		"codemirror": "^6.0.2",
 		"d3": "^7.9.0",
 		"date-fns": "^4.1.0",

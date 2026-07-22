@@ -11,12 +11,32 @@
 	import { Button } from '@coral-os/component-library/components/ui/button/index.js';
 	import { keys } from '$lib/keyHandler.svelte';
 	import { debugMode } from '$lib/debugMode.svelte';
+	import { toast } from 'svelte-sonner';
 
 	const isShiftPressed = $derived(keys.has('Shift'));
 
 	let parent: any = $state();
 
-	let { data, id, positionAbsoluteX, positionAbsoluteY, dragging, selected,  }: NodeProps = $props();
+	let { data, id, positionAbsoluteX, positionAbsoluteY, dragging, selected }: NodeProps = $props();
+
+	function stringifyDebugValue(value: unknown) {
+		if (typeof value === 'string') return value;
+		if (typeof value === 'number' || typeof value === 'boolean' || value == null)
+			return String(value);
+		return JSON.stringify(value);
+	}
+
+	async function copyDebugValue(value: unknown) {
+		const text = stringifyDebugValue(value);
+		if (!text) return;
+
+		try {
+			await navigator.clipboard.writeText(text);
+			toast('Copied value to clipboard');
+		} catch {
+			// no-op: clipboard access is unavailable in some environments
+		}
+	}
 </script>
 
 <div class="ring-wrapper group relative h-30 w-30 rounded-full transition-all">
@@ -79,16 +99,19 @@ text-[oklch(0.72_0.18_44.59)]
 					{#each Object.entries(data) as [key, dataItem]}
 						<div class="flex flex-row justify-between gap-5 border-b">
 							<strong>{key}:</strong>
-							<span class="max-w-max truncate">{dataItem}</span>
+							<button
+								class="max-w-max cursor-copy truncate"
+								onclick={() => copyDebugValue(dataItem)}>{dataItem}</button
+							>
 						</div>
 					{/each}
 					<div class="flex flex-row justify-between gap-5 border-b">
 						<strong>dragging:</strong>
-						{dragging}
+						<button class="cursor-copy" onclick={() => copyDebugValue(dragging)}>{dragging}</button>
 					</div>
 					<div class="flex flex-row justify-between gap-5 border-b">
 						<strong>id:</strong>
-						{id}
+						<button class="cursor-copy" onclick={() => copyDebugValue(id)}>{id}</button>
 					</div>
 					<div class="flex flex-row justify-between gap-5 border-b">
 						<strong>shift key:</strong>
@@ -112,7 +135,7 @@ text-[oklch(0.72_0.18_44.59)]
 			</Tooltip.Root>
 		{/if}
 
-		{#if selected || data.locked }
+		{#if selected || data.locked}
 			{#if !dragging || !isShiftPressed}
 				<Tooltip.Root>
 					<Tooltip.Trigger
